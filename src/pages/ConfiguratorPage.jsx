@@ -1,10 +1,133 @@
 import React, { useState, useEffect } from "react";
 import { useBundles } from "../context/BundleContext";
-
-import { Link, useParams, useNavigate, useLocation } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import Sidebar from '../components/Sidebar';
 import { db } from '../firebase';
 import { doc, updateDoc, arrayUnion, getDoc } from 'firebase/firestore';
+
+function BundleTable({ bundles, items, onItemToggle, onItemPriceChange, onAmountChange, amounts }) {
+  const flattenedItems = flattenItems(items);
+
+  const formatPrice = (price) => {
+    return new Intl.NumberFormat('cs-CZ', {
+      style: 'currency',
+      currency: 'CZK',
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
+    }).format(price);
+  };
+
+  const getItemPrice = (item, bundleId) => {
+    if (!item.prices) return 0;
+    const priceEntry = item.prices.find(p => p.packageId === bundleId);
+    return priceEntry?.price ?? 0;
+  };
+
+  // Add this function to calculate bundle totals
+  const calculateBundleTotal = (bundleId) => {
+    return flattenedItems
+      .filter(item => item.type === 'item')
+      .reduce((total, item) => {
+        return total + (getItemPrice(item, bundleId) * (amounts[item.id] || 0));
+      }, 0);
+  };
+
+  return (
+    <div className="overflow-x-auto rounded-lg border border-gray-200">
+      <table className="min-w-full divide-y divide-gray-200">
+        <thead className="bg-gray-50">
+          <tr>
+            <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/4">
+              Item Details
+            </th>
+            <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-16">Amount</th>
+            {bundles.map(bundle => (
+              <th key={bundle.id} className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-32">
+                <div className="flex flex-col">
+                  <span>{bundle.name}</span>
+                  <span className="text-blue-600 font-semibold">
+                    Total: {formatPrice(calculateBundleTotal(bundle.id))}
+                  </span>
+                </div>
+              </th>
+            ))}
+          </tr>
+        </thead>
+        <tbody className="bg-white divide-y divide-gray-200">
+          {flattenedItems.map((item) => (
+            <tr 
+              key={item.uniqueId}
+              className={`
+                ${item.type === 'category' ? 'bg-gray-50' : 'hover:bg-gray-50'}
+                ${item.depth > 0 ? `pl-${item.depth * 4}` : ''}
+              `}
+            >
+              <td className="px-4 py-2">
+                <div className="flex flex-col">
+                  <span className={`${item.type === 'category' ? 'font-medium text-gray-900' : 'text-gray-700'} text-sm`}>
+                    {item.name}
+                  </span>
+                  {item.note && (
+                    <span className="text-xs text-gray-500 truncate max-w-xs">
+                      {item.note}
+                    </span>
+                  )}
+                </div>
+              </td>
+              <td className="px-4 py-2">
+                {item.type === 'item' && (
+                  <input
+                    type="number"
+                    value={amounts[item.id] || 0}
+                    onChange={(e) => onAmountChange(item.id, e.target.value)}
+                    className="block w-16 rounded-sm border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-xs py-1"
+                  />
+                )}
+              </td>
+              
+              {item.type === 'item' && bundles.map(bundle => (
+                <td key={`${item.uniqueId}-${bundle.id}`} className="px-4 py-2">
+                  <div className="flex flex-col">
+                    <span className="block w-16 text-xs py-1 text-gray-500">
+                      {formatPrice(getItemPrice(item, bundle.id))} each
+                    </span>
+                    <span className="block w-16 text-xs py-1 text-gray-700 font-medium">
+                      {formatPrice(getItemPrice(item, bundle.id) * (amounts[item.id] || 0))} total
+                    </span>
+                  </div>
+                </td>
+              ))}
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+function flattenItems(items, depth = 0, parentId = '') {
+  const result = [];
+  
+  items.forEach((item, index) => {
+    // Create a unique ID by combining parent path and current index
+    const uniqueId = parentId ? `${parentId}-${index}` : `${index}`;
+    
+    // Add the item itself
+    result.push({
+      ...item,
+      uniqueId, // Add uniqueId to use for keys
+      depth,
+      type: item.children ? 'category' : 'item'
+    });
+    
+    // Recursively add children if they exist
+    if (item.children) {
+      result.push(...flattenItems(item.children, depth + 1, uniqueId));
+    }
+  });
+  
+  return result;
+}
 
 function ConfiguratorPage() {
   const { bundles } = useBundles();
@@ -211,130 +334,6 @@ function ConfiguratorPage() {
       </div>
     </div>
   );
-}
-
-function BundleTable({ bundles, items, onItemToggle, onItemPriceChange, onAmountChange, amounts }) {
-  const flattenedItems = flattenItems(items);
-
-  const formatPrice = (price) => {
-    return new Intl.NumberFormat('cs-CZ', {
-      style: 'currency',
-      currency: 'CZK',
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
-    }).format(price);
-  };
-
-  const getItemPrice = (item, bundleId) => {
-    if (!item.prices) return 0;
-    const priceEntry = item.prices.find(p => p.packageId === bundleId);
-    return priceEntry?.price ?? 0;
-  };
-
-  // Add this function to calculate bundle totals
-  const calculateBundleTotal = (bundleId) => {
-    return flattenedItems
-      .filter(item => item.type === 'item')
-      .reduce((total, item) => {
-        return total + (getItemPrice(item, bundleId) * (amounts[item.id] || 0));
-      }, 0);
-  };
-
-  return (
-    <div className="overflow-x-auto rounded-lg border border-gray-200">
-      <table className="min-w-full divide-y divide-gray-200">
-        <thead className="bg-gray-50">
-          <tr>
-            <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/4">
-              Item Details
-            </th>
-            <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-16">Amount</th>
-            {bundles.map(bundle => (
-              <th key={bundle.id} className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-32">
-                <div className="flex flex-col">
-                  <span>{bundle.name}</span>
-                  <span className="text-blue-600 font-semibold">
-                    Total: {formatPrice(calculateBundleTotal(bundle.id))}
-                  </span>
-                </div>
-              </th>
-            ))}
-          </tr>
-        </thead>
-        <tbody className="bg-white divide-y divide-gray-200">
-          {flattenedItems.map((item) => (
-            <tr 
-              key={item.uniqueId}
-              className={`
-                ${item.type === 'category' ? 'bg-gray-50' : 'hover:bg-gray-50'}
-                ${item.depth > 0 ? `pl-${item.depth * 4}` : ''}
-              `}
-            >
-              <td className="px-4 py-2">
-                <div className="flex flex-col">
-                  <span className={`${item.type === 'category' ? 'font-medium text-gray-900' : 'text-gray-700'} text-sm`}>
-                    {item.name}
-                  </span>
-                  {item.note && (
-                    <span className="text-xs text-gray-500 truncate max-w-xs">
-                      {item.note}
-                    </span>
-                  )}
-                </div>
-              </td>
-              <td className="px-4 py-2">
-                {item.type === 'item' && (
-                  <input
-                    type="number"
-                    value={amounts[item.id] || 0}
-                    onChange={(e) => onAmountChange(item.id, e.target.value)}
-                    className="block w-16 rounded-sm border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-xs py-1"
-                  />
-                )}
-              </td>
-              
-              {item.type === 'item' && bundles.map(bundle => (
-                <td key={`${item.uniqueId}-${bundle.id}`} className="px-4 py-2">
-                  <div className="flex flex-col">
-                    <span className="block w-16 text-xs py-1 text-gray-500">
-                      {formatPrice(getItemPrice(item, bundle.id))} each
-                    </span>
-                    <span className="block w-16 text-xs py-1 text-gray-700 font-medium">
-                      {formatPrice(getItemPrice(item, bundle.id) * (amounts[item.id] || 0))} total
-                    </span>
-                  </div>
-                </td>
-              ))}
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
-  );
-}
-
-function flattenItems(items, depth = 0, parentId = '') {
-  const result = [];
-  
-  items.forEach((item, index) => {
-    // Create a unique ID by combining parent path and current index
-    const uniqueId = parentId ? `${parentId}-${index}` : `${index}`;
-    
-    // Add the item itself
-    result.push({
-      ...item,
-      uniqueId, // Add uniqueId to use for keys
-      depth,
-      type: item.children ? 'category' : 'item'
-    });
-    
-    // Recursively add children if they exist
-    if (item.children) {
-      result.push(...flattenItems(item.children, depth + 1, uniqueId));
-    }
-  });
-  
-  return result;
 }
 
 export default ConfiguratorPage;

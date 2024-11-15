@@ -1,4 +1,4 @@
-import { collection, getDocs, addDoc, serverTimestamp, setDoc, doc } from 'firebase/firestore';
+import { collection, getDocs, setDoc, doc } from 'firebase/firestore';
 import { db } from '../firebase';
 import { createUserWithEmailAndPassword } from 'firebase/auth';
 import { auth } from '../firebase';

@@ -3,11 +3,10 @@ import { useBundleData } from '../hooks/useBundleData';
 import ActionButtons from '../components/ActionButtons';
 import { useBundles } from '../context/BundleContext';
 import { initialBundles } from '../data/bundles';
-import { Link, useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import Sidebar from '../components/Sidebar';
 import { db } from '../firebase';
-import { doc, updateDoc, arrayUnion, addDoc, collection, getDocs, getDoc } from 'firebase/firestore';
-import { createBundleStructure, formatBundleItems, createPackageStructure } from '../utils/bundleUtils';
+import { doc, updateDoc, getDoc } from 'firebase/firestore';  
 
 function BundleSettingsPage() {
   const { userId } = useParams();
