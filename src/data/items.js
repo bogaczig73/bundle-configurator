@@ -8,9 +8,9 @@ export const defaultItems = [
     categoryId: 1,
     note: "Pojmenovaní uživatelé (ne konkurenční)",
     prices: [
-      { packageId: 1, price: 1391, selected: false },
-      { packageId: 2, price: 1691, selected: true },
-      { packageId: 3, price: 2000, selected: true }
+      { packageId: 1, price: 1391, selected: false},
+      { packageId: 2, price: 1691, selected: true},
+      { packageId: 3, price: 2000, selected: true}
     ]
   },
   {
@@ -23,8 +23,8 @@ export const defaultItems = [
     categoryId: 1,
     prices: [
       { packageId: 1, price: 0, selected: false },
-      { packageId: 2, price: 845, selected: true },
-      { packageId: 3, price: 995, selected: true }
+      { packageId: 2, price: 845, selected: true},
+      { packageId: 3, price: 995, selected: true}
     ]
   },
   {

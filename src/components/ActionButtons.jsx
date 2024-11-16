@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 
 function ActionButtons({ userId, loading, onSave, onExport, onImport, onReset }) {
   return (
-    <div className="flex gap-2 mb-6">
+    <div className="flex gap-2">
       {userId ? (
         <>
           <button 

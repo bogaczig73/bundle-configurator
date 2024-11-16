@@ -26,6 +26,7 @@ function BundleTable({ bundles = [], items = [], onItemToggle, onItemPriceChange
   };
 
   const getItemPrice = (item, bundleId) => {
+    if (item.individual) return 1;
     if (!item.prices) return 0;
     const priceEntry = item.prices.find(p => p.packageId === bundleId);
     return priceEntry?.price ?? 0;
@@ -84,23 +85,35 @@ function BundleTable({ bundles = [], items = [], onItemToggle, onItemPriceChange
               </td>
               <td className="px-4 py-2">
                 {item.type === 'item' && (
-                  <input
-                    type="number"
-                    value={amounts[item.id] || 0}
-                    onChange={(e) => onAmountChange(item.id, e.target.value)}
-                    className="block w-16 rounded-sm border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-xs py-1"
-                  />
+                  <td className="px-4 py-2">
+                    {item.checkbox ? (
+                      <input
+                        type="checkbox"
+                        checked={amounts[item.id] === 1}
+                        onChange={(e) => onAmountChange(item.id, e.target.checked ? 1 : 0)}
+                        className="rounded border-gray-300 text-blue-600 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                      />
+                    ) : (
+                      <input
+                        type="number"
+                        min={0}
+                        value={amounts[item.id] || 0}
+                        onChange={(e) => onAmountChange(item.id, item.individual ? Number(e.target.value) : e.target.value)}
+                        className="block w-16 rounded-sm border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-xs py-1"
+                      />
+                    )}
+                  </td>
                 )}
               </td>
               
               {item.type === 'item' && bundles.map(bundle => (
                 <td key={`${item.uniqueId}-${bundle.id}`} className="px-4 py-2">
                   <div className="flex flex-col">
-                    <span className="block w-16 text-xs py-1 text-gray-500">
-                      {formatPrice(getItemPrice(item, bundle.id))} each
+                    <span className="block text-xs py-1 text-gray-500">
+                      {item.individual ? formatPrice(1) : formatPrice(getItemPrice(item, bundle.id))} {!item.individual && 'each'}
                     </span>
-                    <span className="block w-16 text-xs py-1 text-gray-700 font-medium">
-                      {formatPrice(getItemPrice(item, bundle.id) * (amounts[item.id] || 0))} total
+                    <span className="block text-xs py-1 text-gray-700 font-medium">
+                      {formatPrice(item.individual ? (amounts[item.id] || 0) : getItemPrice(item, bundle.id) * (amounts[item.id] || 0))} total
                     </span>
                   </div>
                 </td>

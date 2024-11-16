@@ -124,14 +124,14 @@ function BundleSettingsPage() {
     
     try {
       const currentItems = getAllItems(processedItems);
-      const updatedItems = currentItems.map(({ id, name, categoryId, prices, note, checkbox }) => ({
+      const updatedItems = currentItems.map(({ id, name, categoryId, prices, note, checkbox, individual }) => ({
         id,
         name,
         categoryId,
         prices: prices || [],
         amount: 0,
         checkbox: checkbox ?? false,
-        individual: false,
+        individual: individual ?? false,
         ...(note && { note })
       }));
 
@@ -183,6 +183,16 @@ function BundleSettingsPage() {
     );
   }, []);
 
+  // Add the handler function with the other handlers
+  const handleIndividualChange = useCallback((itemId) => {
+    setProcessedItems(prevItems => 
+      updateItemInTree(prevItems, itemId, (item) => ({
+        ...item,
+        individual: item.individual === undefined ? true : !item.individual
+      }))
+    );
+  }, []);
+
   return (
     <div className="flex flex-col md:flex-row min-h-screen bg-gray-50">
       <Sidebar />
@@ -230,6 +240,7 @@ function BundleSettingsPage() {
                 onItemToggle={handleItemToggle}
                 onItemPriceChange={handleItemPriceChange}
                 onCheckboxChange={handleCheckboxChange}
+                onIndividualChange={handleIndividualChange}
                 itemPrices={itemPrices}
               />
             </div>
@@ -249,8 +260,22 @@ const MemoizedBundleTable = memo(BundleTable, (prevProps, nextProps) => {
   );
 });
 
-function BundleTable({ bundles, items, onItemToggle, onItemPriceChange, onCheckboxChange, itemPrices }) {
+function BundleTable({ bundles, items, onItemToggle, onItemPriceChange, onCheckboxChange, onIndividualChange, itemPrices }) {
   const flattenedItems = useMemo(() => flattenItems(items), [items]);
+
+  const tableStyles = {
+    headerCell: "px-2 md:px-4 py-2 text-xs font-medium text-gray-500 uppercase tracking-wider",
+    bodyCell: "px-2 md:px-4 py-2",
+    checkbox: "h-4 w-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500 focus:ring-offset-0",
+    numberInput: "block w-14 md:w-16 rounded-sm border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-xs py-1 text-center",
+    centerWrapper: "flex justify-center items-center h-full",
+    columnWidths: {
+      details: "w-1/4",      // Fixed width instead of w-1/4
+      checkbox: "w-16",      // Fixed width instead of w-16
+      individual: "w-16",    // Fixed width instead of w-16
+      bundle: "w-32",       // Fixed width instead of w-32
+    }
+  };
 
   const getItemPrice = useCallback((item, bundleId) => {
     const localPrice = itemPrices[`${item.id}-${bundleId}`];
@@ -263,79 +288,120 @@ function BundleTable({ bundles, items, onItemToggle, onItemPriceChange, onCheckb
   }, []);
 
   return (
-    <div className="overflow-x-auto rounded-lg border border-gray-200">
+    <div className="border border-gray-200 rounded-lg shadow-sm">
       <div className="min-w-[800px]">
-        <table className="w-full divide-y divide-gray-200">
-          <thead className="bg-gray-50">
-            <tr>
-              <th className="px-2 md:px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/4">
-                Item Details
-              </th>
-              <th className="px-2 md:px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-16">
-                Checkbox
-              </th>
+        {/* Fixed Header */}
+        <div className="bg-gray-50 sticky top-0 z-10 border-b border-gray-200">
+          <table className="w-full table-fixed">
+            <colgroup>
+              <col className={tableStyles.columnWidths.details} />
+              <col className={tableStyles.columnWidths.checkbox} />
+              <col className={tableStyles.columnWidths.individual} />
               {bundles.map(bundle => (
-                <th key={bundle.id} className="px-2 md:px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-32">
-                  {bundle.name}
-                </th>
+                <col key={bundle.id} className={tableStyles.columnWidths.bundle} />
               ))}
-            </tr>
-          </thead>
-          <tbody className="bg-white divide-y divide-gray-200">
-            {flattenedItems.map((item) => (
-              <tr 
-                key={item.uniqueId}
-                className={`
-                  ${item.type === 'category' ? 'bg-gray-50' : 'hover:bg-gray-50'}
-                  ${item.depth > 0 ? `pl-${item.depth * 4}` : ''}
-                `}
-              >
-                <td className="px-2 md:px-4 py-2">
-                  <div className="flex flex-col">
-                    <span className={`${item.type === 'category' ? 'font-medium text-gray-900' : 'text-gray-700'} text-xs md:text-sm`}>
-                      {item.name}
-                    </span>
-                    {item.note && (
-                      <span className="text-xs text-gray-500 truncate max-w-xs">
-                        {item.note}
-                      </span>
-                    )}
+            </colgroup>
+            <thead>
+              <tr>
+                <th className={`${tableStyles.columnWidths.details} text-left ${tableStyles.headerCell}`}>
+                  Item Details
+                </th>
+                <th className={tableStyles.headerCell}>
+                  <div className={tableStyles.centerWrapper}>
+                    Checkbox
                   </div>
-                </td>
-                <td className="px-2 md:px-4 py-2">
-                  {item.type === 'item' && (
-                    <input
-                      type="checkbox"
-                      checked={item.checkbox ?? false}
-                      onChange={() => onCheckboxChange(item.id)}
-                      className="h-3 w-3 text-blue-600 rounded border-gray-300 focus:ring-blue-500"
-                    />
-                  )}
-                </td>
-                
-                {item.type === 'item' && bundles.map(bundle => (
-                  <td key={`${item.id}-${bundle.id}`} className="px-2 md:px-4 py-2">
-                    <div className="flex items-center gap-1 md:gap-2">
-                      <input
-                        type="checkbox"
-                        checked={getItemSelected(item, bundle.id)}
-                        onChange={() => onItemToggle(bundle.id, item.id)}
-                        className="h-3 w-3 text-blue-600 rounded border-gray-300 focus:ring-blue-500"
-                      />
-                      <input
-                        type="number"
-                        min={0}
-                        onChange={(e) => onItemPriceChange(bundle.id, item.id, e.target.value)}
-                        value={itemPrices[`${item.id}-${bundle.id}`] || getItemPrice(item, bundle.id)}
-                        className="block w-14 md:w-16 rounded-sm border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-xs py-1"
-                      />
+                </th>
+                <th className={tableStyles.headerCell}>
+                  <div className={tableStyles.centerWrapper}>
+                    Individual
+                  </div>
+                </th>
+                {bundles.map(bundle => (
+                  <th key={bundle.id} className={tableStyles.headerCell}>
+                    <div className={tableStyles.centerWrapper}>
+                      {bundle.name}
                     </div>
-                  </td>
+                  </th>
                 ))}
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+          </table>
+        </div>
+
+        {/* Scrollable Body */}
+        <div className="overflow-y-auto max-h-[calc(100vh-200px)] bg-white">
+          <table className="w-full">
+            <tbody className="divide-y divide-gray-200">
+              {flattenedItems.map((item) => (
+                <tr 
+                  key={item.uniqueId}
+                  className={`
+                    ${item.type === 'category' ? 'bg-gray-50' : 'hover:bg-gray-50 transition-colors duration-150'}
+                    ${item.depth > 0 ? `pl-${item.depth * 4}` : ''}
+                  `}
+                >
+                  <td className={`${tableStyles.columnWidths.details} ${tableStyles.bodyCell}`}>
+                    <div className="flex flex-col">
+                      <span className={`${item.type === 'category' ? 'font-medium text-gray-900' : 'text-gray-700'} text-sm`}>
+                        {item.name}
+                      </span>
+                      {item.note && (
+                        <span className="text-xs text-gray-500 truncate max-w-xs mt-0.5">
+                          {item.note}
+                        </span>
+                      )}
+                    </div>
+                  </td>
+                  <td className={`${tableStyles.columnWidths.checkbox} ${tableStyles.bodyCell}`}>
+                    <div className={tableStyles.centerWrapper}>
+                      {item.type === 'item' && (
+                        <input
+                          type="checkbox"
+                          checked={item.checkbox ?? false}
+                          onChange={() => onCheckboxChange(item.id)}
+                          className={tableStyles.checkbox}
+                        />
+                      )}
+                    </div>
+                  </td>
+                  <td className={`${tableStyles.columnWidths.individual} ${tableStyles.bodyCell}`}>
+                    <div className={tableStyles.centerWrapper}>
+                      {item.type === 'item' && (
+                        <input
+                          type="checkbox"
+                          checked={item.individual ?? false}
+                          onChange={() => onIndividualChange(item.id)}
+                          className={tableStyles.checkbox}
+                        />
+                      )}
+                    </div>
+                  </td>
+                  {bundles.map(bundle => (
+                    <td key={`${item.id}-${bundle.id}`} className={`${tableStyles.columnWidths.bundle} ${tableStyles.bodyCell}`}>
+                      {item.type === 'item' && (
+                        <div className="flex items-center justify-center gap-2">
+                          <input
+                            type="checkbox"
+                            checked={getItemSelected(item, bundle.id)}
+                            onChange={() => onItemToggle(bundle.id, item.id)}
+                            className={tableStyles.checkbox}
+                          />
+                          <input
+                            type="number"
+                            min={0}
+                            onChange={(e) => onItemPriceChange(bundle.id, item.id, e.target.value)}
+                            value={getItemPrice(item, bundle.id)}
+                            className={tableStyles.numberInput}
+                          />
+                        </div>
+                      )}
+                    </td>
+                  ))}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
   );
