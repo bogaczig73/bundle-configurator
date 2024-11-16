@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { items } from "../data/items";
+import { defaultItems as items } from "../data/items";
 import { Link, useParams, useLocation } from 'react-router-dom';
 import Sidebar from '../components/Sidebar';
 import { db } from '../firebase';

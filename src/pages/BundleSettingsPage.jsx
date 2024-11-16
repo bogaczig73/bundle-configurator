@@ -1,204 +1,144 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback, memo } from 'react';
 import { useBundleData } from '../hooks/useBundleData';
 import ActionButtons from '../components/ActionButtons';
-import { useBundles } from '../context/BundleContext';
-import { initialBundles } from '../data/bundles';
 import { useParams, useNavigate } from 'react-router-dom';
 import Sidebar from '../components/Sidebar';
 import { db } from '../firebase';
-import { doc, updateDoc, getDoc } from 'firebase/firestore';  
+import { doc, updateDoc, setDoc } from 'firebase/firestore';  
+import { useConfigData } from '../hooks/useConfigData';
+import { defaultItems } from '../data/items';
+import { defaultCategories } from '../data/categories';
+import { defaultPackages } from '../data/packages';
 
 function BundleSettingsPage() {
   const { userId } = useParams();
   const navigate = useNavigate();
-  const { bundles, setBundles } = useBundles();
-  const { bundlesState, setBundlesState, saveBundles } = useBundleData(initialBundles);
+  const { bundlesState, setBundlesState } = useBundleData();
+  const { loading, setLoading, error, setError, processedItems, packages, setProcessedItems, items } = useConfigData();
 
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
-  const [categories, setCategories] = useState([]);
-  const [items, setItems] = useState({});
-  const [processedItems, setProcessedItems] = useState([]);
+  const [itemPrices, setItemPrices] = useState({});
 
-  // Calculate flattenedItems from processedItems
-  const flattenedItems = useMemo(() => {
-    return flattenItems(processedItems);
-  }, [processedItems]);
-
-  // Fetch categories and items from Firebase
+  // Initialize bundles state from packages
   useEffect(() => {
-    const fetchData = async () => {
-      setLoading(true);
-      try {
-        // Fetch categories
-        const categoriesRef = doc(db, 'default', "categories");
-        const categoriesSnap = await getDoc(categoriesRef);
-        let categoriesData = [];
-        if (categoriesSnap.exists()) {
-          categoriesData = categoriesSnap.data().categories || [];
-        }
+    if (packages.length) {
+      setBundlesState(packages.map(pkg => ({
+        ...pkg,
+        items: items.reduce((acc, item) => ({
+          ...acc,
+          [item.id]: {
+            selected: false,
+            price: item.prices?.find(p => p.packageId === pkg.id)?.price || 0
+          }
+        }), {})
+      })));
+    }
+  }, [packages, items, setBundlesState]);
 
-        // Fetch items
-        const itemsRef = doc(db, 'default', "items");
-        const itemsSnap = await getDoc(itemsRef);
-        let itemsData = [];
-        if (itemsSnap.exists()) {
-          itemsData = itemsSnap.data().items || [];
-        }
 
-        setCategories(categoriesData);
-        setItems(itemsData);
-
-        // Process the data to create the tree structure
-        const processedData = processCategories(categoriesData, itemsData);
-        setProcessedItems(processedData);
-      } catch (err) {
-        console.error('Error fetching data:', err);
-        setError('Error loading data. Please try again.');
-      } finally {
-        setLoading(false);
+  // 1. Extract the recursive updateItem helper function since it's used in both handlers
+  const updateItemInTree = (items, itemId, updateFn) => {
+    return items.map(item => {
+      if (item.type === 'category' && item.children) {
+        return {
+          ...item,
+          children: updateItemInTree(item.children, itemId, updateFn)
+        };
       }
-    };
-
-    fetchData();
-  }, []);
-
-  // Helper function to process categories and items into a tree structure
-  const processCategories = (categories, items) => {
-    // Helper function to build tree structure
-    const buildCategoryTree = (parentId = null) => {
-      const categoryChildren = categories
-        .filter(cat => cat.parentId === parentId)
-        .map(category => {
-          // Get all items for this category
-          const categoryItems = items.filter(item => item.categoryId === category.id);
-          
-          // Get all child categories
-          const childCategories = buildCategoryTree(category.id);
-          
-          return {
-            id: category.id,
-            name: category.name,
-            type: 'category',
-            children: [
-              ...childCategories,
-              ...categoryItems.map(item => ({
-                ...item,
-                type: 'item',
-                name: item.name,
-                description: item.note || '',
-                prices: item.prices
-              }))
-            ]
-          };
-        });
-
-      return categoryChildren;
-    };
-
-    // Start building from root categories (parentId = null)
-    return buildCategoryTree(null);
+      if (item.id === itemId) {
+        return updateFn(item);
+      }
+      return item;
+    });
   };
 
-  const handleItemToggle = (bundleId, itemId) => {
-    setBundlesState(prevBundles => 
-      prevBundles.map(bundle => {
-        if (bundle.id !== bundleId) return bundle;
+  // 2. Simplify the handlers using the shared function
+  const handleItemToggle = useCallback((bundleId, itemId) => {
+    setProcessedItems(prevItems => 
+      updateItemInTree(prevItems, itemId, (item) => {
+        const newPrices = [...(item.prices || [])];
+        const priceIndex = newPrices.findIndex(p => p.packageId === bundleId);
         
-        const updatedItems = { ...bundle.items };
-        const item = flattenedItems.find(item => item.id === itemId);
-        if (!item.prices) {
-          item.prices = [];
-        }
-        
-        const priceEntry = item.prices.find(p => p.packageId === bundleId);
-        if (priceEntry) {
-          priceEntry.selected = !priceEntry.selected;
+        if (priceIndex >= 0) {
+          newPrices[priceIndex] = {
+            ...newPrices[priceIndex],
+            selected: !newPrices[priceIndex].selected
+          };
         } else {
-          item.prices.push({
+          newPrices.push({
             packageId: bundleId,
             price: 0,
             selected: true
           });
         }
         
-        return {
-          ...bundle,
-          items: updatedItems
-        };
+        return { ...item, prices: newPrices };
       })
     );
-  };
+  }, []);
 
-  const handleItemPriceChange = (bundleId, itemId, price) => {
-    setBundlesState(prevBundles => 
-      prevBundles.map(bundle => {
-        if (bundle.id !== bundleId) return bundle;
+  const handleItemPriceChange = useCallback((bundleId, itemId, price) => {
+    setItemPrices(prev => ({
+      ...prev,
+      [`${itemId}-${bundleId}`]: price
+    }));
+
+    setProcessedItems(prevItems => 
+      updateItemInTree(prevItems, itemId, (item) => {
+        const newPrices = [...(item.prices || [])];
+        const priceIndex = newPrices.findIndex(p => p.packageId === bundleId);
         
-        const updatedItems = { ...bundle.items };
-        const item = flattenedItems.find(item => item.id === itemId);
-        if (!item.prices) {
-          item.prices = [];
-        }
-        
-        const priceEntry = item.prices.find(p => p.packageId === bundleId);
-        if (priceEntry) {
-          priceEntry.price = Number(price);
+        if (priceIndex >= 0) {
+          newPrices[priceIndex] = {
+            ...newPrices[priceIndex],
+            price: Number(price)
+          };
         } else {
-          item.prices.push({
+          newPrices.push({
             packageId: bundleId,
             price: Number(price),
             selected: false
           });
         }
         
-        return {
-          ...bundle,
-          items: updatedItems
-        };
+        return { ...item, prices: newPrices };
       })
     );
+  }, []);
+
+  // 3. Extract the getAllItems helper function since it's used in save
+  const getAllItems = (items) => {
+    return items.reduce((acc, item) => {
+      if (item.type === 'item') {
+        acc.push(item);
+      } else if (item.children) {
+        acc.push(...getAllItems(item.children));
+      }
+      return acc;
+    }, []);
   };
 
+  // 4. Simplify the save function
   const handleSave = async () => {
     setLoading(true);
     setError('');
     
     try {
-      const itemsRef = doc(db, 'default', 'items');
-      
-      // Convert the flattened items back to the desired structure
-      const updatedItems = flattenedItems
-        .filter(item => item.type === 'item') // Only process actual items, not categories
-        .map(item => {
-          // Create the base object with required fields
-          const itemData = {
-            id: item.id,
-            amount: 0,
-            toggle: false,
-            individual: false,
-            name: item.name,
-            categoryId: item.categoryId,
-            prices: item.prices || []
-          };
+      const currentItems = getAllItems(processedItems);
+      const updatedItems = currentItems.map(({ id, name, categoryId, prices, note, checkbox }) => ({
+        id,
+        name,
+        categoryId,
+        prices: prices || [],
+        amount: 0,
+        checkbox: checkbox ?? false,
+        individual: false,
+        ...(note && { note })
+      }));
 
-          // Only add note if it exists and is not undefined/null
-          if (item.note) {
-            itemData.note = item.note;
-          }
+      console.log('Saving items:', updatedItems);
+      await updateDoc(doc(db, 'default', 'items'), { items: updatedItems });
 
-          return itemData;
-        });
-
-      // Update the items in Firebase
-      await updateDoc(itemsRef, {
-        items: updatedItems
-      });
-
-      // Show success message or redirect
-      if (userId) {
-        navigate(`/users/${userId}/bundles`);
-      }
+      userId && navigate(`/users/${userId}/bundles`);
     } catch (err) {
       console.error('Error saving bundles:', err);
       setError('Failed to save changes. Please try again.');
@@ -207,22 +147,66 @@ function BundleSettingsPage() {
     }
   };
 
+  const handleLoadDefaults = async () => {
+    setLoading(true);
+    setError('');
+    
+    try {
+      // Upload default items
+      await setDoc(doc(db, 'default', 'items'), { items: defaultItems });
+      
+      // Upload default categories
+      await setDoc(doc(db, 'default', 'categories'), { categories: defaultCategories });
+      
+      // Upload default packages
+      await setDoc(doc(db, 'default', 'packages'), { packages: defaultPackages });
+      
+      console.log('Default data loaded successfully');
+    } catch (err) {
+      console.error('Error loading defaults:', err);
+      setError('Failed to load default data. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Add the handler function at the component level
+  const handleCheckboxChange = useCallback((itemId) => {
+    setProcessedItems(prevItems => 
+      updateItemInTree(prevItems, itemId, (item) => {
+        console.log('Updating checkbox for item:', item.id, 'Current value:', item.checkbox);
+        return {
+          ...item,
+          checkbox: item.checkbox === undefined ? true : !item.checkbox
+        };
+      })
+    );
+  }, []);
+
   return (
-    <div className="flex h-screen bg-gray-50">
+    <div className="flex flex-col md:flex-row min-h-screen bg-gray-50">
       <Sidebar />
       <div className="flex-1 flex flex-col overflow-hidden">
         {/* Header Section */}
         <header className="bg-white shadow-sm">
-          <div className="p-6">
-            <div className="flex justify-between items-center">
-              <h1 className="text-2xl font-bold text-gray-900">
+          <div className="p-4 md:p-6">
+            <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-4">
+              <h1 className="text-xl md:text-2xl font-bold text-gray-900">
                 {userId ? 'Create New Bundle for User' : 'Bundle Settings'}
               </h1>
-              <ActionButtons
-                userId={userId}
-                loading={loading}
-                onSave={handleSave}
-              />
+              <div className="flex gap-2">
+                <button
+                  onClick={handleLoadDefaults}
+                  className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600"
+                >
+                  Load Defaults
+                </button>
+                <ActionButtons
+                  userId={userId}
+                  loading={loading}
+                  onSave={handleSave}
+                />
+              </div>
             </div>
             {error && (
               <div className="mt-4 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">
@@ -239,12 +223,14 @@ function BundleSettingsPage() {
               <div className="text-gray-600">Loading...</div>
             </div>
           ) : (
-            <div className="p-6">
+            <div className="p-2 md:p-6">
               <BundleTable
                 bundles={bundlesState}
                 items={processedItems}
                 onItemToggle={handleItemToggle}
                 onItemPriceChange={handleItemPriceChange}
+                onCheckboxChange={handleCheckboxChange}
+                itemPrices={itemPrices}
               />
             </div>
           )}
@@ -254,82 +240,103 @@ function BundleSettingsPage() {
   );
 }
 
-function BundleTable({ bundles, items, onItemToggle, onItemPriceChange }) {
-  const flattenedItems = flattenItems(items);
+const MemoizedBundleTable = memo(BundleTable, (prevProps, nextProps) => {
+  return (
+    prevProps.bundles === nextProps.bundles &&
+    prevProps.items === nextProps.items &&
+    prevProps.itemPrices === nextProps.itemPrices &&
+    prevProps.onCheckboxChange === nextProps.onCheckboxChange
+  );
+});
 
-  const getItemPrice = (item, bundleId) => {
-    if (!item.prices) return 0;
-    const priceEntry = item.prices.find(p => p.packageId === bundleId);
-    return priceEntry?.price ?? 0;
-  };
+function BundleTable({ bundles, items, onItemToggle, onItemPriceChange, onCheckboxChange, itemPrices }) {
+  const flattenedItems = useMemo(() => flattenItems(items), [items]);
 
-  const getItemSelected = (item, bundleId) => {
-    if (!item.prices) return false;
-    const priceEntry = item.prices.find(p => p.packageId === bundleId);
-    return priceEntry?.selected ?? false;
-  };
+  const getItemPrice = useCallback((item, bundleId) => {
+    const localPrice = itemPrices[`${item.id}-${bundleId}`];
+    if (localPrice !== undefined) return localPrice;
+    return item.prices?.find(p => p.packageId === bundleId)?.price ?? 0;
+  }, [itemPrices]);
+
+  const getItemSelected = useCallback((item, bundleId) => {
+    return item.prices?.find(p => p.packageId === bundleId)?.selected ?? false;
+  }, []);
 
   return (
     <div className="overflow-x-auto rounded-lg border border-gray-200">
-      <table className="min-w-full divide-y divide-gray-200">
-        <thead className="bg-gray-50">
-          <tr>
-            <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/4">
-              Item Details
-            </th>
-            <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-16">Toggle</th>
-            {bundles.map(bundle => (
-              <th key={bundle.id} className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-32">
-                {bundle.name}
+      <div className="min-w-[800px]">
+        <table className="w-full divide-y divide-gray-200">
+          <thead className="bg-gray-50">
+            <tr>
+              <th className="px-2 md:px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/4">
+                Item Details
               </th>
-            ))}
-          </tr>
-        </thead>
-        <tbody className="bg-white divide-y divide-gray-200">
-          {flattenedItems.map((item) => (
-            <tr 
-              key={item.uniqueId}
-              className={`
-                ${item.type === 'category' ? 'bg-gray-50' : 'hover:bg-gray-50'}
-                ${item.depth > 0 ? `pl-${item.depth * 4}` : ''}
-              `}
-            >
-              <td className="px-4 py-2">
-                <div className="flex flex-col">
-                  <span className={`${item.type === 'category' ? 'font-medium text-gray-900' : 'text-gray-700'} text-sm`}>
-                    {item.name}
-                  </span>
-                  {item.note && (
-                    <span className="text-xs text-gray-500 truncate max-w-xs">
-                      {item.note}
-                    </span>
-                  )}
-                </div>
-              </td>
-              <td className="px-4 py-2 text-xs text-gray-500">{item.toggle ? '✓' : '–'}</td>
-              
-              {item.type === 'item' && bundles.map(bundle => (
-                <td key={`${item.id}-${bundle.id}`} className="px-4 py-2">
-                  <div className="flex items-center gap-2">
-                    <input
-                      type="checkbox"
-                      checked={getItemSelected(item, bundle.id)}
-                      onChange={() => onItemToggle(bundle.id, item.id)}
-                      className="h-3 w-3 text-blue-600 rounded border-gray-300 focus:ring-blue-500"
-                    />
-                    <input
-                      type="number"
-                      value={getItemPrice(item, bundle.id)}
-                      onChange={(e) => onItemPriceChange(bundle.id, item.id, e.target.value)}
-                      className="block w-16 rounded-sm border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-xs py-1"
-                    />
-                  </div>
-                </td>
+              <th className="px-2 md:px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-16">
+                Checkbox
+              </th>
+              {bundles.map(bundle => (
+                <th key={bundle.id} className="px-2 md:px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-32">
+                  {bundle.name}
+                </th>
               ))}
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody className="bg-white divide-y divide-gray-200">
+            {flattenedItems.map((item) => (
+              <tr 
+                key={item.uniqueId}
+                className={`
+                  ${item.type === 'category' ? 'bg-gray-50' : 'hover:bg-gray-50'}
+                  ${item.depth > 0 ? `pl-${item.depth * 4}` : ''}
+                `}
+              >
+                <td className="px-2 md:px-4 py-2">
+                  <div className="flex flex-col">
+                    <span className={`${item.type === 'category' ? 'font-medium text-gray-900' : 'text-gray-700'} text-xs md:text-sm`}>
+                      {item.name}
+                    </span>
+                    {item.note && (
+                      <span className="text-xs text-gray-500 truncate max-w-xs">
+                        {item.note}
+                      </span>
+                    )}
+                  </div>
+                </td>
+                <td className="px-2 md:px-4 py-2">
+                  {item.type === 'item' && (
+                    <input
+                      type="checkbox"
+                      checked={item.checkbox ?? false}
+                      onChange={() => onCheckboxChange(item.id)}
+                      className="h-3 w-3 text-blue-600 rounded border-gray-300 focus:ring-blue-500"
+                    />
+                  )}
+                </td>
+                
+                {item.type === 'item' && bundles.map(bundle => (
+                  <td key={`${item.id}-${bundle.id}`} className="px-2 md:px-4 py-2">
+                    <div className="flex items-center gap-1 md:gap-2">
+                      <input
+                        type="checkbox"
+                        checked={getItemSelected(item, bundle.id)}
+                        onChange={() => onItemToggle(bundle.id, item.id)}
+                        className="h-3 w-3 text-blue-600 rounded border-gray-300 focus:ring-blue-500"
+                      />
+                      <input
+                        type="number"
+                        min={0}
+                        onChange={(e) => onItemPriceChange(bundle.id, item.id, e.target.value)}
+                        value={itemPrices[`${item.id}-${bundle.id}`] || getItemPrice(item, bundle.id)}
+                        className="block w-14 md:w-16 rounded-sm border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-xs py-1"
+                      />
+                    </div>
+                  </td>
+                ))}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 }

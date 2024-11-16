@@ -1,11 +1,19 @@
 import React, { useState, useEffect } from "react";
-import { useBundles } from "../context/BundleContext";
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import Sidebar from '../components/Sidebar';
-import { db } from '../firebase';
-import { doc, updateDoc, arrayUnion, getDoc } from 'firebase/firestore';
+import { useConfigData } from '../hooks/useConfigData';
+import { useBundleData } from '../hooks/useBundleData';
+function BundleTable({ bundles = [], items = [], onItemToggle, onItemPriceChange, onAmountChange, amounts = {} }) {
+  console.log('bundles', bundles);
+  console.log('items', items);
+  if (!bundles?.length || !items?.length) {
+    return (
+      <div className="p-4 text-gray-500">
+        No data available
+      </div>
+    );
+  }
 
-function BundleTable({ bundles, items, onItemToggle, onItemPriceChange, onAmountChange, amounts }) {
   const flattenedItems = flattenItems(items);
 
   const formatPrice = (price) => {
@@ -130,20 +138,33 @@ function flattenItems(items, depth = 0, parentId = '') {
 }
 
 function ConfiguratorPage() {
-  const { bundles } = useBundles();
-  // const [amounts, setAmounts] = useState(() => JSON.parse(localStorage.getItem('amounts')) || {});
+  const { loading, error, processedItems, packages, items } = useConfigData();
+  const { bundlesState, setBundlesState } = useBundleData();
   const { userId } = useParams();
   const navigate = useNavigate();
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
   const location = useLocation();
   const bundleId = new URLSearchParams(location.search).get('bundleId');
   const [currentBundle, setCurrentBundle] = useState(null);
   const [amounts, setAmounts] = useState({});
-  const [categories, setCategories] = useState([]);
-  const [items, setItems] = useState({});
-  const [processedItems, setProcessedItems] = useState([]);
 
+  useEffect(() => {
+    console.log('packages:', packages);
+    console.log('items:', items);
+    if (packages.length) {
+      const newBundlesState = packages.map(pkg => ({
+        ...pkg,
+        items: items.reduce((acc, item) => ({
+          ...acc,
+          [item.id]: {
+            selected: false,
+            price: item.prices?.find(p => p.packageId === pkg.id)?.price || 0
+          }
+        }), {})
+      }));
+      console.log('newBundlesState:', newBundlesState);
+      setBundlesState(newBundlesState);
+    }
+  }, [packages, items, setBundlesState]);
 
   const handleItemToggle = (bundleId, itemId) => {
     // Implementation similar to BundleSettingsPage
@@ -153,143 +174,9 @@ function ConfiguratorPage() {
     // Implementation similar to BundleSettingsPage
   };
 
-  useEffect(() => {
-    const fetchData = async () => {
-      setLoading(true);
-      try {
-        // Fetch categories
-        const categoriesRef = doc(db, 'default', "categories");
-        const categoriesSnap = await getDoc(categoriesRef);
-        let categoriesData = [];
-        if (categoriesSnap.exists()) {
-          categoriesData = categoriesSnap.data().categories || [];
-        }
-
-        // Fetch items
-        const itemsRef = doc(db, 'default', "items");
-        const itemsSnap = await getDoc(itemsRef);
-        let itemsData = [];
-        if (itemsSnap.exists()) {
-          itemsData = itemsSnap.data().items || [];
-        }
-        console.log('itemsData', itemsData);
-        setCategories(categoriesData);
-        setItems(itemsData);
-
-        // Process the data to create the tree structure
-        const processedData = processCategories(categoriesData, itemsData);
-        setProcessedItems(processedData);
-      } catch (err) {
-        console.error('Error fetching data:', err);
-        setError('Error loading data. Please try again.');
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchData();
-  }, []);
-
-  const processCategories = (categories, items) => {
-    const buildCategoryTree = (parentId = null) => {
-      const categoryChildren = categories
-        .filter(cat => cat.parentId === parentId)
-        .map(category => {
-          const categoryItems = items.filter(item => item.categoryId === category.id);
-          const childCategories = buildCategoryTree(category.id);
-          
-          return {
-            id: category.id,
-            name: category.name,
-            type: 'category',
-            children: [
-              ...childCategories,
-              ...categoryItems.map(item => ({
-                ...item,
-                type: 'item',
-                name: item.name,
-                description: item.note || '',
-                prices: item.prices
-              }))
-            ]
-          };
-        });
-
-      return categoryChildren;
-    };
-
-    return buildCategoryTree(null);
-  };
-
   const handleAmountChange = (itemId, amount) => {
     setAmounts(prev => ({ ...prev, [itemId]: Number(amount) }));
   };
-
- 
-
-  // const handleSaveBundle = async () => {
-  //   setLoading(true);
-  //   try {
-  //     if (userId && bundleId && currentBundle) {
-  //       const bundleRef = doc(db, 'bundles', bundleId);
-
-  //       const updatedPackages = currentBundle.packages.map(pkg => ({
-  //         ...pkg,
-  //         items: formatBundleItems(pkg.items, amounts),
-  //         totalPrice: calculatePackageTotal(pkg.id, formatBundleItems(pkg.items, amounts))
-  //       }));
-  //       // console.log('updatedPackages', JSON.stringify(updatedPackages, null, 2));
-
-  //       await updateDoc(bundleRef, {
-  //         packages: updatedPackages,
-  //         status: 'completed'
-  //       });
-
-  //       const userRef = doc(db, 'users', userId);
-  //       await updateDoc(userRef, {
-  //         bundleIds: arrayUnion(bundleId)
-  //       });
-
-  //       alert('Bundle saved successfully!');
-  //     }
-  //   } catch (err) {
-  //     console.error('Error saving bundle:', err);
-  //     setError('Failed to save bundle: ' + err.message);
-  //   } finally {
-  //     setLoading(false);
-  //   }
-  // };
-
-  // const ActionButtons = () => (
-  //   <div className="flex gap-2">
-  //     {userId ? (
-  //       <>
-  //         <button
-  //           onClick={handleSaveBundle}
-  //           disabled={loading}
-  //           className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded"
-  //         >
-  //           {loading ? 'Saving...' : 'Save Bundle for User'}
-  //         </button>
-  //         <Link
-  //           to="/users"
-  //           className="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded"
-  //         >
-  //           Cancel
-  //         </Link>
-  //       </>
-  //     ) : (
-  //       <>
-  //         <Link 
-  //           to="/bundles"
-  //           className="bg-purple-500 hover:bg-purple-600 text-white px-4 py-2 rounded"
-  //         >
-  //           Bundle Settings
-  //         </Link>
-  //       </>
-  //     )}
-  //   </div>
-  // );
 
   return (
     <div className="flex h-screen bg-gray-50">
@@ -302,7 +189,6 @@ function ConfiguratorPage() {
               <h1 className="text-2xl font-bold text-gray-900">
                 {userId ? 'Create Bundle for User' : 'Configurator Page'}
               </h1>
-              {/* <ActionButtons /> */}
             </div>
             {error && (
               <div className="mt-4 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">
@@ -318,11 +204,15 @@ function ConfiguratorPage() {
             <div className="flex items-center justify-center h-full">
               <div className="text-gray-600">Loading...</div>
             </div>
+          ) : error ? (
+            <div className="p-6 text-red-600">
+              {error}
+            </div>
           ) : (
             <div className="p-6">
               <BundleTable
-                bundles={bundles}
-                items={processedItems}
+                bundles={bundlesState || []}
+                items={processedItems || []}
                 onItemToggle={handleItemToggle}
                 onItemPriceChange={handleItemPriceChange}
                 onAmountChange={handleAmountChange}

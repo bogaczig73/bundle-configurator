@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
 import { getBundlesConfiguration, saveBundlesConfiguration } from '../api/bundles';
 
-export function useBundleData(initialBundles) {
-  const [bundlesState, setBundlesState] = useState(initialBundles);
+export function useBundleData() {
+  const [bundlesState, setBundlesState] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 

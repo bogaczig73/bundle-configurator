@@ -2,7 +2,6 @@ import React from 'react';
 import AmountInput from './AmountInput';
 
 function ItemRow({ item, amounts, bundles, onAmountChange, calculateItemTotal, indent = false }) {
-  // console.log('item', JSON.stringify(item, null, 2));
   return (
     <React.Fragment>
       {/* Item Name */}

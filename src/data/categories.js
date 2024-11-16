@@ -1,4 +1,4 @@
-export const categories = [
+export const defaultCategories = [
     { id: 1, name: "UŽIVATELÉ", parentId: null },
     { id: 2, name: "VLASTNOSTI SYSTÉMU", parentId: null },
     { id: 3, name: "MODULY (AGENDY)", parentId: null },
