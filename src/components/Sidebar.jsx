@@ -37,10 +37,10 @@ function Sidebar({ children }) {
             <Link
               key={item.path}
               to={item.path}
-              className={`block px-4 py-2 rounded-lg transition-colors ${
+              className={`menu-item block px-4 py-2 rounded-lg transition-colors ${
                 location.pathname === item.path
-                  ? 'bg-blue-600 text-white'
-                  : 'hover:bg-gray-700'
+                  ? 'menu-item-selected'
+                  : ''
               } ${!isOpen && 'px-2'}`}
             >
               {isOpen ? item.name : item.name.charAt(0)}

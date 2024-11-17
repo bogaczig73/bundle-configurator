@@ -135,7 +135,7 @@ function BundleSettingsPage() {
         ...(note && { note })
       }));
 
-      console.log('Saving items:', updatedItems);
+      console.log('Saving items:', JSON.stringify(updatedItems, null, 2));
       await updateDoc(doc(db, 'default', 'items'), { items: updatedItems });
 
       userId && navigate(`/users/${userId}/bundles`);
@@ -265,15 +265,17 @@ function BundleTable({ bundles, items, onItemToggle, onItemPriceChange, onCheckb
 
   const tableStyles = {
     headerCell: "px-2 md:px-4 py-2 text-xs font-medium text-gray-500 uppercase tracking-wider",
+    packageHeaderCell: "px-2 md:px-4 py-2 text-xs font-medium text-gray-500 uppercase tracking-wider bg-primary-light border-x border-white",
     bodyCell: "px-2 md:px-4 py-2",
-    checkbox: "h-4 w-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500 focus:ring-offset-0",
-    numberInput: "block w-14 md:w-16 rounded-sm border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-xs py-1 text-center",
+    packageBodyCell: "px-2 md:px-4 py-2 bg-primary-hover border-x border-white",
+    checkbox: "checkbox h-4 w-4 rounded border-gray-300 focus:ring-offset-0",
+    numberInput: "input block w-14 md:w-16 rounded-sm text-xs py-1 text-center",
     centerWrapper: "flex justify-center items-center h-full",
     columnWidths: {
-      details: "w-1/4",      // Fixed width instead of w-1/4
-      checkbox: "w-16",      // Fixed width instead of w-16
-      individual: "w-16",    // Fixed width instead of w-16
-      bundle: "w-32",       // Fixed width instead of w-32
+      details: "w-48 min-w-[120px]",
+      checkbox: "w-16",
+      individual: "w-16",
+      bundle: "w-32",
     }
   };
 
@@ -317,7 +319,7 @@ function BundleTable({ bundles, items, onItemToggle, onItemPriceChange, onCheckb
                   </div>
                 </th>
                 {bundles.map(bundle => (
-                  <th key={bundle.id} className={tableStyles.headerCell}>
+                  <th key={bundle.id} className={tableStyles.packageHeaderCell}>
                     <div className={tableStyles.centerWrapper}>
                       {bundle.name}
                     </div>
@@ -336,17 +338,17 @@ function BundleTable({ bundles, items, onItemToggle, onItemPriceChange, onCheckb
                 <tr 
                   key={item.uniqueId}
                   className={`
-                    ${item.type === 'category' ? 'bg-gray-50' : 'hover:bg-gray-50 transition-colors duration-150'}
+                    ${item.type === 'category' ? 'bg-gray-50' : 'hover:bg-gray-50/70 transition-colors duration-150'}
                     ${item.depth > 0 ? `pl-${item.depth * 4}` : ''}
                   `}
                 >
                   <td className={`${tableStyles.columnWidths.details} ${tableStyles.bodyCell}`}>
                     <div className="flex flex-col">
-                      <span className={`${item.type === 'category' ? 'font-medium text-gray-900' : 'text-gray-700'} text-sm`}>
+                      <span className={`${item.type === 'category' ? 'font-medium text-gray-900' : 'text-gray-700'} text-sm break-words`}>
                         {item.name}
                       </span>
                       {item.note && (
-                        <span className="text-xs text-gray-500 truncate max-w-xs mt-0.5">
+                        <span className="text-xs text-gray-500 break-words">
                           {item.note}
                         </span>
                       )}
@@ -377,7 +379,7 @@ function BundleTable({ bundles, items, onItemToggle, onItemPriceChange, onCheckb
                     </div>
                   </td>
                   {bundles.map(bundle => (
-                    <td key={`${item.id}-${bundle.id}`} className={`${tableStyles.columnWidths.bundle} ${tableStyles.bodyCell}`}>
+                    <td key={`${item.id}-${bundle.id}`} className={`${tableStyles.columnWidths.bundle} ${tableStyles.packageBodyCell}`}>
                       {item.type === 'item' && (
                         <div className="flex items-center justify-center gap-2">
                           <input

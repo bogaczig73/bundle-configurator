@@ -1,7 +1,9 @@
 /* src/index.css */
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
 
 
 body {
@@ -16,5 +18,54 @@ body {
 code {
   font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
     monospace;
+}
+
+/* Primary Button */
+.btn-primary {
+  @apply bg-primary text-white hover:bg-primary-hover disabled:bg-primary-light;
+}
+
+/* Text Button */
+.btn-text {
+  @apply bg-primary-light text-primary hover:bg-primary-hover disabled:bg-gray-disabled;
+}
+
+/* Text Fields */
+.input {
+  @apply bg-white border border-gray-300 
+         disabled:bg-gray-input 
+         focus:ring-2 focus:ring-accent;
+}
+
+/* Checkboxes & Radio */
+.checkbox, .radio {
+  @apply text-accent-checkbox 
+         disabled:text-gray-disabled;
+}
+
+/* Table Rows */
+.table-row {
+  @apply hover:bg-accent-hover;
+}
+
+.table-row-selected {
+  @apply bg-accent text-white;
+}
+
+.table-row-active {
+  @apply bg-accent-selected;
+}
+
+.table-row-selected-active {
+  @apply bg-accent-hover;
+}
+
+/* Menu Items */
+.menu-item {
+  @apply hover:bg-accent-hover;
+}
+
+.menu-item-selected {
+  @apply bg-accent text-white;
 }
 
