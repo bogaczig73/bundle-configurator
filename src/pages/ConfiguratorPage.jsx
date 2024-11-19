@@ -1,20 +1,34 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import Sidebar from '../components/Sidebar';
 import { useConfigData } from '../hooks/useConfigData';
 import { useBundleData } from '../hooks/useBundleData';
 
-function BundleTable({ bundles = [], items = [], onItemToggle, onItemPriceChange, onAmountChange, amounts = {} }) {
+function BundleTable({ bundles = [], items = [], onAmountChange, amounts = {} }) {
+  const flattenedItems = useMemo(() => flattenItems(items), [items]);
 
-  if (!bundles?.length || !items?.length) {
-    return (
-      <div className="p-4 text-gray-500">
-        No data available
-      </div>
-    );
-  }
+  const tableStyles = {
+    headerCell: "px-2 md:px-4 py-2 text-xs font-medium text-gray-500 uppercase tracking-wider",
+    packageHeaderCell: "px-2 md:px-4 py-2 text-xs font-medium text-gray-500 uppercase tracking-wider",
+    bodyCell: "px-2 md:px-4 py-2",
+    packageBodyCell: "px-2 md:px-4 py-2",
+    checkbox: "checkbox h-4 w-4 rounded border-gray-300 focus:ring-offset-0",
+    numberInput: "input block w-14 md:w-16 rounded-sm text-xs py-1 text-center",
+    centerWrapper: "flex justify-center items-center h-full",
+    columnWidths: {
+      details: "w-48 min-w-[120px]",
+      amount: "w-32",
+      bundle: "w-32 px-[5px]",
+    }
+  };
 
-  const flattenedItems = flattenItems(items);
+  // Add border color array
+  const borderColors = [
+    'border-abra-yellow',
+    'border-abra-orange',
+    'border-abra-magenta',
+  ];
+
 
   const formatPrice = (price) => {
     return new Intl.NumberFormat('cs-CZ', {
@@ -24,7 +38,10 @@ function BundleTable({ bundles = [], items = [], onItemToggle, onItemPriceChange
       maximumFractionDigits: 0,
     }).format(price);
   };
-
+  const getItemSelected = (item, bundleId) => {
+    const selectionEntry = item.prices.find(p => p.packageId === bundleId);
+    return selectionEntry?.selected ?? false;
+  };
   const getItemPrice = (item, bundleId) => {
     if (item.individual) return 1;
     if (!item.prices) return 0;
@@ -40,135 +57,183 @@ function BundleTable({ bundles = [], items = [], onItemToggle, onItemPriceChange
         return total + (getItemPrice(item, bundleId) * (amounts[item.id] || 0));
       }, 0);
   };
+  const getBundleBorderClasses = (index) => `
+    border-l-2 border-r-2
+    ${borderColors[index % borderColors.length]}
+    relative
+    after:absolute after:content-[''] after:left-2 after:right-2 after:top-0 
+    after:border-t after:border-dotted after:border-gray-200
+  `;
 
-  // Calculate the number of columns needed (1 for name + 1 for amount + number of bundles)
-  const numColumns = 2 + bundles.length;
-  const borderColors = [
-    'border-abra-yellow',
-    'border-abra-orange',
-    'border-abra-primary'
-  ];
-  
+  const getBundleHeaderBorderClasses = (index) => `
+    border-l-2 border-r-2 border-t-2
+    ${borderColors[index % borderColors.length]}
+  `;
+
+  // Create a shared colgroup component to ensure consistent column widths
+  const TableColgroup = () => (
+    <colgroup>
+      <col className={tableStyles.columnWidths.details} />
+      <col className={tableStyles.columnWidths.amount} />
+      {bundles.map((bundle, index) => (
+        <React.Fragment key={`${bundle.id}-group`}>
+          <col className="w-[20px]" />
+          <col className={`${tableStyles.columnWidths.bundle} ${getBundleBorderClasses(index)}`} />
+        </React.Fragment>
+      ))}
+    </colgroup>
+  );
+
+  // Add this helper function near the top of the BundleTable component
+  const isFreeForAllBundles = (item) => {
+    // Check if the item has prices array
+    if (!item.prices) return false;
+    
+    // Check if all prices are 0 and the item is not individual
+    return item.prices.every(price => price.price === 0) && !item.individual;
+  };
+
   return (
     <div className="border border-gray-200 rounded-lg shadow-sm">
       <div className="min-w-[800px]">
-        {/* Header Grid */}
-        <div className="bg-gray-50 sticky top-0 z-10 border-b border-gray-200">
-          <div style={{
-            display: 'grid',
-            gridTemplateColumns: `minmax(200px, 1fr) 100px ${Array(bundles.length).fill('150px').join(' ')}`
-          }}>
-            <div className="px-4 py-2 text-xs font-medium text-gray-500 uppercase tracking-wider">
-              Položka
-            </div>
-            <div className="px-4 py-2 text-xs font-medium text-gray-500 uppercase tracking-wider">
-              Počet
-            </div>
-            {bundles.map((bundle, index) => (
-              <div 
-                key={bundle.id} 
-                className={`px-4 py-2 text-xs font-medium text-gray-500 uppercase tracking-wider border-l-4 ${borderColors[index % borderColors.length]}`}
-              >
-                <div className="flex flex-col">
-                  <span>{bundle.name}</span>
-                  <span className="text-blue-600 font-semibold">
-                    Total: {formatPrice(calculateBundleTotal(bundle.id))}
-                  </span>
-                </div>
-              </div>
-            ))}
-          </div>
+        {/* Fixed Header */}
+        <div className="sticky top-0 z-10 border-b border-gray-200">
+          <table className="w-full table-fixed">
+            <TableColgroup />
+            <thead>
+              <tr>
+                <th className={`${tableStyles.columnWidths.details} text-left ${tableStyles.headerCell}`}>
+                  Item Details
+                </th>
+                <th className={tableStyles.headerCell}>
+                  <div className={tableStyles.centerWrapper}>
+                    Amount
+                  </div>
+                </th>
+                {bundles.map((bundle, index) => (
+                  <React.Fragment key={`${bundle.id}-header`}>
+                    <th className="w-[20px]" />
+                    <th className={`${tableStyles.packageHeaderCell} ${getBundleHeaderBorderClasses(index)}`}>
+                      <div className="flex flex-col items-center">
+                        <span>{bundle.name}</span>
+                        <span className="text-blue-600 font-semibold">
+                          {formatPrice(calculateBundleTotal(bundle.id))}
+                        </span>
+                      </div>
+                    </th>
+                  </React.Fragment>
+                ))}
+              </tr>
+            </thead>
+          </table>
         </div>
 
         {/* Scrollable Body */}
         <div className="overflow-y-auto max-h-[calc(100vh-200px)] bg-white">
-          {flattenedItems.map((item) => (
-            <div 
-              key={item.uniqueId}
-              style={{
-                display: 'grid',
-                gridTemplateColumns: `minmax(200px, 1fr) 100px ${Array(bundles.length).fill('150px').join(' ')}`,
-              }}
-              className={`
-                ${item.type === 'category' ? 'bg-gray-50' : 'hover:bg-gray-50'}
-                ${item.depth > 0 ? `pl-${item.depth * 4}` : ''}
-                border-b border-gray-200
-              `}
-            >
-              <div className="px-4 py-2">
-                <div className="flex flex-col">
-                  <span className={`${item.type === 'category' ? 'font-medium text-gray-900' : 'text-gray-700'} text-sm`}>
-                    {item.name}
-                  </span>
-                  {item.note && (
-                    <span className="text-xs text-gray-500 truncate max-w-xs">
-                      {item.note}
-                    </span>
-                  )}
-                </div>
-              </div>
-
-              <div className="px-4 py-2">
-                {item.type === 'item' && (
-                  <>
-                    {item.checkbox ? (
-                      <input
-                        type="checkbox"
-                        checked={amounts[item.id] === 1}
-                        onChange={(e) => onAmountChange(item.id, e.target.checked ? 1 : 0)}
-                        className="rounded border-gray-300 text-blue-600 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                      />
-                    ) : (
-                      <div className="flex items-center space-x-1">
-                        <button
-                          onClick={() => onAmountChange(item.id, Math.max(0, (amounts[item.id] || 0) - 1))}
-                          className="px-1.5 py-0.5 text-xs border border-gray-300 rounded-sm hover:bg-gray-100"
-                        >
-                          -
-                        </button>
-                        <input
-                          type="number"
-                          min={0}
-                          value={amounts[item.id] || 0}
-                          onChange={(e) => onAmountChange(item.id, item.individual ? Number(e.target.value) : e.target.value)}
-                          className="block w-12 rounded-sm border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-xs py-1"
-                        />
-                        <button
-                          onClick={() => onAmountChange(item.id, (amounts[item.id] || 0) + 1)}
-                          className="px-1.5 py-0.5 text-xs border border-gray-300 rounded-sm hover:bg-gray-100"
-                        >
-                          +
-                        </button>
-                      </div>
-                    )}
-                  </>
-                )}
-              </div>
-
-              {item.type === 'item' && bundles.map((bundle, index) => (
-                <div 
-                  key={`${item.uniqueId}-${bundle.id}`} 
-                  className={`px-4 py-2 border-l-4 ${borderColors[index % borderColors.length]}`}
+          <table className="w-full table-fixed">
+            <TableColgroup />
+            <tbody className="divide-y-0">
+              {flattenedItems.map((item) => (
+                <tr 
+                  key={item.uniqueId}
+                  className={`
+                    ${item.type === 'category' ? '' : 'hover:bg-gray-50/70 transition-colors duration-150'}
+                    ${item.depth > 0 ? `pl-${item.depth * 4}` : ''}
+                  `}
                 >
-                  <div className="flex flex-col">
-                    <span className="block text-xs py-1 text-gray-700 font-medium">
-                      {formatPrice(item.individual ? (amounts[item.id] || 0) : getItemPrice(item, bundle.id) * (amounts[item.id] || 0))}
-                    </span>
-                    <span className="block text-xs py-1 text-gray-500">
-                      {item.individual ? formatPrice(1) : formatPrice(getItemPrice(item, bundle.id))} {!item.individual && 'za jednotku'}
-                    </span>
-                  </div>
-                </div>
-              ))}
+                  {/* Item Details Cell */}
+                  <td className={`
+                    ${tableStyles.columnWidths.details} 
+                    ${tableStyles.bodyCell}
+                    ${item.type === 'category' ? 'border-b-2 border-b-abra-magenta' : ''}
+                  `}>
+                    <div className="flex flex-col">
+                      <span className={`${item.type === 'category' ? 'font-medium text-abra-magenta' : 'text-gray-700'} text-sm break-words`}>
+                        {item.name}
+                      </span>
+                      {item.note && (
+                        <span className="text-xs text-gray-500 break-words">
+                          {item.note}
+                        </span>
+                      )}
+                    </div>
+                  </td>
 
-              {item.type === 'category' && bundles.map((bundle, index) => (
-                <div 
-                  key={`${item.uniqueId}-${bundle.id}`} 
-                  className={`px-4 py-2 border-l-4 ${borderColors[index % borderColors.length]}`} 
-                />
+                  {/* Amount Cell */}
+                  <td className={`
+                    ${tableStyles.columnWidths.amount} 
+                    ${tableStyles.bodyCell}
+                    ${item.type === 'category' ? 'border-b-2 border-b-abra-magenta' : ''}
+                  `}>
+                    <div className={tableStyles.centerWrapper}>
+                      {item.type === 'item' && (
+                        isFreeForAllBundles(item) ? (
+                          <span className="text-xs font-medium">
+                            -
+                          </span>
+                        ) : item.checkbox ? (
+                          <input
+                            type="checkbox"
+                            checked={amounts[item.id] === 1}
+                            onChange={(e) => onAmountChange(item.id, e.target.checked ? 1 : 0)}
+                            className={tableStyles.checkbox}
+                          />
+                        ) : (
+                          <div className="flex items-center gap-1">
+                            <button
+                              onClick={() => onAmountChange(item.id, Math.max(0, (amounts[item.id] || 0) - 1))}
+                              className="px-1.5 py-0.5 text-xs border border-gray-300 rounded-sm hover:bg-gray-100"
+                            >
+                              -
+                            </button>
+                            <input
+                              type="number"
+                              min={0}
+                              value={amounts[item.id] || 0}
+                              onChange={(e) => onAmountChange(item.id, Number(e.target.value))}
+                              className={tableStyles.numberInput}
+                            />
+                            <button
+                              onClick={() => onAmountChange(item.id, (amounts[item.id] || 0) + 1)}
+                              className="px-1.5 py-0.5 text-xs border border-gray-300 rounded-sm hover:bg-gray-100"
+                            >
+                              +
+                            </button>
+                          </div>
+                        )
+                      )}
+                    </div>
+                  </td>
+
+                  {/* Bundle Price Cells */}
+                  {bundles.map((bundle, index) => (
+                    <React.Fragment key={`${item.id}-${bundle.id}-group`}>
+                      <td className="w-[20px]" />
+                      <td className={`${tableStyles.columnWidths.bundle} ${tableStyles.packageBodyCell} ${getBundleBorderClasses(index)}`}>
+                        {item.type === 'item' && (
+                          <div className="flex flex-col items-center">
+                            {getItemPrice(item, bundle.id) === 0 ? (
+                              <span className="text-xs font-medium">
+                                {getItemSelected(item, bundle.id) ? '✅' : '❌'}
+                              </span>
+                            ) : (
+                              <span className="text-xs font-medium">
+                                {formatPrice(getItemPrice(item, bundle.id, amounts[item.id]) * (amounts[item.id] || 0))}
+                              </span>
+                            )}
+                            <span className="text-xs text-gray-500">
+                              {getItemPrice(item, bundle.id) === 0 ? '' : 
+                                item.individual ? 'individuální paušál' : `${formatPrice(getItemPrice(item, bundle.id))} per unit`}
+                            </span>
+                          </div>
+                        )}
+                      </td>
+                    </React.Fragment>
+                  ))}
+                </tr>
               ))}
-            </div>
-          ))}
+            </tbody>
+          </table>
         </div>
       </div>
     </div>
@@ -277,8 +342,6 @@ function ConfiguratorPage() {
               <BundleTable
                 bundles={bundlesState || []}
                 items={processedItems || []}
-                onItemToggle={handleItemToggle}
-                onItemPriceChange={handleItemPriceChange}
                 onAmountChange={handleAmountChange}
                 amounts={amounts}
               />

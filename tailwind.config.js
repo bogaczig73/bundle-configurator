@@ -6,11 +6,6 @@ module.exports = {
   theme: {
     extend: {
       colors: {
-        primary: {
-          DEFAULT: '#F04A6A',
-          light: '#FCDEE4',
-          hover: '#F14F6F',
-        },
         accent: {
           DEFAULT: '#F04A6A',
           checkbox: '#F48096',
@@ -23,7 +18,8 @@ module.exports = {
         },
         magenta: {
           DEFAULT: '#F04A6A',
-          light: '#F9B7C3',
+          light: '#FCDEE4',
+          hover: '#F14F6F',
         },
         orange: {
           DEFAULT: '#e7573e',

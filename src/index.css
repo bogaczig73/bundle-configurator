@@ -22,12 +22,12 @@ code {
 
 /* Primary Button */
 .btn-primary {
-  @apply bg-primary text-white hover:bg-primary-hover disabled:bg-primary-light;
+  @apply bg-magenta text-white hover:bg-magenta-hover disabled:bg-magenta-light;
 }
 
 /* Text Button */
 .btn-text {
-  @apply bg-primary-light text-primary hover:bg-primary-hover disabled:bg-gray-disabled;
+  @apply bg-magenta-light text-magenta hover:bg-magenta-hover disabled:bg-gray-disabled;
 }
 
 /* Text Fields */
@@ -78,8 +78,8 @@ code {
   @apply border-orange;
 }
 
-.border-abra-primary {
-  @apply border-primary;
+.border-abra-magenta {
+  @apply border-magenta;
 }
 
 .text-abra-yellow {
@@ -88,6 +88,6 @@ code {
 .text-abra-orange {
   @apply text-orange;
 }
-.text-abra-primary {
-  @apply text-primary;
+.text-abra-magenta {
+  @apply text-magenta;
 }
