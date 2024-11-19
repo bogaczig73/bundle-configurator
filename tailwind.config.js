@@ -7,9 +7,9 @@ module.exports = {
     extend: {
       colors: {
         primary: {
-          DEFAULT: '#196FCA',
-          light: '#D0E3F4',
-          hover: '#ECF4FB',
+          DEFAULT: '#F04A6A',
+          light: '#FCDEE4',
+          hover: '#F14F6F',
         },
         accent: {
           DEFAULT: '#F04A6A',
@@ -20,7 +20,19 @@ module.exports = {
         gray: {
           disabled: '#B2B2B2',
           input: '#F2F2F2',
-        }
+        },
+        magenta: {
+          DEFAULT: '#F04A6A',
+          light: '#F9B7C3',
+        },
+        orange: {
+          DEFAULT: '#e7573e',
+          light: '#ec7600',
+        },
+        yellow: {
+          DEFAULT: '#ffab26',
+          light: '#FFDEA9',
+        },
       }
     },
   },

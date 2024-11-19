@@ -69,3 +69,25 @@ code {
   @apply bg-accent text-white;
 }
 
+/* Border Colors for Bundles */
+.border-abra-yellow {
+  @apply border-yellow;
+}
+
+.border-abra-orange {
+  @apply border-orange;
+}
+
+.border-abra-primary {
+  @apply border-primary;
+}
+
+.text-abra-yellow {
+  @apply text-yellow;
+}
+.text-abra-orange {
+  @apply text-orange;
+}
+.text-abra-primary {
+  @apply text-primary;
+}

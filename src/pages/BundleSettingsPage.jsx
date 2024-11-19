@@ -263,11 +263,18 @@ const MemoizedBundleTable = memo(BundleTable, (prevProps, nextProps) => {
 function BundleTable({ bundles, items, onItemToggle, onItemPriceChange, onCheckboxChange, onIndividualChange, itemPrices }) {
   const flattenedItems = useMemo(() => flattenItems(items), [items]);
 
+  // Add border color array
+  const borderColors = [
+    'border-abra-yellow',
+    'border-abra-orange',
+    'border-abra-primary'
+  ];
+
   const tableStyles = {
     headerCell: "px-2 md:px-4 py-2 text-xs font-medium text-gray-500 uppercase tracking-wider",
-    packageHeaderCell: "px-2 md:px-4 py-2 text-xs font-medium text-gray-500 uppercase tracking-wider bg-primary-light border-x border-white",
+    packageHeaderCell: "px-2 md:px-4 py-2 text-xs font-medium text-gray-500 uppercase tracking-wider bg-gray-100",
     bodyCell: "px-2 md:px-4 py-2",
-    packageBodyCell: "px-2 md:px-4 py-2 bg-primary-hover border-x border-white",
+    packageBodyCell: "px-2 md:px-4 py-2",
     checkbox: "checkbox h-4 w-4 rounded border-gray-300 focus:ring-offset-0",
     numberInput: "input block w-14 md:w-16 rounded-sm text-xs py-1 text-center",
     centerWrapper: "flex justify-center items-center h-full",
@@ -275,7 +282,7 @@ function BundleTable({ bundles, items, onItemToggle, onItemPriceChange, onCheckb
       details: "w-48 min-w-[120px]",
       checkbox: "w-16",
       individual: "w-16",
-      bundle: "w-32",
+      bundle: "w-32 px-[5px]",
     }
   };
 
@@ -294,13 +301,13 @@ function BundleTable({ bundles, items, onItemToggle, onItemPriceChange, onCheckb
       <div className="min-w-[800px]">
         {/* Fixed Header */}
         <div className="bg-gray-50 sticky top-0 z-10 border-b border-gray-200">
-          <table className="w-full table-fixed">
+          <table className="w-full table-fixed border-separate border-spacing-x-[10px]">
             <colgroup>
               <col className={tableStyles.columnWidths.details} />
               <col className={tableStyles.columnWidths.checkbox} />
               <col className={tableStyles.columnWidths.individual} />
-              {bundles.map(bundle => (
-                <col key={bundle.id} className={tableStyles.columnWidths.bundle} />
+              {bundles.map((bundle, index) => (
+                <col key={bundle.id} className={`${tableStyles.columnWidths.bundle} border-x-2 ${borderColors[index % borderColors.length]}`} />
               ))}
             </colgroup>
             <thead>
@@ -318,10 +325,13 @@ function BundleTable({ bundles, items, onItemToggle, onItemPriceChange, onCheckb
                     Individual
                   </div>
                 </th>
-                {bundles.map(bundle => (
-                  <th key={bundle.id} className={tableStyles.packageHeaderCell}>
+                {bundles.map((bundle, index) => (
+                  <th 
+                    key={bundle.id} 
+                    className={`${tableStyles.packageHeaderCell} border-x-2 border-t-2 ${borderColors[index % borderColors.length]}`}
+                  >
                     <div className={tableStyles.centerWrapper}>
-                      {bundle.name}
+                      <span className="font-bold">{bundle.name}</span>
                     </div>
                   </th>
                 ))}
@@ -332,7 +342,7 @@ function BundleTable({ bundles, items, onItemToggle, onItemPriceChange, onCheckb
 
         {/* Scrollable Body */}
         <div className="overflow-y-auto max-h-[calc(100vh-200px)] bg-white">
-          <table className="w-full">
+          <table className="w-full border-separate border-spacing-x-[10px]">
             <tbody className="divide-y divide-gray-200">
               {flattenedItems.map((item) => (
                 <tr 
@@ -378,8 +388,11 @@ function BundleTable({ bundles, items, onItemToggle, onItemPriceChange, onCheckb
                       )}
                     </div>
                   </td>
-                  {bundles.map(bundle => (
-                    <td key={`${item.id}-${bundle.id}`} className={`${tableStyles.columnWidths.bundle} ${tableStyles.packageBodyCell}`}>
+                  {bundles.map((bundle, index) => (
+                    <td 
+                      key={`${item.id}-${bundle.id}`} 
+                      className={`${tableStyles.columnWidths.bundle} ${tableStyles.packageBodyCell} border-x-2 ${borderColors[index % borderColors.length]}`}
+                    >
                       {item.type === 'item' && (
                         <div className="flex items-center justify-center gap-2">
                           <input
