@@ -267,12 +267,25 @@ function BundleTable({ bundles, items, onItemToggle, onItemPriceChange, onCheckb
   const borderColors = [
     'border-abra-yellow',
     'border-abra-orange',
-    'border-abra-primary'
+    'border-abra-primary',
   ];
+
+  const getBundleBorderClasses = (index) => `
+    border-l-2 border-r-2
+    ${borderColors[index % borderColors.length]}
+    relative
+    after:absolute after:content-[''] after:left-2 after:right-2 after:top-0 
+    after:border-t after:border-dotted after:border-gray-200
+  `;
+
+  const getBundleHeaderBorderClasses = (index) => `
+    border-l-2 border-r-2 border-t-2
+    ${borderColors[index % borderColors.length]}
+  `;
 
   const tableStyles = {
     headerCell: "px-2 md:px-4 py-2 text-xs font-medium text-gray-500 uppercase tracking-wider",
-    packageHeaderCell: "px-2 md:px-4 py-2 text-xs font-medium text-gray-500 uppercase tracking-wider bg-gray-100",
+    packageHeaderCell: "px-2 md:px-4 py-2 text-xs font-medium text-gray-500 uppercase tracking-wider",
     bodyCell: "px-2 md:px-4 py-2",
     packageBodyCell: "px-2 md:px-4 py-2",
     checkbox: "checkbox h-4 w-4 rounded border-gray-300 focus:ring-offset-0",
@@ -301,13 +314,16 @@ function BundleTable({ bundles, items, onItemToggle, onItemPriceChange, onCheckb
       <div className="min-w-[800px]">
         {/* Fixed Header */}
         <div className="bg-gray-50 sticky top-0 z-10 border-b border-gray-200">
-          <table className="w-full table-fixed border-separate border-spacing-x-[10px]">
+          <table className="w-full table-fixed">
             <colgroup>
               <col className={tableStyles.columnWidths.details} />
               <col className={tableStyles.columnWidths.checkbox} />
               <col className={tableStyles.columnWidths.individual} />
               {bundles.map((bundle, index) => (
-                <col key={bundle.id} className={`${tableStyles.columnWidths.bundle} border-x-2 ${borderColors[index % borderColors.length]}`} />
+                <React.Fragment key={`${bundle.id}-group`}>
+                  <col className="w-[20px]" />
+                  <col className={`${tableStyles.columnWidths.bundle} ${getBundleBorderClasses(index)}`} />
+                </React.Fragment>
               ))}
             </colgroup>
             <thead>
@@ -326,14 +342,14 @@ function BundleTable({ bundles, items, onItemToggle, onItemPriceChange, onCheckb
                   </div>
                 </th>
                 {bundles.map((bundle, index) => (
-                  <th 
-                    key={bundle.id} 
-                    className={`${tableStyles.packageHeaderCell} border-x-2 border-t-2 ${borderColors[index % borderColors.length]}`}
-                  >
-                    <div className={tableStyles.centerWrapper}>
-                      <span className="font-bold">{bundle.name}</span>
-                    </div>
-                  </th>
+                  <React.Fragment key={`${bundle.id}-header`}>
+                    <th className="w-[20px]" />
+                    <th className={`${tableStyles.packageHeaderCell} ${getBundleHeaderBorderClasses(index)}`}>
+                      <div className={tableStyles.centerWrapper}>
+                        {bundle.name}
+                      </div>
+                    </th>
+                  </React.Fragment>
                 ))}
               </tr>
             </thead>
@@ -342,8 +358,8 @@ function BundleTable({ bundles, items, onItemToggle, onItemPriceChange, onCheckb
 
         {/* Scrollable Body */}
         <div className="overflow-y-auto max-h-[calc(100vh-200px)] bg-white">
-          <table className="w-full border-separate border-spacing-x-[10px]">
-            <tbody className="divide-y divide-gray-200">
+          <table className="w-full">
+            <tbody className="divide-y-0">
               {flattenedItems.map((item) => (
                 <tr 
                   key={item.uniqueId}
@@ -389,28 +405,28 @@ function BundleTable({ bundles, items, onItemToggle, onItemPriceChange, onCheckb
                     </div>
                   </td>
                   {bundles.map((bundle, index) => (
-                    <td 
-                      key={`${item.id}-${bundle.id}`} 
-                      className={`${tableStyles.columnWidths.bundle} ${tableStyles.packageBodyCell} border-x-2 ${borderColors[index % borderColors.length]}`}
-                    >
-                      {item.type === 'item' && (
-                        <div className="flex items-center justify-center gap-2">
-                          <input
-                            type="checkbox"
-                            checked={getItemSelected(item, bundle.id)}
-                            onChange={() => onItemToggle(bundle.id, item.id)}
-                            className={tableStyles.checkbox}
-                          />
-                          <input
-                            type="number"
-                            min={0}
-                            onChange={(e) => onItemPriceChange(bundle.id, item.id, e.target.value)}
-                            value={getItemPrice(item, bundle.id)}
-                            className={tableStyles.numberInput}
-                          />
-                        </div>
-                      )}
-                    </td>
+                    <React.Fragment key={`${item.id}-${bundle.id}-group`}>
+                      <td className="w-[20px]" />
+                      <td className={`${tableStyles.columnWidths.bundle} ${tableStyles.packageBodyCell} ${getBundleBorderClasses(index)}`}>
+                        {item.type === 'item' && (
+                          <div className="flex items-center justify-center gap-2">
+                            <input
+                              type="checkbox"
+                              checked={getItemSelected(item, bundle.id)}
+                              onChange={() => onItemToggle(bundle.id, item.id)}
+                              className={tableStyles.checkbox}
+                            />
+                            <input
+                              type="number"
+                              min={0}
+                              onChange={(e) => onItemPriceChange(bundle.id, item.id, e.target.value)}
+                              value={getItemPrice(item, bundle.id)}
+                              className={tableStyles.numberInput}
+                            />
+                          </div>
+                        )}
+                      </td>
+                    </React.Fragment>
                   ))}
                 </tr>
               ))}

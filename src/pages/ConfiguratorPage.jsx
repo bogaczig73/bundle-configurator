@@ -41,130 +41,134 @@ function BundleTable({ bundles = [], items = [], onItemToggle, onItemPriceChange
       }, 0);
   };
 
+  // Calculate the number of columns needed (1 for name + 1 for amount + number of bundles)
+  const numColumns = 2 + bundles.length;
+  const borderColors = [
+    'border-abra-yellow',
+    'border-abra-orange',
+    'border-abra-primary'
+  ];
+  
   return (
     <div className="border border-gray-200 rounded-lg shadow-sm">
       <div className="min-w-[800px]">
-        {/* Fixed Header */}
+        {/* Header Grid */}
         <div className="bg-gray-50 sticky top-0 z-10 border-b border-gray-200">
-          <table className="w-full table-fixed">
-            <colgroup>
-              <col className="w-48 min-w-[120px]" />
-              <col className="w-16" />
-              {bundles.map(() => (
-                <col className="w-32" />
-              ))}
-            </colgroup>
-            <thead>
-              <tr>
-                <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Položka
-                </th>
-                <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Počet
-                </th>
-                {bundles.map(bundle => (
-                  <th key={bundle.id} className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    <div className="flex flex-col">
-                      <span>{bundle.name}</span>
-                      <span className="text-blue-600 font-semibold">
-                        Total: {formatPrice(calculateBundleTotal(bundle.id))}
-                      </span>
-                    </div>
-                  </th>
-                ))}
-              </tr>
-            </thead>
-          </table>
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: `minmax(200px, 1fr) 100px ${Array(bundles.length).fill('150px').join(' ')}`
+          }}>
+            <div className="px-4 py-2 text-xs font-medium text-gray-500 uppercase tracking-wider">
+              Položka
+            </div>
+            <div className="px-4 py-2 text-xs font-medium text-gray-500 uppercase tracking-wider">
+              Počet
+            </div>
+            {bundles.map((bundle, index) => (
+              <div 
+                key={bundle.id} 
+                className={`px-4 py-2 text-xs font-medium text-gray-500 uppercase tracking-wider border-l-4 ${borderColors[index % borderColors.length]}`}
+              >
+                <div className="flex flex-col">
+                  <span>{bundle.name}</span>
+                  <span className="text-blue-600 font-semibold">
+                    Total: {formatPrice(calculateBundleTotal(bundle.id))}
+                  </span>
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
 
         {/* Scrollable Body */}
         <div className="overflow-y-auto max-h-[calc(100vh-200px)] bg-white">
-          <table className="w-full table-fixed">
-            <colgroup>
-              <col className="w-48 min-w-[120px]" />
-              <col className="w-16" />
-              {bundles.map(() => (
-                <col className="w-32" />
-              ))}
-            </colgroup>
-            <tbody className="divide-y divide-gray-200">
-              {flattenedItems.map((item) => (
-                <tr 
-                  key={item.uniqueId}
-                  className={`
-                    ${item.type === 'category' ? 'bg-gray-50' : 'hover:bg-gray-50'}
-                    ${item.depth > 0 ? `pl-${item.depth * 4}` : ''}
-                  `}
-                >
-                  <td className="px-4 py-2">
-                    <div className="flex flex-col">
-                      <span className={`${item.type === 'category' ? 'font-medium text-gray-900' : 'text-gray-700'} text-sm`}>
-                        {item.name}
-                      </span>
-                      {item.note && (
-                        <span className="text-xs text-gray-500 truncate max-w-xs">
-                          {item.note}
-                        </span>
-                      )}
-                    </div>
-                  </td>
-                  <td className="px-4 py-2">
-                    {item.type === 'item' && (
-                      <>
-                        {item.checkbox ? (
-                          <input
-                            type="checkbox"
-                            checked={amounts[item.id] === 1}
-                            onChange={(e) => onAmountChange(item.id, e.target.checked ? 1 : 0)}
-                            className="rounded border-gray-300 text-blue-600 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                          />
-                        ) : (
-                          <div className="flex items-center space-x-1">
-                            <button
-                              onClick={() => onAmountChange(item.id, Math.max(0, (amounts[item.id] || 0) - 1))}
-                              className="px-1.5 py-0.5 text-xs border border-gray-300 rounded-sm hover:bg-gray-100"
-                            >
-                              -
-                            </button>
-                            <input
-                              type="number"
-                              min={0}
-                              value={amounts[item.id] || 0}
-                              onChange={(e) => onAmountChange(item.id, item.individual ? Number(e.target.value) : e.target.value)}
-                              className="block w-12 rounded-sm border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-xs py-1"
-                            />
-                            <button
-                              onClick={() => onAmountChange(item.id, (amounts[item.id] || 0) + 1)}
-                              className="px-1.5 py-0.5 text-xs border border-gray-300 rounded-sm hover:bg-gray-100"
-                            >
-                              +
-                            </button>
-                          </div>
-                        )}
-                      </>
-                    )}
-                  </td>
-                  
-                  {item.type === 'category' && bundles.map(bundle => (
-                    <td key={`${item.uniqueId}-${bundle.id}`} className="px-4 py-2" />
-                  ))}
-                  
-                  {item.type === 'item' && bundles.map(bundle => (
-                    <td key={`${item.uniqueId}-${bundle.id}`} className="px-4 py-2">
-                      <div className="flex flex-col">
-                        <span className="block text-xs py-1 text-gray-700 font-medium">
-                          {formatPrice(item.individual ? (amounts[item.id] || 0) : getItemPrice(item, bundle.id) * (amounts[item.id] || 0))}
-                        </span>
-                        <span className="block text-xs py-1 text-gray-500">
-                          {item.individual ? formatPrice(1) : formatPrice(getItemPrice(item, bundle.id))} {!item.individual && 'za jednotku'}
-                        </span>
+          {flattenedItems.map((item) => (
+            <div 
+              key={item.uniqueId}
+              style={{
+                display: 'grid',
+                gridTemplateColumns: `minmax(200px, 1fr) 100px ${Array(bundles.length).fill('150px').join(' ')}`,
+              }}
+              className={`
+                ${item.type === 'category' ? 'bg-gray-50' : 'hover:bg-gray-50'}
+                ${item.depth > 0 ? `pl-${item.depth * 4}` : ''}
+                border-b border-gray-200
+              `}
+            >
+              <div className="px-4 py-2">
+                <div className="flex flex-col">
+                  <span className={`${item.type === 'category' ? 'font-medium text-gray-900' : 'text-gray-700'} text-sm`}>
+                    {item.name}
+                  </span>
+                  {item.note && (
+                    <span className="text-xs text-gray-500 truncate max-w-xs">
+                      {item.note}
+                    </span>
+                  )}
+                </div>
+              </div>
+
+              <div className="px-4 py-2">
+                {item.type === 'item' && (
+                  <>
+                    {item.checkbox ? (
+                      <input
+                        type="checkbox"
+                        checked={amounts[item.id] === 1}
+                        onChange={(e) => onAmountChange(item.id, e.target.checked ? 1 : 0)}
+                        className="rounded border-gray-300 text-blue-600 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                      />
+                    ) : (
+                      <div className="flex items-center space-x-1">
+                        <button
+                          onClick={() => onAmountChange(item.id, Math.max(0, (amounts[item.id] || 0) - 1))}
+                          className="px-1.5 py-0.5 text-xs border border-gray-300 rounded-sm hover:bg-gray-100"
+                        >
+                          -
+                        </button>
+                        <input
+                          type="number"
+                          min={0}
+                          value={amounts[item.id] || 0}
+                          onChange={(e) => onAmountChange(item.id, item.individual ? Number(e.target.value) : e.target.value)}
+                          className="block w-12 rounded-sm border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-xs py-1"
+                        />
+                        <button
+                          onClick={() => onAmountChange(item.id, (amounts[item.id] || 0) + 1)}
+                          className="px-1.5 py-0.5 text-xs border border-gray-300 rounded-sm hover:bg-gray-100"
+                        >
+                          +
+                        </button>
                       </div>
-                    </td>
-                  ))}
-                </tr>
+                    )}
+                  </>
+                )}
+              </div>
+
+              {item.type === 'item' && bundles.map((bundle, index) => (
+                <div 
+                  key={`${item.uniqueId}-${bundle.id}`} 
+                  className={`px-4 py-2 border-l-4 ${borderColors[index % borderColors.length]}`}
+                >
+                  <div className="flex flex-col">
+                    <span className="block text-xs py-1 text-gray-700 font-medium">
+                      {formatPrice(item.individual ? (amounts[item.id] || 0) : getItemPrice(item, bundle.id) * (amounts[item.id] || 0))}
+                    </span>
+                    <span className="block text-xs py-1 text-gray-500">
+                      {item.individual ? formatPrice(1) : formatPrice(getItemPrice(item, bundle.id))} {!item.individual && 'za jednotku'}
+                    </span>
+                  </div>
+                </div>
               ))}
-            </tbody>
-          </table>
+
+              {item.type === 'category' && bundles.map((bundle, index) => (
+                <div 
+                  key={`${item.uniqueId}-${bundle.id}`} 
+                  className={`px-4 py-2 border-l-4 ${borderColors[index % borderColors.length]}`} 
+                />
+              ))}
+            </div>
+          ))}
         </div>
       </div>
     </div>
