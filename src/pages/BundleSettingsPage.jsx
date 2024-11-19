@@ -267,7 +267,7 @@ function BundleTable({ bundles, items, onItemToggle, onItemPriceChange, onCheckb
   const borderColors = [
     'border-abra-yellow',
     'border-abra-orange',
-    'border-abra-primary',
+    'border-abra-magenta',
   ];
 
   const getBundleBorderClasses = (index) => `
