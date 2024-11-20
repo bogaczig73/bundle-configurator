@@ -205,12 +205,6 @@ function BundleSettingsPage() {
                 {userId ? 'Create New Bundle for User' : 'Bundle Settings'}
               </h1>
               <div className="flex gap-2">
-                <button
-                  onClick={handleLoadDefaults}
-                  className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600"
-                >
-                  Load Defaults
-                </button>
                 <ActionButtons
                   userId={userId}
                   loading={loading}

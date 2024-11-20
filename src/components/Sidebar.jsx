@@ -8,8 +8,6 @@ function Sidebar({ children }) {
   const navigation = [
     { name: 'Configurator', path: '/configurator' },
     { name: 'Bundle Settings', path: '/bundle' },
-    { name: 'Users', path: '/users' },
-    { name: 'View Offers', path: '/viewoffers' },
     { name: 'Home', path: '/' }
   ];
 

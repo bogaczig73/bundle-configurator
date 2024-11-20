@@ -24,7 +24,8 @@ function ActionButtons({ userId, loading, onSave, onExport, onImport, onReset })
         <>
           <button onClick={onSave} className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded">
             Save Changes
-          </button>
+            </button>
+          {/* 
           <button onClick={onExport} className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded">
             Export to File
           </button>
@@ -34,7 +35,7 @@ function ActionButtons({ userId, loading, onSave, onExport, onImport, onReset })
           </label>
           <button onClick={onReset} className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded">
             Reset to Defaults
-          </button>
+          </button> */}
         </>
       )}
     </div>
