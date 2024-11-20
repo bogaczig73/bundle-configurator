@@ -8,12 +8,12 @@ function BundleTable({ bundles = [], items = [], onAmountChange, amounts = {} })
   const flattenedItems = useMemo(() => flattenItems(items), [items]);
 
   const tableStyles = {
-    headerCell: "px-2 md:px-4 py-2 text-xs font-medium text-gray-500 uppercase tracking-wider",
-    packageHeaderCell: "px-2 md:px-4 py-2 text-xs font-medium text-gray-500 uppercase tracking-wider",
+    headerCell: "px-2 md:px-4 py-2 text-xs font-medium text-black uppercase tracking-wider",
+    packageHeaderCell: "px-2 md:px-4 py-2 text-xs font-medium text-black uppercase tracking-wider",
     bodyCell: "px-2 md:px-4 py-2",
     packageBodyCell: "px-2 md:px-4 py-2",
-    checkbox: "checkbox h-4 w-4 rounded border-gray-300 focus:ring-offset-0",
-    numberInput: "input block w-14 md:w-16 rounded-sm text-xs py-1 text-center",
+    checkbox: "checkbox h-4 w-4 size-4 rounded border-gray-300 focus:ring-offset-0",
+    numberInput: "input w-14 md:w-16 rounded-sm text-xs text-center appearance-auto block w-full rounded-md border-0 py-1",
     centerWrapper: "flex justify-center items-center h-full",
     columnWidths: {
       details: "w-48 min-w-[120px]",
