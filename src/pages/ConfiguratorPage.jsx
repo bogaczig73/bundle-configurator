@@ -8,12 +8,16 @@ function BundleTable({ bundles = [], items = [], onAmountChange, amounts = {} })
   const flattenedItems = useMemo(() => flattenItems(items), [items]);
 
   const tableStyles = {
-    headerCell: "px-2 md:px-4 py-2 text-xs font-medium text-black uppercase tracking-wider",
-    packageHeaderCell: "px-2 md:px-4 py-2 text-xs font-medium text-black uppercase tracking-wider",
+    headerCell: "px-2 md:px-4 py-2 text-xs font-medium text-gray-900 uppercase tracking-wider",
+    packageHeaderCell: "px-2 md:px-4 py-2 text-xs font-medium text-gray-900 uppercase tracking-wider",
     bodyCell: "px-2 md:px-4 py-2",
     packageBodyCell: "px-2 md:px-4 py-2",
-    checkbox: "checkbox h-4 w-4 size-4 rounded border-gray-300 focus:ring-offset-0",
-    numberInput: "input w-14 md:w-16 rounded-sm text-xs text-center appearance-auto block w-full rounded-md border-0 py-1",
+    checkbox: "h-4 w-4 size-4 rounded border-abra-magenta focus:ring-offset-0",
+    
+    numberInput: "w-14 md:w-16 text-center w-full border-x-0 h-8 text-gray-900 text-sm border-abra-magenta block w-full p-2",
+    inputCounterButton: "hover:bg-gray-200 border border-abra-magenta p-2.5 h-8 focus:ring-gray-100 focus:ring-2 focus:outline-none",
+    counterButtonSymbols: "w-2 h-2 text-abra-magenta",
+    
     centerWrapper: "flex justify-center items-center h-full",
     columnWidths: {
       details: "w-48 min-w-[120px]",
@@ -179,15 +183,18 @@ function BundleTable({ bundles = [], items = [], onAmountChange, amounts = {} })
                             className={tableStyles.checkbox}
                           />
                         ) : (
-                          <div className="flex items-center gap-1">
+                          <div className="flex items-center">
                             <button
                               onClick={() => onAmountChange(item.id, Math.max(0, (amounts[item.id] || 0) - 1))}
-                              className="px-1.5 py-0.5 text-xs border border-gray-300 rounded-sm hover:bg-gray-100"
+                              className={tableStyles.inputCounterButton + " rounded-s-md"}
                             >
-                              -
+                              <svg class={tableStyles.counterButtonSymbols} aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 18 2">
+                                <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M1 1h16"/>
+                              </svg>
                             </button>
+                            
                             <input
-                              type="number"
+                              type="text"
                               min={0}
                               value={amounts[item.id] || 0}
                               onChange={(e) => onAmountChange(item.id, Number(e.target.value))}
@@ -195,10 +202,13 @@ function BundleTable({ bundles = [], items = [], onAmountChange, amounts = {} })
                             />
                             <button
                               onClick={() => onAmountChange(item.id, (amounts[item.id] || 0) + 1)}
-                              className="px-1.5 py-0.5 text-xs border border-gray-300 rounded-sm hover:bg-gray-100"
+                              className={tableStyles.inputCounterButton + " rounded-e-md"}
                             >
-                              +
+                              <svg class={tableStyles.counterButtonSymbols} aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 18 18">
+                                <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 1v16M1 9h16"/>
+                              </svg>
                             </button>
+
                           </div>
                         )
                       )}
