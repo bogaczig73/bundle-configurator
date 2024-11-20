@@ -31,13 +31,12 @@ export function useConfigData(bundleId = null) {
                 type: 'item',
                 name: item.name,
                 description: item.note || '',
-                prices: item.prices
+                packages: item.packages
               }))
             ]
           };
         });
     };
-
     return buildCategoryTree(null);
   };
 

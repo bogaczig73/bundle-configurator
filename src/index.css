@@ -22,12 +22,12 @@ code {
 
 /* Primary Button */
 .btn-primary {
-  @apply bg-magenta text-white hover:bg-magenta-hover disabled:bg-magenta-light;
+  @apply bg-magenta text-white hover:bg-magenta-hover disabled:bg-magenta-tone-100;
 }
 
-/* Text Button */
+  /* Text Button */
 .btn-text {
-  @apply bg-magenta-light text-magenta hover:bg-magenta-hover disabled:bg-gray-disabled;
+  @apply bg-magenta-tone-100 text-magenta hover:bg-magenta-tone-200 disabled:bg-gray-disabled;
 }
 
 /* Text Fields */
@@ -39,7 +39,7 @@ code {
 
 /* Checkboxes & Radio */
 .checkbox, .radio {
-  @apply text-accent-checkbox 
+  @apply text-magenta-tone-100 
          disabled:text-gray-disabled;
 }
 

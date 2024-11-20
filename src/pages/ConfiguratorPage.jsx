@@ -2,21 +2,20 @@ import React, { useState, useEffect, useMemo } from "react";
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import Sidebar from '../components/Sidebar';
 import { useConfigData } from '../hooks/useConfigData';
-import { useBundleData } from '../hooks/useBundleData';
 
 function BundleTable({ bundles = [], items = [], onAmountChange, amounts = {} }) {
   const flattenedItems = useMemo(() => flattenItems(items), [items]);
 
   const tableStyles = {
-    headerCell: "px-2 md:px-4 py-2 text-xs font-medium text-gray-900 uppercase tracking-wider",
+    headerCell: "px-2 md:px-4 py-2 text-xs font-bold text-gray-900 uppercase tracking-wider border-b-2 border-gray-200",
     packageHeaderCell: "px-2 md:px-4 py-2 text-xs font-medium text-gray-900 uppercase tracking-wider",
     bodyCell: "px-2 md:px-4 py-2",
     packageBodyCell: "px-2 md:px-4 py-2",
-    checkbox: "h-4 w-4 size-4 rounded border-abra-magenta focus:ring-offset-0",
+    checkbox: "h-4 w-4 size-4 rounded border-magenta-tone-100 focus:ring-offset-0",
     
-    numberInput: "w-14 md:w-16 text-center w-full border-x-0 h-8 text-gray-900 text-sm border-abra-magenta block w-full p-2",
-    inputCounterButton: "hover:bg-gray-200 border border-abra-magenta p-2.5 h-8 focus:ring-gray-100 focus:ring-2 focus:outline-none",
-    counterButtonSymbols: "w-2 h-2 text-abra-magenta",
+    numberInput: "w-14 md:w-16 text-center w-full border-x-0 h-8 text-gray-900 text-sm border-magenta-tone-100 block w-full p-2",
+    inputCounterButton: "hover:bg-gray-200 border border-magenta-tone-100 p-2.5 h-8 focus:ring-gray-100 focus:ring-2 focus:outline-none",
+    counterButtonSymbols: "w-2 h-2 text-magenta-tone-100",
     
     centerWrapper: "flex justify-center items-center h-full",
     columnWidths: {
@@ -43,14 +42,18 @@ function BundleTable({ bundles = [], items = [], onAmountChange, amounts = {} })
     }).format(price);
   };
   const getItemSelected = (item, bundleId) => {
-    const selectionEntry = item.prices.find(p => p.packageId === bundleId);
+    const selectionEntry = item.packages.find(p => p.packageId === bundleId);
     return selectionEntry?.selected ?? false;
   };
   const getItemPrice = (item, bundleId) => {
     if (item.individual) return 1;
-    if (!item.prices) return 0;
-    const priceEntry = item.prices.find(p => p.packageId === bundleId);
+    if (!item.packages) return 0;
+    const priceEntry = item.packages.find(p => p.packageId === bundleId);
     return priceEntry?.price ?? 0;
+  };
+  const getItemDiscount = (item, bundleId) => {
+    const priceEntry = item.packages.find(p => p.packageId === bundleId);
+    return priceEntry?.discountedAmount ?? 0;
   };
 
   // Add this function to calculate bundle totals
@@ -58,7 +61,14 @@ function BundleTable({ bundles = [], items = [], onAmountChange, amounts = {} })
     return flattenedItems
       .filter(item => item.type === 'item')
       .reduce((total, item) => {
-        return total + (getItemPrice(item, bundleId) * (amounts[item.id] || 0));
+        const amount = amounts[item.id] || 0;
+        const discount = getItemDiscount(item, bundleId);
+        const price = getItemPrice(item, bundleId);
+        
+        // Calculate charged units (amount minus discounted units, but not less than 0)
+        const chargedUnits = Math.max(0, amount - discount);
+        
+        return total + (price * chargedUnits);
       }, 0);
   };
   const getBundleBorderClasses = (index) => `
@@ -91,17 +101,17 @@ function BundleTable({ bundles = [], items = [], onAmountChange, amounts = {} })
   // Add this helper function near the top of the BundleTable component
   const isFreeForAllBundles = (item) => {
     // Check if the item has prices array
-    if (!item.prices) return false;
+    if (!item.packages) return false;
     
     // Check if all prices are 0 and the item is not individual
-    return item.prices.every(price => price.price === 0) && !item.individual;
+    return item.packages.every(price => price.price === 0) && !item.individual;
   };
 
   return (
-    <div className="border border-gray-200 rounded-lg shadow-sm">
+    <div className="">
       <div className="min-w-[800px]">
         {/* Fixed Header */}
-        <div className="sticky top-0 z-10 border-b border-gray-200">
+        <div className="sticky top-0 z-10">
           <table className="w-full table-fixed">
             <TableColgroup />
             <thead>
@@ -116,7 +126,7 @@ function BundleTable({ bundles = [], items = [], onAmountChange, amounts = {} })
                 </th>
                 {bundles.map((bundle, index) => (
                   <React.Fragment key={`${bundle.id}-header`}>
-                    <th className="w-[20px]" />
+                    <th className="w-[20px] border-none" />
                     <th className={`${tableStyles.packageHeaderCell} ${getBundleHeaderBorderClasses(index)}`}>
                       <div className="flex flex-col items-center">
                         <span>{bundle.name}</span>
@@ -172,7 +182,7 @@ function BundleTable({ bundles = [], items = [], onAmountChange, amounts = {} })
                     <div className={tableStyles.centerWrapper}>
                       {item.type === 'item' && (
                         isFreeForAllBundles(item) ? (
-                          <span className="text-xs font-medium">
+                          <span className="text-xs font-medium text-magenta-tone-100">
                             -
                           </span>
                         ) : item.checkbox ? (
@@ -188,8 +198,8 @@ function BundleTable({ bundles = [], items = [], onAmountChange, amounts = {} })
                               onClick={() => onAmountChange(item.id, Math.max(0, (amounts[item.id] || 0) - 1))}
                               className={tableStyles.inputCounterButton + " rounded-s-md"}
                             >
-                              <svg class={tableStyles.counterButtonSymbols} aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 18 2">
-                                <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M1 1h16"/>
+                              <svg className={tableStyles.counterButtonSymbols} aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 18 2">
+                                <path stroke="currentColor" strokeLinejoin="round" strokeWidth="2" d="M1 1h16"/>
                               </svg>
                             </button>
                             
@@ -204,8 +214,8 @@ function BundleTable({ bundles = [], items = [], onAmountChange, amounts = {} })
                               onClick={() => onAmountChange(item.id, (amounts[item.id] || 0) + 1)}
                               className={tableStyles.inputCounterButton + " rounded-e-md"}
                             >
-                              <svg class={tableStyles.counterButtonSymbols} aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 18 18">
-                                <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 1v16M1 9h16"/>
+                              <svg className={tableStyles.counterButtonSymbols} aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 18 18">
+                                <path stroke="currentColor"  strokeLinejoin="round" strokeWidth="2" d="M9 1v16M1 9h16"/>
                               </svg>
                             </button>
 
@@ -228,12 +238,12 @@ function BundleTable({ bundles = [], items = [], onAmountChange, amounts = {} })
                               </span>
                             ) : (
                               <span className="text-xs font-medium">
-                                {formatPrice(getItemPrice(item, bundle.id, amounts[item.id]) * (amounts[item.id] || 0))}
+                                {formatPrice(getItemPrice(item, bundle.id) * (Math.max(0, amounts[item.id] - getItemDiscount(item, bundle.id)) || 0))}
                               </span>
                             )}
                             <span className="text-xs text-gray-500">
                               {getItemPrice(item, bundle.id) === 0 ? '' : 
-                                item.individual ? 'individuální paušál' : `${formatPrice(getItemPrice(item, bundle.id))} per unit`}
+                                item.individual ? 'individuální paušál' : `${formatPrice(getItemPrice(item, bundle.id))} per unit` + (getItemDiscount(item, bundle.id) > 0 ? ` / první ${getItemDiscount(item, bundle.id)} v ceně` : '')}
                             </span>
                           </div>
                         )}
@@ -284,35 +294,13 @@ function ConfiguratorPage() {
     items, 
     bundleData 
   } = useConfigData(bundleId);
-  const { bundlesState, setBundlesState } = useBundleData();
   const [amounts, setAmounts] = useState({});
 
   useEffect(() => {
     if (bundleData?.amounts) {
       setAmounts(bundleData.amounts);
-    } else if (packages.length) {
-      // Original logic for loading default data
-      const newBundlesState = packages.map(pkg => ({
-        ...pkg,
-        items: items.reduce((acc, item) => ({
-          ...acc,
-          [item.id]: {
-            selected: false,
-            price: item.prices?.find(p => p.packageId === pkg.id)?.price || 0
-          }
-        }), {})
-      }));
-      setBundlesState(newBundlesState);
     }
-  }, [bundleData, packages, items, setBundlesState]);
-
-  const handleItemToggle = (bundleId, itemId) => {
-    // Implementation similar to BundleSettingsPage
-  };
-  
-  const handleItemPriceChange = (bundleId, itemId, price) => {
-    // Implementation similar to BundleSettingsPage
-  };
+  }, [bundleData]);
 
   const handleAmountChange = (itemId, amount) => {
     setAmounts(prev => ({ ...prev, [itemId]: Number(amount) }));
@@ -350,7 +338,7 @@ function ConfiguratorPage() {
           ) : (
             <div className="p-6">
               <BundleTable
-                bundles={bundlesState || []}
+                bundles={packages}
                 items={processedItems || []}
                 onAmountChange={handleAmountChange}
                 amounts={amounts}

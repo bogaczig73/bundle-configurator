@@ -3,7 +3,7 @@ export const defaultItems = [
     "id": 1,
     "name": "Počet uživatelů s plným přístupem",
     "categoryId": 1,
-    "prices": [
+    "packages": [
       {
         "packageId": 1,
         "price": 1391,
@@ -29,7 +29,7 @@ export const defaultItems = [
     "id": 4,
     "name": "Read-only uživatelé",
     "categoryId": 1,
-    "prices": [
+    "packages": [
       {
         "price": 0,
         "selected": false,
@@ -55,7 +55,7 @@ export const defaultItems = [
     "id": 5,
     "name": "Správa uživatelů a předplatných v novém Zákaznickém portálu",
     "categoryId": 1,
-    "prices": [
+    "packages": [
       {
         "packageId": 1,
         "selected": true,
@@ -80,7 +80,7 @@ export const defaultItems = [
     "id": 6,
     "name": "API",
     "categoryId": 1,
-    "prices": [
+    "packages": [
       {
         "packageId": 1,
         "price": 0,
@@ -105,7 +105,7 @@ export const defaultItems = [
     "id": 7,
     "name": "Systém pro více IČO",
     "categoryId": 2,
-    "prices": [
+    "packages": [
       {
         "packageId": 1,
         "selected": false,
@@ -130,7 +130,7 @@ export const defaultItems = [
     "id": 8,
     "name": "Počet IČO v ceně",
     "categoryId": 2,
-    "prices": [
+    "packages": [
       {
         "price": 0,
         "packageId": 1,
@@ -155,7 +155,7 @@ export const defaultItems = [
     "id": 9,
     "name": "Databáze",
     "categoryId": 2,
-    "prices": [
+    "packages": [
       {
         "price": 0,
         "packageId": 1,
@@ -180,7 +180,7 @@ export const defaultItems = [
     "id": 10,
     "name": "API",
     "categoryId": 2,
-    "prices": [
+    "packages": [
       {
         "packageId": 1,
         "selected": false,
@@ -205,7 +205,7 @@ export const defaultItems = [
     "id": 15,
     "name": "Výroba",
     "categoryId": 3,
-    "prices": [
+    "packages": [
       {
         "price": 0,
         "selected": false,
@@ -231,7 +231,7 @@ export const defaultItems = [
     "id": 16,
     "name": "Mzdy a personalistika",
     "categoryId": 3,
-    "prices": [
+    "packages": [
       {
         "price": 1000,
         "packageId": 1,
@@ -257,7 +257,7 @@ export const defaultItems = [
     "id": 17,
     "name": "EDI",
     "categoryId": 5,
-    "prices": [
+    "packages": [
       {
         "selected": false,
         "packageId": 1,
@@ -283,7 +283,7 @@ export const defaultItems = [
     "id": 18,
     "name": "E-shop / B2B portal",
     "categoryId": 5,
-    "prices": [
+    "packages": [
       {
         "price": 0,
         "selected": false,
@@ -309,7 +309,7 @@ export const defaultItems = [
     "id": 19,
     "name": "E-shop – jazyková mutace",
     "categoryId": 5,
-    "prices": [
+    "packages": [
       {
         "price": 0,
         "packageId": 1,
@@ -335,7 +335,7 @@ export const defaultItems = [
     "id": 20,
     "name": "E-shop - zakázkový e-shop",
     "categoryId": 5,
-    "prices": [
+    "packages": [
       {
         "selected": false,
         "packageId": 1,
@@ -361,7 +361,7 @@ export const defaultItems = [
     "id": 21,
     "name": "Expedice balíků – integrace služby Balíkobot.cz",
     "categoryId": 5,
-    "prices": [
+    "packages": [
       {
         "price": 0,
         "packageId": 1,
@@ -387,7 +387,7 @@ export const defaultItems = [
     "id": 22,
     "name": "Mobilní skladník",
     "categoryId": 5,
-    "prices": [
+    "packages": [
       {
         "price": 0,
         "selected": false,
@@ -413,7 +413,7 @@ export const defaultItems = [
     "id": 23,
     "name": "Obchodní referent",
     "categoryId": 5,
-    "prices": [
+    "packages": [
       {
         "price": 0,
         "selected": false,
@@ -439,7 +439,7 @@ export const defaultItems = [
     "id": 24,
     "name": "Mobilní servis",
     "categoryId": 5,
-    "prices": [
+    "packages": [
       {
         "selected": false,
         "price": 0,
@@ -465,7 +465,7 @@ export const defaultItems = [
     "id": 25,
     "name": "ABRA BI (obsahuje standardní BI reporty)",
     "categoryId": 6,
-    "prices": [
+    "packages": [
       {
         "selected": false,
         "packageId": 1,
@@ -491,7 +491,7 @@ export const defaultItems = [
     "id": 26,
     "name": "ABRA Business Navigátor – analyzer",
     "categoryId": 6,
-    "prices": [
+    "packages": [
       {
         "price": 0,
         "selected": false,
@@ -517,7 +517,7 @@ export const defaultItems = [
     "id": 27,
     "name": "ABRA Business Navigátor – builder",
     "categoryId": 6,
-    "prices": [
+    "packages": [
       {
         "price": 0,
         "selected": false,
@@ -543,7 +543,7 @@ export const defaultItems = [
     "id": 28,
     "name": "ABRA Business Navigátor – další spojení",
     "categoryId": 6,
-    "prices": [
+    "packages": [
       {
         "price": 0,
         "selected": false,
@@ -569,7 +569,7 @@ export const defaultItems = [
     "id": 29,
     "name": "ABRA On-line schvalování",
     "categoryId": 6,
-    "prices": [
+    "packages": [
       {
         "price": 0,
         "selected": false,
@@ -595,7 +595,7 @@ export const defaultItems = [
     "id": 30,
     "name": "OCR (Optical Character Recognition)",
     "categoryId": 6,
-    "prices": [
+    "packages": [
       {
         "selected": false,
         "packageId": 1,
@@ -621,7 +621,7 @@ export const defaultItems = [
     "id": 31,
     "name": "Výrobní terminál (PLM)",
     "categoryId": 7,
-    "prices": [
+    "packages": [
       {
         "packageId": 1,
         "selected": false,
@@ -647,7 +647,7 @@ export const defaultItems = [
     "id": 32,
     "name": "Licence katalogových doplňků",
     "categoryId": 8,
-    "prices": [
+    "packages": [
       {
         "selected": false,
         "packageId": 1,
@@ -673,7 +673,7 @@ export const defaultItems = [
     "id": 39,
     "name": "Vzdálený monitoring (on-premise)",
     "categoryId": 9,
-    "prices": [
+    "packages": [
       {
         "selected": false,
         "price": 0,
@@ -699,7 +699,7 @@ export const defaultItems = [
     "id": 40,
     "name": "Záložní provoz",
     "categoryId": 9,
-    "prices": [
+    "packages": [
       {
         "packageId": 1,
         "price": 0,
@@ -725,7 +725,7 @@ export const defaultItems = [
     "id": 41,
     "name": "Garantovaná reakční doba na krizovou situaci standardu systému",
     "categoryId": 9,
-    "prices": [
+    "packages": [
       {
         "packageId": 1,
         "selected": true,
@@ -750,7 +750,7 @@ export const defaultItems = [
     "id": 33,
     "name": "Garantovaná reakční doba na krizovou situaci vč. řešení zakázkových úprav",
     "categoryId": 9,
-    "prices": [
+    "packages": [
       {
         "selected": false,
         "price": 0,
@@ -775,7 +775,7 @@ export const defaultItems = [
     "id": 42,
     "name": "Virtuální správce ABRA Gen",
     "categoryId": 9,
-    "prices": [
+    "packages": [
       {
         "selected": false,
         "packageId": 1,
@@ -800,7 +800,7 @@ export const defaultItems = [
     "id": 43,
     "name": "Spáva databáze Oracle",
     "categoryId": 9,
-    "prices": [
+    "packages": [
       {
         "price": 0,
         "selected": false,
@@ -825,7 +825,7 @@ export const defaultItems = [
     "id": 44,
     "name": "Spáva databáze MS SQL",
     "categoryId": 9,
-    "prices": [
+    "packages": [
       {
         "selected": false,
         "price": 0,
@@ -850,7 +850,7 @@ export const defaultItems = [
     "id": 45,
     "name": "Monitoring databázového serveru Oracle",
     "categoryId": 9,
-    "prices": [
+    "packages": [
       {
         "selected": false,
         "packageId": 1,
@@ -875,7 +875,7 @@ export const defaultItems = [
     "id": 46,
     "name": "Licence pro testovací prostředí",
     "categoryId": 9,
-    "prices": [
+    "packages": [
       {
         "packageId": 1,
         "selected": true,
@@ -900,7 +900,7 @@ export const defaultItems = [
     "id": 47,
     "name": "Preventivní údržba",
     "categoryId": 9,
-    "prices": [
+    "packages": [
       {
         "selected": true,
         "packageId": 1,
@@ -925,7 +925,7 @@ export const defaultItems = [
     "id": 48,
     "name": "Dostupnost nové verze systému a legislativy",
     "categoryId": 10,
-    "prices": [
+    "packages": [
       {
         "selected": true,
         "price": 0,
@@ -950,7 +950,7 @@ export const defaultItems = [
     "id": 49,
     "name": "Aktualizace systému vč. garance stejné funkčnosti zakázkových úprav – pro ABRA online i on-prem",
     "categoryId": 10,
-    "prices": [
+    "packages": [
       {
         "packageId": 1,
         "selected": false,
@@ -975,7 +975,7 @@ export const defaultItems = [
     "id": 87,
     "name": "Zákázkové úpravy od Abry a certifikovaných partnerů",
     "categoryId": 11,
-    "prices": [
+    "packages": [
       {
         "selected": true,
         "packageId": 1,
@@ -1000,7 +1000,7 @@ export const defaultItems = [
     "id": 88,
     "name": "Vlastní skriptování",
     "categoryId": 11,
-    "prices": [
+    "packages": [
       {
         "selected": false,
         "price": 0,
@@ -1025,7 +1025,7 @@ export const defaultItems = [
     "id": 50,
     "name": "Přidělený account manager",
     "categoryId": 12,
-    "prices": [
+    "packages": [
       {
         "price": 0,
         "selected": true,
@@ -1050,7 +1050,7 @@ export const defaultItems = [
     "id": 51,
     "name": "Písemná hotline",
     "categoryId": 12,
-    "prices": [
+    "packages": [
       {
         "selected": true,
         "price": 0,
@@ -1075,7 +1075,7 @@ export const defaultItems = [
     "id": 52,
     "name": "Telefonní hotline",
     "categoryId": 12,
-    "prices": [
+    "packages": [
       {
         "packageId": 1,
         "price": 500,
@@ -1100,7 +1100,7 @@ export const defaultItems = [
     "id": 53,
     "name": "Přednostní odbavení na hotline",
     "categoryId": 12,
-    "prices": [
+    "packages": [
       {
         "price": 0,
         "packageId": 1,
@@ -1125,7 +1125,7 @@ export const defaultItems = [
     "id": 54,
     "name": "Uživatelské videokurzy",
     "categoryId": 12,
-    "prices": [
+    "packages": [
       {
         "packageId": 1,
         "selected": true,
@@ -1150,7 +1150,7 @@ export const defaultItems = [
     "id": 55,
     "name": "Videokurzy pro pokročilé uživatele",
     "categoryId": 12,
-    "prices": [
+    "packages": [
       {
         "selected": true,
         "price": 0,
@@ -1175,7 +1175,7 @@ export const defaultItems = [
     "id": 56,
     "name": "Strategická konzultace k využití Abry ke zlepšení byznysu",
     "categoryId": 12,
-    "prices": [
+    "packages": [
       {
         "packageId": 1,
         "price": 0,
@@ -1201,7 +1201,7 @@ export const defaultItems = [
     "id": 57,
     "name": "Přednostní péče",
     "categoryId": 13,
-    "prices": [
+    "packages": [
       {
         "packageId": 1,
         "selected": true,
@@ -1227,7 +1227,7 @@ export const defaultItems = [
     "id": 58,
     "name": "Péče all-inclusive",
     "categoryId": 13,
-    "prices": [
+    "packages": [
       {
         "packageId": 1,
         "price": 0,
@@ -1253,7 +1253,7 @@ export const defaultItems = [
     "id": 59,
     "name": "ABRA online",
     "categoryId": 14,
-    "prices": [
+    "packages": [
       {
         "selected": true,
         "price": 1290,
@@ -1279,7 +1279,7 @@ export const defaultItems = [
     "id": 60,
     "name": "Aktualizace vč. podporovaných add-onů s výjimkou BI a WMS",
     "categoryId": 14,
-    "prices": [
+    "packages": [
       {
         "price": 0,
         "selected": true,
@@ -1304,7 +1304,7 @@ export const defaultItems = [
     "id": 34,
     "name": "Automatizační server – jedno vlákno",
     "categoryId": 14,
-    "prices": [
+    "packages": [
       {
         "price": 0,
         "selected": true,
@@ -1329,7 +1329,7 @@ export const defaultItems = [
     "id": 61,
     "name": "Provoz rozhranní pro ABRA Apps",
     "categoryId": 14,
-    "prices": [
+    "packages": [
       {
         "packageId": 1,
         "price": 0,
@@ -1354,7 +1354,7 @@ export const defaultItems = [
     "id": 62,
     "name": "Provoz ABRA On-line schvalování",
     "categoryId": 14,
-    "prices": [
+    "packages": [
       {
         "packageId": 1,
         "price": 0,
@@ -1379,7 +1379,7 @@ export const defaultItems = [
     "id": 35,
     "name": "API každých 16 vláken",
     "categoryId": 14,
-    "prices": [
+    "packages": [
       {
         "packageId": 1,
         "price": 1790,
@@ -1404,7 +1404,7 @@ export const defaultItems = [
     "id": 36,
     "name": "Webové služby",
     "categoryId": 14,
-    "prices": [
+    "packages": [
       {
         "packageId": 1,
         "price": 1790,
@@ -1429,7 +1429,7 @@ export const defaultItems = [
     "id": 63,
     "name": "Virtuální server Basic",
     "categoryId": 14,
-    "prices": [
+    "packages": [
       {
         "price": 1280,
         "selected": true,
@@ -1454,7 +1454,7 @@ export const defaultItems = [
     "id": 64,
     "name": "Virtuální server Power",
     "categoryId": 14,
-    "prices": [
+    "packages": [
       {
         "price": 1890,
         "packageId": 1,
@@ -1479,7 +1479,7 @@ export const defaultItems = [
     "id": 65,
     "name": "Provoz ABRA BI",
     "categoryId": 14,
-    "prices": [
+    "packages": [
       {
         "selected": false,
         "packageId": 1,
@@ -1504,7 +1504,7 @@ export const defaultItems = [
     "id": 66,
     "name": "Automatizační server – paralelní zpracování úloh",
     "categoryId": 14,
-    "prices": [
+    "packages": [
       {
         "packageId": 1,
         "selected": true,
@@ -1529,7 +1529,7 @@ export const defaultItems = [
     "id": 67,
     "name": "Využívaná data nad 10 GB",
     "categoryId": 14,
-    "prices": [
+    "packages": [
       {
         "price": 10,
         "selected": true,
@@ -1555,7 +1555,7 @@ export const defaultItems = [
     "id": 68,
     "name": "MS Office",
     "categoryId": 14,
-    "prices": [
+    "packages": [
       {
         "selected": true,
         "packageId": 1,
@@ -1580,7 +1580,7 @@ export const defaultItems = [
     "id": 69,
     "name": "Provoz ABRA E-shop",
     "categoryId": 14,
-    "prices": [
+    "packages": [
       {
         "price": 1790,
         "selected": true,
@@ -1605,7 +1605,7 @@ export const defaultItems = [
     "id": 37,
     "name": "Provoz ABN pro zákazníky s databází Firebird",
     "categoryId": 14,
-    "prices": [
+    "packages": [
       {
         "price": 500,
         "selected": true,
@@ -1630,7 +1630,7 @@ export const defaultItems = [
     "id": 38,
     "name": "Provoz ABN pro zákazníky s databází MS SQL",
     "categoryId": 14,
-    "prices": [
+    "packages": [
       {
         "packageId": 1,
         "price": 1000,
@@ -1655,7 +1655,7 @@ export const defaultItems = [
     "id": 70,
     "name": "2FA – dvoufaktorová autentizace za uživatele",
     "categoryId": 14,
-    "prices": [
+    "packages": [
       {
         "selected": true,
         "packageId": 1,
@@ -1680,7 +1680,7 @@ export const defaultItems = [
     "id": 80,
     "name": "Pohotovost 13x7x4",
     "categoryId": 14,
-    "prices": [
+    "packages": [
       {
         "selected": true,
         "price": 8000,
@@ -1705,7 +1705,7 @@ export const defaultItems = [
     "id": 71,
     "name": "Základní hodinová sazba",
     "categoryId": 15,
-    "prices": [
+    "packages": [
       {
         "packageId": 1,
         "price": 0,
@@ -1730,7 +1730,7 @@ export const defaultItems = [
     "id": 95,
     "name": "Doprava",
     "categoryId": 15,
-    "prices": [
+    "packages": [
       {
         "price": 0,
         "packageId": 1,
@@ -1755,7 +1755,7 @@ export const defaultItems = [
     "id": 96,
     "name": "Pohotovost k servisnímu zásahu (on-line) v pracovní době",
     "categoryId": 15,
-    "prices": [
+    "packages": [
       {
         "price": 0,
         "selected": true,
@@ -1780,7 +1780,7 @@ export const defaultItems = [
     "id": 97,
     "name": "Pohotovost k servisnímu zásahu (on-line) mimo pracovní dobu",
     "categoryId": 15,
-    "prices": [
+    "packages": [
       {
         "selected": true,
         "packageId": 1,
@@ -1805,7 +1805,7 @@ export const defaultItems = [
     "id": 98,
     "name": "Pravidelný rozvoj – měsíční návštěva",
     "categoryId": 15,
-    "prices": [
+    "packages": [
       {
         "price": 0,
         "packageId": 1,
@@ -1831,7 +1831,7 @@ export const defaultItems = [
     "id": 99,
     "name": "Pravidelný rozvoj – čtvrtletní návštěva",
     "categoryId": 15,
-    "prices": [
+    "packages": [
       {
         "packageId": 1,
         "selected": true,
@@ -1857,7 +1857,7 @@ export const defaultItems = [
     "id": 100,
     "name": "Předplacené dny HW specialisty",
     "categoryId": 15,
-    "prices": [
+    "packages": [
       {
         "selected": true,
         "price": 0,
@@ -1882,7 +1882,7 @@ export const defaultItems = [
     "id": 105,
     "name": "Příplatek za práci mimo pracovní dobu",
     "categoryId": 15,
-    "prices": [
+    "packages": [
       {
         "price": 0,
         "packageId": 1,
@@ -1907,7 +1907,7 @@ export const defaultItems = [
     "id": 91,
     "name": "Příplatek za práci v noci a mimo pracovní dny",
     "categoryId": 15,
-    "prices": [
+    "packages": [
       {
         "price": 0,
         "selected": true,
@@ -1932,7 +1932,7 @@ export const defaultItems = [
     "id": 104,
     "name": "Provoz ABN a BNS v ABRA cloudu bez služby ABRA online)",
     "categoryId": 16,
-    "prices": [
+    "packages": [
       {
         "selected": true,
         "price": 0,
@@ -1957,7 +1957,7 @@ export const defaultItems = [
     "id": 103,
     "name": "Zákazníkem vytvořená aplikace v ABRA Apps",
     "categoryId": 16,
-    "prices": [
+    "packages": [
       {
         "packageId": 1,
         "price": 0,
@@ -1983,7 +1983,7 @@ export const defaultItems = [
     "id": 102,
     "name": "ABRA Webhosting",
     "categoryId": 16,
-    "prices": [
+    "packages": [
       {
         "selected": true,
         "packageId": 1,
@@ -2008,7 +2008,7 @@ export const defaultItems = [
     "id": 101,
     "name": "Správa domény a Správa domény 3. řádu)",
     "categoryId": 16,
-    "prices": [
+    "packages": [
       {
         "selected": true,
         "price": 0,
@@ -2033,7 +2033,7 @@ export const defaultItems = [
     "id": 92,
     "name": "Zpracování mezd (mdové účetnictví)",
     "categoryId": 17,
-    "prices": [
+    "packages": [
       {
         "packageId": 1,
         "selected": true,
@@ -2058,7 +2058,7 @@ export const defaultItems = [
     "id": 93,
     "name": "Účetní služby",
     "categoryId": 17,
-    "prices": [
+    "packages": [
       {
         "selected": true,
         "packageId": 1,
@@ -2083,7 +2083,7 @@ export const defaultItems = [
     "id": 94,
     "name": "Daňové poradenství",
     "categoryId": 17,
-    "prices": [
+    "packages": [
       {
         "price": 0,
         "packageId": 1,
@@ -2108,7 +2108,7 @@ export const defaultItems = [
     "id": 95,
     "name": "Ekonomické poradenství",
     "categoryId": 17,
-    "prices": [
+    "packages": [
       {
         "price": 0,
         "packageId": 1,

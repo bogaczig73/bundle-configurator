@@ -18,7 +18,11 @@ module.exports = {
         },
         magenta: {
           DEFAULT: '#F04A6A',
-          light: '#FCDEE4',
+          tone: {
+            100: '#F79CAE',
+            200: '#FABDC9',
+            300: '#F48096',
+          },
           hover: '#F14F6F',
         },
         orange: {
