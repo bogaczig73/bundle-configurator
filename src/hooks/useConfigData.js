@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { db } from '../firebase';
 import { doc, getDoc } from 'firebase/firestore';
+import { defaultItems } from '../data/items';
 
 export function useConfigData(bundleId = null) {
   const [loading, setLoading] = useState(false);
@@ -65,7 +66,8 @@ export function useConfigData(bundleId = null) {
 
         const packagesData = packagesSnap.exists() ? packagesSnap.data().packages || [] : [];
         const categoriesData = categoriesSnap.exists() ? categoriesSnap.data().categories || [] : [];
-        const itemsData = itemsSnap.exists() ? itemsSnap.data().items || [] : [];
+        //const itemsData = itemsSnap.exists() ? itemsSnap.data().items || [] : [];
+        const itemsData = defaultItems;
 
         setCategories(categoriesData);
         setItems(itemsData);
