@@ -132,7 +132,18 @@ function BundleSettingsPage() {
     }, []);
   };
 
-  // 4. Simplify the save function
+  // Add new handler for userLimit changes
+  const handleUserLimitChange = useCallback((bundleId, limit) => {
+    setBundlesState(prevBundles => 
+      prevBundles.map(bundle => 
+        bundle.id === bundleId 
+          ? { ...bundle, userLimit: Number(limit) }
+          : bundle
+      )
+    );
+  }, []);
+
+  // Modify the save function to include userLimit
   const handleSave = async () => {
     setLoading(true);
     setError('');
@@ -150,8 +161,16 @@ function BundleSettingsPage() {
         ...(note && { note })
       }));
 
-      console.log('Saving items:', JSON.stringify(updatedItems, null, 2));
+      // Save items
       await updateDoc(doc(db, 'default', 'items'), { items: updatedItems });
+
+      // Save packages with userLimit
+      const updatedPackages = bundlesState.map(({ id, name, userLimit }) => ({
+        id,
+        name,
+        userLimit: userLimit || 0
+      }));
+      await updateDoc(doc(db, 'default', 'packages'), { packages: updatedPackages });
 
       userId && navigate(`/users/${userId}/bundles`);
     } catch (err) {
@@ -257,6 +276,7 @@ function BundleSettingsPage() {
                 onCheckboxChange={handleCheckboxChange}
                 onIndividualChange={handleIndividualChange}
                 onItemDiscountChange={handleItemDiscountChange}
+                onUserLimitChange={handleUserLimitChange}
                 itemPrices={itemPrices}
               />
             </div>
@@ -276,18 +296,18 @@ const MemoizedBundleTable = memo(BundleTable, (prevProps, nextProps) => {
   );
 });
 
-function BundleTable({ bundles, items, onItemToggle, onItemPriceChange, onItemDiscountChange, onCheckboxChange, onIndividualChange, itemPrices }) {
+function BundleTable({ bundles, items, onItemToggle, onItemPriceChange, onItemDiscountChange, onCheckboxChange, onIndividualChange, onUserLimitChange, itemPrices }) {
   const flattenedItems = useMemo(() => flattenItems(items), [items]);
   // Add border color array
-  const borderColors = [
-    'border-abra-yellow',
-    'border-abra-orange',
-    'border-abra-magenta',
+  const abraColors = [
+    'abraYellow',
+    'abraOrange',
+    'abraMagenta',
   ];
 
   const getBundleBorderClasses = (index) => `
     border-l-2 border-r-2
-    ${borderColors[index % borderColors.length]}
+    border-${abraColors[index % abraColors.length]}
     relative
     after:absolute after:content-[''] after:left-2 after:right-2 after:top-0 
     after:border-t after:border-dotted after:border-gray-200
@@ -295,7 +315,7 @@ function BundleTable({ bundles, items, onItemToggle, onItemPriceChange, onItemDi
 
   const getBundleHeaderBorderClasses = (index) => `
     border-l-2 border-r-2 border-t-2
-    ${borderColors[index % borderColors.length]}
+    border-${abraColors[index % abraColors.length]}
   `;
 
   const tableStyles = { 
@@ -380,6 +400,32 @@ function BundleTable({ bundles, items, onItemToggle, onItemPriceChange, onItemDi
             </tr>
           </thead>
           <tbody className="divide-y-0">
+            {/* Add user limit row */}
+            <tr className="">
+              <td className={`${tableStyles.columnWidths.details} ${tableStyles.bodyCell}`}>
+                <span className="font-small text-gray-700 text-sm">
+                  Limit uživatelů v balíčku
+                </span>
+              </td>
+              <td className={tableStyles.bodyCell} />
+              <td className={tableStyles.bodyCell} />
+              {bundles.map((bundle, index) => (
+                <React.Fragment key={`${bundle.id}-limit`}>
+                  <td className="w-[20px]" />
+                  <td className={`${tableStyles.columnWidths.bundle} ${tableStyles.packageBodyCell} ${getBundleBorderClasses(index)}`}>
+                    <div className={tableStyles.centerWrapper}>
+                      <input
+                        type="number"
+                        min={0}
+                        value={bundle.userLimit || 0}
+                        onChange={(e) => onUserLimitChange(bundle.id, e.target.value)}
+                        className={tableStyles.numberInput}
+                      />
+                    </div>
+                  </td>
+                </React.Fragment>
+              ))}
+            </tr>
             {flattenedItems.map((item) => (
               <tr 
                 key={item.uniqueId}
