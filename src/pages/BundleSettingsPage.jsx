@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useMemo, useCallback, memo } from 'react';
-import { useBundleData } from '../hooks/useBundleData';
 import ActionButtons from '../components/ActionButtons';
 import { useParams, useNavigate } from 'react-router-dom';
 import Sidebar from '../components/Sidebar';
@@ -13,8 +12,9 @@ import { defaultPackages } from '../data/packages';
 function BundleSettingsPage() {
   const { userId } = useParams();
   const navigate = useNavigate();
-  const { bundlesState, setBundlesState } = useBundleData();
   const { loading, setLoading, error, setError, processedItems, packages, setProcessedItems, items } = useConfigData();
+
+  const [bundlesState, setBundlesState] = useState([]);
 
   const [itemPrices, setItemPrices] = useState({});
 
@@ -27,12 +27,12 @@ function BundleSettingsPage() {
           ...acc,
           [item.id]: {
             selected: false,
-            price: item.prices?.find(p => p.packageId === pkg.id)?.price || 0
+            price: item.packages?.find(p => p.packageId === pkg.id)?.price || 0
           }
         }), {})
       })));
     }
-  }, [packages, items, setBundlesState]);
+  }, [packages, items]);
 
 
   // 1. Extract the recursive updateItem helper function since it's used in both handlers
@@ -52,58 +52,73 @@ function BundleSettingsPage() {
   };
 
   // 2. Simplify the handlers using the shared function
+  const updateItemPrice = useCallback((bundleId, itemId, updates) => {
+    setProcessedItems(prevItems => 
+      updateItemInTree(prevItems, itemId, (item) => {
+        const newPackages = [...(item.packages || [])];
+        const packageIndex = newPackages.findIndex(p => p.packageId === bundleId);
+        
+        if (packageIndex >= 0) {
+          newPackages[packageIndex] = {
+            ...newPackages[packageIndex],
+            ...updates
+          };
+        } else {
+          newPackages.push({
+            packageId: bundleId,
+            price: 0,
+            selected: false,
+            ...updates
+          });
+        }
+        
+        return { ...item, packages: newPackages };
+      })
+    );
+  }, []);
+
+  const handleItemDiscountChange = useCallback((bundleId, itemId, discountedAmount) => {
+    updateItemPrice(bundleId, itemId, {
+      discountedAmount: Number(discountedAmount)
+    });
+  }, [updateItemPrice]);
+  
   const handleItemToggle = useCallback((bundleId, itemId) => {
     setProcessedItems(prevItems => 
       updateItemInTree(prevItems, itemId, (item) => {
-        const newPrices = [...(item.prices || [])];
-        const priceIndex = newPrices.findIndex(p => p.packageId === bundleId);
+        const selected = item.packages?.find(p => p.packageId === bundleId)?.selected;
+        const newPackages = [...(item.packages || [])];
+        const packageIndex = newPackages.findIndex(p => p.packageId === bundleId);
         
-        if (priceIndex >= 0) {
-          newPrices[priceIndex] = {
-            ...newPrices[priceIndex],
-            selected: !newPrices[priceIndex].selected
+        if (packageIndex >= 0) {
+          newPackages[packageIndex] = {
+            ...newPackages[packageIndex],
+            selected: !selected
           };
         } else {
-          newPrices.push({
+          newPackages.push({
             packageId: bundleId,
             price: 0,
             selected: true
           });
         }
         
-        return { ...item, prices: newPrices };
+        return { ...item, packages: newPackages };
       })
     );
   }, []);
-
+  
   const handleItemPriceChange = useCallback((bundleId, itemId, price) => {
     setItemPrices(prev => ({
       ...prev,
       [`${itemId}-${bundleId}`]: price
     }));
+    
+    updateItemPrice(bundleId, itemId, {
+      price: Number(price)
+    });
+  }, [updateItemPrice]);
 
-    setProcessedItems(prevItems => 
-      updateItemInTree(prevItems, itemId, (item) => {
-        const newPrices = [...(item.prices || [])];
-        const priceIndex = newPrices.findIndex(p => p.packageId === bundleId);
-        
-        if (priceIndex >= 0) {
-          newPrices[priceIndex] = {
-            ...newPrices[priceIndex],
-            price: Number(price)
-          };
-        } else {
-          newPrices.push({
-            packageId: bundleId,
-            price: Number(price),
-            selected: false
-          });
-        }
-        
-        return { ...item, prices: newPrices };
-      })
-    );
-  }, []);
 
   // 3. Extract the getAllItems helper function since it's used in save
   const getAllItems = (items) => {
@@ -117,26 +132,45 @@ function BundleSettingsPage() {
     }, []);
   };
 
-  // 4. Simplify the save function
+  // Add new handler for userLimit changes
+  const handleUserLimitChange = useCallback((bundleId, limit) => {
+    setBundlesState(prevBundles => 
+      prevBundles.map(bundle => 
+        bundle.id === bundleId 
+          ? { ...bundle, userLimit: Number(limit) }
+          : bundle
+      )
+    );
+  }, []);
+
+  // Modify the save function to include userLimit
   const handleSave = async () => {
     setLoading(true);
     setError('');
     
     try {
       const currentItems = getAllItems(processedItems);
-      const updatedItems = currentItems.map(({ id, name, categoryId, prices, note, checkbox, individual }) => ({
+      const updatedItems = currentItems.map(({ id, name, categoryId, packages, note, checkbox, individual }) => ({
         id,
         name,
         categoryId,
-        prices: prices || [],
+        packages: packages || [],
         amount: 0,
         checkbox: checkbox ?? false,
         individual: individual ?? false,
         ...(note && { note })
       }));
 
-      console.log('Saving items:', JSON.stringify(updatedItems, null, 2));
+      // Save items
       await updateDoc(doc(db, 'default', 'items'), { items: updatedItems });
+
+      // Save packages with userLimit
+      const updatedPackages = bundlesState.map(({ id, name, userLimit }) => ({
+        id,
+        name,
+        userLimit: userLimit || 0
+      }));
+      await updateDoc(doc(db, 'default', 'packages'), { packages: updatedPackages });
 
       userId && navigate(`/users/${userId}/bundles`);
     } catch (err) {
@@ -235,6 +269,8 @@ function BundleSettingsPage() {
                 onItemPriceChange={handleItemPriceChange}
                 onCheckboxChange={handleCheckboxChange}
                 onIndividualChange={handleIndividualChange}
+                onItemDiscountChange={handleItemDiscountChange}
+                onUserLimitChange={handleUserLimitChange}
                 itemPrices={itemPrices}
               />
             </div>
@@ -254,163 +290,217 @@ const MemoizedBundleTable = memo(BundleTable, (prevProps, nextProps) => {
   );
 });
 
-function BundleTable({ bundles, items, onItemToggle, onItemPriceChange, onCheckboxChange, onIndividualChange, itemPrices }) {
+function BundleTable({ bundles, items, onItemToggle, onItemPriceChange, onItemDiscountChange, onCheckboxChange, onIndividualChange, onUserLimitChange, itemPrices }) {
   const flattenedItems = useMemo(() => flattenItems(items), [items]);
-
   // Add border color array
-  const borderColors = [
-    'border-abra-yellow',
-    'border-abra-orange',
-    'border-abra-primary'
+  const abraColors = [
+    'abraYellow',
+    'abraOrange',
+    'abraMagenta',
   ];
 
-  const tableStyles = {
-    headerCell: "px-2 md:px-4 py-2 text-xs font-medium text-gray-500 uppercase tracking-wider",
-    packageHeaderCell: "px-2 md:px-4 py-2 text-xs font-medium text-gray-500 uppercase tracking-wider bg-gray-100",
+  const getBundleBorderClasses = (index) => `
+    border-l-2 border-r-2
+    border-${abraColors[index % abraColors.length]}
+    relative
+    after:absolute after:content-[''] after:left-2 after:right-2 after:top-0 
+    after:border-t after:border-dotted after:border-gray-200
+  `;
+
+  const getBundleHeaderBorderClasses = (index) => `
+    border-l-2 border-r-2 border-t-2
+    border-${abraColors[index % abraColors.length]}
+  `;
+
+  const tableStyles = { 
+    headerCell: "px-2 md:px-4 py-2 text-xs font-medium text-black uppercase tracking-wider",
+    packageHeaderCell: "px-2 py-2 text-xs font-medium text-black uppercase tracking-wider",
     bodyCell: "px-2 md:px-4 py-2",
-    packageBodyCell: "px-2 md:px-4 py-2",
+    packageBodyCell: "px-2 py-2",
     checkbox: "checkbox h-4 w-4 rounded border-gray-300 focus:ring-offset-0",
-    numberInput: "input block w-14 md:w-16 rounded-sm text-xs py-1 text-center",
+    numberInput: "input w-20 md:w-24 rounded-sm text-xs text-center appearance-auto block rounded-md border-0 py-1",
     centerWrapper: "flex justify-center items-center h-full",
     columnWidths: {
       details: "w-48 min-w-[120px]",
       checkbox: "w-16",
       individual: "w-16",
-      bundle: "w-32 px-[5px]",
+      bundle: "w-48",
     }
   };
 
   const getItemPrice = useCallback((item, bundleId) => {
     const localPrice = itemPrices[`${item.id}-${bundleId}`];
     if (localPrice !== undefined) return localPrice;
-    return item.prices?.find(p => p.packageId === bundleId)?.price ?? 0;
+    return item.packages?.find(p => p.packageId === bundleId)?.price ?? 0;
   }, [itemPrices]);
 
   const getItemSelected = useCallback((item, bundleId) => {
-    return item.prices?.find(p => p.packageId === bundleId)?.selected ?? false;
+    return item.packages?.find(p => p.packageId === bundleId)?.selected ?? false;
   }, []);
+
+  const getItemDiscountedAmount = useCallback((item, bundleId) => {
+    return item.packages?.find(p => p.packageId === bundleId)?.discountedAmount ?? 0;
+  }, []);
+
+  // Create a shared colgroup component
+  const TableColgroup = () => (
+    <colgroup>
+      <col className={tableStyles.columnWidths.details} />
+      <col className={tableStyles.columnWidths.checkbox} />
+      <col className={tableStyles.columnWidths.individual} />
+      {bundles.map((bundle, index) => (
+        <React.Fragment key={`${bundle.id}-group`}>
+          <col className="w-[20px]" />
+          <col className={`${tableStyles.columnWidths.bundle} ${getBundleBorderClasses(index)}`} />
+        </React.Fragment>
+      ))}
+    </colgroup>
+  );
 
   return (
     <div className="border border-gray-200 rounded-lg shadow-sm">
       <div className="min-w-[800px]">
-        {/* Fixed Header */}
-        <div className="bg-gray-50 sticky top-0 z-10 border-b border-gray-200">
-          <table className="w-full table-fixed border-separate border-spacing-x-[10px]">
-            <colgroup>
-              <col className={tableStyles.columnWidths.details} />
-              <col className={tableStyles.columnWidths.checkbox} />
-              <col className={tableStyles.columnWidths.individual} />
+        <table className="w-full table-fixed">
+          <TableColgroup />
+          <thead className="bg-gray-50 sticky top-0 z-10 border-b border-gray-200">
+            <tr>
+              <th className={`${tableStyles.columnWidths.details} text-left ${tableStyles.headerCell}`}>
+                Item Details
+              </th>
+              <th className={tableStyles.headerCell}>
+                <div className={tableStyles.centerWrapper}>
+                  Checkbox
+                </div>
+              </th>
+              <th className={tableStyles.headerCell}>
+                <div className={tableStyles.centerWrapper}>
+                  Individual
+                </div>
+              </th>
               {bundles.map((bundle, index) => (
-                <col key={bundle.id} className={`${tableStyles.columnWidths.bundle} border-x-2 ${borderColors[index % borderColors.length]}`} />
-              ))}
-            </colgroup>
-            <thead>
-              <tr>
-                <th className={`${tableStyles.columnWidths.details} text-left ${tableStyles.headerCell}`}>
-                  Item Details
-                </th>
-                <th className={tableStyles.headerCell}>
-                  <div className={tableStyles.centerWrapper}>
-                    Checkbox
-                  </div>
-                </th>
-                <th className={tableStyles.headerCell}>
-                  <div className={tableStyles.centerWrapper}>
-                    Individual
-                  </div>
-                </th>
-                {bundles.map((bundle, index) => (
-                  <th 
-                    key={bundle.id} 
-                    className={`${tableStyles.packageHeaderCell} border-x-2 border-t-2 ${borderColors[index % borderColors.length]}`}
-                  >
-                    <div className={tableStyles.centerWrapper}>
-                      <span className="font-bold">{bundle.name}</span>
+                <React.Fragment key={`${bundle.id}-header`}>
+                  <th className="w-[20px]" />
+                  <th className={`${tableStyles.packageHeaderCell} ${getBundleHeaderBorderClasses(index)}`}>
+                    <div className="flex flex-col items-center">
+                      <div>{bundle.name}</div>
+                      <div className="flex gap-4 text-[10px] mt-1">
+                        <span>Price</span>
+                        <span>Discount</span>
+                      </div>
                     </div>
                   </th>
-                ))}
-              </tr>
-            </thead>
-          </table>
-        </div>
-
-        {/* Scrollable Body */}
-        <div className="overflow-y-auto max-h-[calc(100vh-200px)] bg-white">
-          <table className="w-full border-separate border-spacing-x-[10px]">
-            <tbody className="divide-y divide-gray-200">
-              {flattenedItems.map((item) => (
-                <tr 
-                  key={item.uniqueId}
-                  className={`
-                    ${item.type === 'category' ? 'bg-gray-50' : 'hover:bg-gray-50/70 transition-colors duration-150'}
-                    ${item.depth > 0 ? `pl-${item.depth * 4}` : ''}
-                  `}
-                >
-                  <td className={`${tableStyles.columnWidths.details} ${tableStyles.bodyCell}`}>
-                    <div className="flex flex-col">
-                      <span className={`${item.type === 'category' ? 'font-medium text-gray-900' : 'text-gray-700'} text-sm break-words`}>
-                        {item.name}
+                </React.Fragment>
+              ))}
+            </tr>
+          </thead>
+          <tbody className="divide-y-0">
+            {/* Add user limit row */}
+            <tr className="">
+              <td className={`${tableStyles.columnWidths.details} ${tableStyles.bodyCell}`}>
+                <span className="font-small text-gray-700 text-sm">
+                  Limit uživatelů v balíčku
+                </span>
+              </td>
+              <td className={tableStyles.bodyCell} />
+              <td className={tableStyles.bodyCell} />
+              {bundles.map((bundle, index) => (
+                <React.Fragment key={`${bundle.id}-limit`}>
+                  <td className="w-[20px]" />
+                  <td className={`${tableStyles.columnWidths.bundle} ${tableStyles.packageBodyCell} ${getBundleBorderClasses(index)}`}>
+                    <div className={tableStyles.centerWrapper}>
+                      <input
+                        type="number"
+                        min={0}
+                        value={bundle.userLimit || 0}
+                        onChange={(e) => onUserLimitChange(bundle.id, e.target.value)}
+                        className={tableStyles.numberInput}
+                      />
+                    </div>
+                  </td>
+                </React.Fragment>
+              ))}
+            </tr>
+            {flattenedItems.map((item) => (
+              <tr 
+                key={item.uniqueId}
+                className={`
+                  ${item.type === 'category' ? 'bg-gray-50' : 'hover:bg-gray-50/70 transition-colors duration-150'}
+                  ${item.depth > 0 ? `pl-${item.depth * 4}` : ''}
+                `}
+              >
+                <td className={`${tableStyles.columnWidths.details} ${tableStyles.bodyCell}`}>
+                  <div className="flex flex-col">
+                    <span className={`${item.type === 'category' ? 'font-medium text-gray-900' : 'text-gray-700'} text-sm break-words`}>
+                      {item.name}
+                    </span>
+                    {item.note && (
+                      <span className="text-xs text-gray-500 break-words">
+                        {item.note}
                       </span>
-                      {item.note && (
-                        <span className="text-xs text-gray-500 break-words">
-                          {item.note}
-                        </span>
-                      )}
-                    </div>
-                  </td>
-                  <td className={`${tableStyles.columnWidths.checkbox} ${tableStyles.bodyCell}`}>
-                    <div className={tableStyles.centerWrapper}>
+                    )}
+                  </div>
+                </td>
+                <td className={`${tableStyles.columnWidths.checkbox} ${tableStyles.bodyCell}`}>
+                  <div className={tableStyles.centerWrapper}>
+                    {item.type === 'item' && (
+                      <input
+                        type="checkbox"
+                        checked={item.checkbox ?? false}
+                        onChange={() => onCheckboxChange(item.id)}
+                        className={tableStyles.checkbox}
+                      />
+                    )}
+                  </div>
+                </td>
+                <td className={`${tableStyles.columnWidths.individual} ${tableStyles.bodyCell}`}>
+                  <div className={tableStyles.centerWrapper}>
+                    {item.type === 'item' && (
+                      <input
+                        type="checkbox"
+                        checked={item.individual ?? false}
+                        onChange={() => onIndividualChange(item.id)}
+                        className={tableStyles.checkbox}
+                      />
+                    )}
+                  </div>
+                </td>
+                {bundles.map((bundle, index) => (
+                  <React.Fragment key={`${item.id}-${bundle.id}-group`}>
+                    <td className="w-[20px]" />
+                    <td className={`${tableStyles.columnWidths.bundle} ${tableStyles.packageBodyCell} ${getBundleBorderClasses(index)}`}>
                       {item.type === 'item' && (
-                        <input
-                          type="checkbox"
-                          checked={item.checkbox ?? false}
-                          onChange={() => onCheckboxChange(item.id)}
-                          className={tableStyles.checkbox}
-                        />
-                      )}
-                    </div>
-                  </td>
-                  <td className={`${tableStyles.columnWidths.individual} ${tableStyles.bodyCell}`}>
-                    <div className={tableStyles.centerWrapper}>
-                      {item.type === 'item' && (
-                        <input
-                          type="checkbox"
-                          checked={item.individual ?? false}
-                          onChange={() => onIndividualChange(item.id)}
-                          className={tableStyles.checkbox}
-                        />
-                      )}
-                    </div>
-                  </td>
-                  {bundles.map((bundle, index) => (
-                    <td 
-                      key={`${item.id}-${bundle.id}`} 
-                      className={`${tableStyles.columnWidths.bundle} ${tableStyles.packageBodyCell} border-x-2 ${borderColors[index % borderColors.length]}`}
-                    >
-                      {item.type === 'item' && (
-                        <div className="flex items-center justify-center gap-2">
+                        <div className={tableStyles.centerWrapper + " gap-2"}>
                           <input
                             type="checkbox"
                             checked={getItemSelected(item, bundle.id)}
                             onChange={() => onItemToggle(bundle.id, item.id)}
                             className={tableStyles.checkbox}
                           />
-                          <input
-                            type="number"
-                            min={0}
-                            onChange={(e) => onItemPriceChange(bundle.id, item.id, e.target.value)}
-                            value={getItemPrice(item, bundle.id)}
-                            className={tableStyles.numberInput}
-                          />
+                          <div className="flex gap-2">
+                            <input
+                              type="number"
+                              min={0}
+                              onChange={(e) => onItemPriceChange(bundle.id, item.id, e.target.value)}
+                              value={getItemPrice(item, bundle.id)}
+                              className={tableStyles.numberInput}
+                            />
+                            <input
+                              type="number"
+                              min={0}
+                              onChange={(e) => onItemDiscountChange(bundle.id, item.id, e.target.value)}
+                              value={getItemDiscountedAmount(item, bundle.id)}
+                              className={tableStyles.numberInput}
+                            />
+                          </div>
                         </div>
                       )}
                     </td>
-                  ))}
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+                  </React.Fragment>
+                ))}
+              </tr>
+            ))}
+          </tbody>
+        </table>
       </div>
     </div>
   );
