@@ -1,5 +1,6 @@
 import { Link, useLocation } from 'react-router-dom';
 import { useState } from 'react';
+import logo from '../images/ABRA_White_Primary.png';
 
 function Sidebar({ children }) {
   const location = useLocation();
@@ -21,6 +22,14 @@ function Sidebar({ children }) {
           isOpen ? 'w-64' : 'w-16'
         }`}
       >
+        <div className={`flex items-center ${!isOpen && 'justify-center'}`}>
+          <img 
+            src={logo} 
+            alt="Logo" 
+            className={`${isOpen ? 'w-32' : 'w-10'} transition-all duration-300`}
+          />
+        </div>
+
         <button
           onClick={() => setIsOpen(!isOpen)}
           className="absolute top-4 right-4 p-2 rounded-lg bg-gray-700 text-white hover:bg-gray-600"

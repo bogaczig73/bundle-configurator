@@ -1,16 +1,23 @@
 /** @type {import('tailwindcss').Config} */
+
 module.exports = {
   content: [
     "./src/**/*.{js,jsx,ts,tsx}",
   ],
+  safelist: [
+    'bg-abraYellow',
+    'bg-abraOrange',
+    'bg-abraMagenta',
+    'border-abraYellow',
+    'border-abraOrange',
+    'border-abraMagenta',
+    'text-abraYellow',
+    'text-abraOrange',
+    'text-abraMagenta',
+  ],
   theme: {
     extend: {
       colors: {
-        primary: {
-          DEFAULT: '#F04A6A',
-          light: '#FCDEE4',
-          hover: '#F14F6F',
-        },
         accent: {
           DEFAULT: '#F04A6A',
           checkbox: '#F48096',
@@ -21,20 +28,27 @@ module.exports = {
           disabled: '#B2B2B2',
           input: '#F2F2F2',
         },
-        magenta: {
-          DEFAULT: '#F04A6A',
-          light: '#F9B7C3',
+        abraMagenta: {
+          DEFAULT: '#e1007b',//'rgb(207, 60, 128)',
+          tone: {
+            100: '#F79CAE',
+            200: '#FABDC9',
+            300: '#F48096',
+          },
+          hover: '#F14F6F',
         },
-        orange: {
-          DEFAULT: '#e7573e',
+        abraOrange: {
+          DEFAULT: '#e96b46', //'rgb(215, 97, 78)',
           light: '#ec7600',
         },
-        yellow: {
-          DEFAULT: '#ffab26',
+        abraYellow: {
+          DEFAULT: '#f6b200',//'rgb(243, 178, 68)',
           light: '#FFDEA9',
         },
       }
     },
   },
-  plugins: [],
+  plugins: [
+    require('@tailwindcss/forms'),
+  ],
 }

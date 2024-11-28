@@ -216,7 +216,7 @@ function UserManagementPage() {
                       </>
                     ) : (
                       <Link 
-                        to={`/bundle/create/${user.id}`}
+                        to={`/configurator/create/${user.id}`}
                         className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded text-sm"
                       >
                         Create Bundle
