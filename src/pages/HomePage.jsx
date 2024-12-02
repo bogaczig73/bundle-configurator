@@ -61,7 +61,7 @@ function HomePage() {
           alt="Chytni si vyplatnici zmrde!"
           className="w-full object-contain mb-2 rounded"
         />
-        <p className="text-sm">Chytni si vyplatnici zmrde!</p>
+        <p className="text-sm">Chytni si vyplatnici!</p>
       </div>
 
     </div>

@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { db } from '../firebase';
 import { doc, getDoc } from 'firebase/firestore';
 
@@ -65,6 +65,14 @@ export function useConfigData(bundleId = null) {
         const packagesData = packagesSnap.exists() ? packagesSnap.data().packages || [] : [];
         const categoriesData = categoriesSnap.exists() ? categoriesSnap.data().categories || [] : [];
         const itemsData = itemsSnap.exists() ? itemsSnap.data().items || [] : [];
+<<<<<<< Updated upstream
+<<<<<<< Updated upstream
+=======
+
+>>>>>>> Stashed changes
+=======
+
+>>>>>>> Stashed changes
 
         setCategories(categoriesData);
         setItems(itemsData);
@@ -82,6 +90,36 @@ export function useConfigData(bundleId = null) {
     fetchData();
   }, [bundleId]);
 
+  const refetchData = useCallback(async () => {
+    setLoading(true);
+    try {
+      // Fetch items
+      const itemsSnap = await getDoc(doc(db, 'default', 'items'));
+      const itemsData = itemsSnap.data()?.items || [];
+
+      // Fetch categories
+      const categoriesSnap = await getDoc(doc(db, 'default', 'categories'));
+      const categoriesData = categoriesSnap.data()?.categories || [];
+
+      // Fetch packages
+      const packagesSnap = await getDoc(doc(db, 'default', 'packages'));
+      const packagesData = packagesSnap.data()?.packages || [];
+
+      setItems(itemsData);
+      setCategories(categoriesData);
+      setPackages(packagesData);
+      
+      // Process items with categories
+      const processed = processCategories(categoriesData, itemsData);
+      setProcessedItems(processed);
+    } catch (error) {
+      console.error('Error fetching config data:', error);
+      setError('Failed to fetch configuration data');
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
   return {
     loading,
     setLoading,
@@ -92,6 +130,7 @@ export function useConfigData(bundleId = null) {
     packages,
     processedItems,
     setProcessedItems,
-    bundleData
+    bundleData,
+    refetchData
   };
 } 
