@@ -65,15 +65,6 @@ export function useConfigData(bundleId = null) {
         const packagesData = packagesSnap.exists() ? packagesSnap.data().packages || [] : [];
         const categoriesData = categoriesSnap.exists() ? categoriesSnap.data().categories || [] : [];
         const itemsData = itemsSnap.exists() ? itemsSnap.data().items || [] : [];
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-=======
-
->>>>>>> Stashed changes
-=======
-
->>>>>>> Stashed changes
-
         setCategories(categoriesData);
         setItems(itemsData);
         setPackages(packagesData);

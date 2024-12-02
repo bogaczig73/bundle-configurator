@@ -43,9 +43,9 @@ function HomePage() {
   }, []);
 
   return (
-    <div className="p-8 text-center" onMouseMove={handleMouseNear}>
+    <div className="p-8" onMouseMove={handleMouseNear}>
       <Sidebar />
-      <h1 className="text-2xl font-bold mb-4">Bundle Configurator</h1>
+      <h1 className="text-2xl font-bold mb-4 text-center">Bundle Configurator</h1>
 
       <div
         ref={elementRef}

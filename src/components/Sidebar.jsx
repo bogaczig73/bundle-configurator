@@ -10,13 +10,7 @@ function Sidebar({ children }) {
     { name: 'Configurator', path: '/configurator' },
     { name: 'Bundle Settings', path: '/bundle' },
     { name: 'Users', path: '/users' },
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
     { name: 'View Offers', path: '/viewoffers' },
-=======
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
     { name: 'Home', path: '/' }
   ];
 

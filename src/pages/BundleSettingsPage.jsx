@@ -39,17 +39,24 @@ function BundleSettingsPage() {
   }, [packages, items]);
 
 
-  // 1. Extract the recursive updateItem helper function since it's used in both handlers
+  // 1. Fix the updateItemInTree helper function
   const updateItemInTree = (items, itemId, updateFn) => {
     return items.map(item => {
-      if (item.type === 'category' && item.children) {
-        return {
-          ...item,
-          children: updateItemInTree(item.children, itemId, updateFn)
-        };
-      }
+      // If this is the target item, update it
       if (item.id === itemId) {
         return updateFn(item);
+      }
+      
+      // If this is a category, recursively check its children
+      if (item.type === 'category' && item.children) {
+        const updatedChildren = updateItemInTree(item.children, itemId, updateFn);
+        // Only update the item if children actually changed
+        if (updatedChildren !== item.children) {
+          return {
+            ...item,
+            children: updatedChildren
+          };
+        }
       }
       return item;
     });
@@ -208,37 +215,52 @@ function BundleSettingsPage() {
     }
   }
 
-  // Simplify the handleItemSubmit to work with ItemFormModal's data structure
+  // 2. Update the handleItemSubmit function
   const handleItemSubmit = useCallback((formData) => {
+    console.log('Submitting form data:', formData);
+    
     if (editingItem) {
       // Update existing item
       setProcessedItems(prevItems => 
         updateItemInTree(prevItems, editingItem.id, (item) => ({
           ...item,
           ...formData,
-          packages: formData.packages || item.packages || [],
+          packages: formData.type === 'item' ? (formData.packages || item.packages || []) : undefined,
+          children: formData.type === 'category' ? (item.children || []) : undefined,
         }))
       );
     } else {
-      // Create new item
+      // Create new item or category
       const newItem = {
         ...formData,
-        id: `item-${Date.now()}`,
-        type: 'item',
-        packages: formData.packages || [],
+        id: `${formData.type}-${Date.now()}`,
+        type: formData.type,
+        ...(formData.type === 'category' ? {
+          children: [],
+        } : {
+          packages: formData.packages || [],
+        }),
       };
+      
+      console.log('New item to be added:', newItem);
 
       setProcessedItems(prevItems => {
         if (!formData.categoryId) {
-          // Add to root level if no category selected
+          // Add to root level
           return [...prevItems, newItem];
         }
         
         // Add to selected category
-        return updateItemInTree(prevItems, formData.categoryId, (category) => ({
-          ...category,
-          children: [...(category.children || []), newItem]
-        }));
+        return updateItemInTree(prevItems, formData.categoryId, (category) => {
+          if (category.type === 'category') {
+            console.log('Adding to category:', category.name);
+            return {
+              ...category,
+              children: [...(category.children || []), newItem]
+            };
+          }
+          return category;
+        });
       });
     }
     
@@ -604,22 +626,25 @@ function BundleTable({
 }
 
 function flattenItems(items, depth = 0, parentId = '') {
+  if (!items) return [];  // Add null check
+  
   const result = [];
   
   items.forEach((item, index) => {
     // Create a unique ID by combining parent path and current index
     const uniqueId = parentId ? `${parentId}-${index}` : `${index}`;
     
-    // Add the item itself
+    // Add the item itself with all necessary properties
     result.push({
       ...item,
-      uniqueId, // Add uniqueId to use for keys
+      uniqueId,
       depth,
-      type: item.children ? 'category' : 'item'
+      type: item.children ? 'category' : 'item',
+      children: item.children || []  // Ensure children array exists
     });
     
     // Recursively add children if they exist
-    if (item.children) {
+    if (item.children && item.children.length > 0) {
       result.push(...flattenItems(item.children, depth + 1, uniqueId));
     }
   });
