@@ -4,7 +4,7 @@ import abraLogo from '../images/ABRA_Color_Primary.jpg';
 import vyplatnice from '../images/vyplatnice.png';
 
 function HomePage() {
-  const [position, setPosition] = useState({ x: 100, y: 100 });
+  const [position, setPosition] = useState({ x: Math.random() * (window.innerWidth - 200), y: Math.random() * (window.innerHeight - 200) });
   const elementRef = useRef(null);
   const lastMoveRef = useRef(Date.now());
 
@@ -43,9 +43,9 @@ function HomePage() {
   }, []);
 
   return (
-    <div className="p-8 text-center" onMouseMove={handleMouseNear}>
+    <div className="p-8" onMouseMove={handleMouseNear}>
       <Sidebar />
-      <h1 className="text-2xl font-bold mb-4">Bundle Configurator</h1>
+      <h1 className="text-2xl font-bold mb-4 text-center">Bundle Configurator</h1>
 
       <div
         ref={elementRef}
@@ -61,7 +61,7 @@ function HomePage() {
           alt="Chytni si vyplatnici zmrde!"
           className="w-full object-contain mb-2 rounded"
         />
-        <p className="text-sm">Chytni si vyplatnici zmrde!</p>
+        <p className="text-sm">Chytni si vyplatnici!</p>
       </div>
 
     </div>
