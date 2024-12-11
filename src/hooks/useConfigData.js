@@ -65,8 +65,7 @@ export function useConfigData(bundleId = null) {
 
         const packagesData = packagesSnap.exists() ? packagesSnap.data().packages || [] : [];
         const categoriesData = categoriesSnap.exists() ? categoriesSnap.data().categories || [] : [];
-        //const itemsData = itemsSnap.exists() ? itemsSnap.data().items || [] : [];
-        const itemsData = defaultItems;
+        const itemsData = itemsSnap.exists() ? itemsSnap.data().items || [] : [];
 
         setCategories(categoriesData);
         setItems(itemsData);

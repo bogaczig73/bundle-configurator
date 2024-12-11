@@ -91,9 +91,10 @@ function BundleTable({ bundles = [], items = [], onAmountChange, amounts = {} })
         return total + (price * chargedUnits);
       }, 0);
   };
-  const getBundleBorderClasses = (index) => `
+  const getBundleBorderClasses = (index, isDisabled) => `
     border-l-2 border-r-2
     border-${abraColors[index % abraColors.length]}
+    ${isDisabled ? 'border-opacity-40' : ''}
     relative
     after:absolute after:content-[''] after:left-2 after:right-2 after:top-0 
     after:border-t after:border-dotted after:border-gray-200
@@ -155,6 +156,12 @@ function BundleTable({ bundles = [], items = [], onAmountChange, amounts = {} })
     }
   };
 
+  // Add this helper function near other bundle-related functions
+  const isBundleDisabled = (bundle, index) => {
+    const userAmount = amounts[1] || 0;
+    return userAmount > bundle.userLimit;
+  };
+
   return (
     <div className="">
       <div className={tableStyles.container}>
@@ -179,12 +186,16 @@ function BundleTable({ bundles = [], items = [], onAmountChange, amounts = {} })
                       ${tableStyles.packageHeaderCell} 
                       ${getBundleHeaderBorderClasses(index)}
                       ${isBundleActive(bundle, index) ? `bg-${abraColors[index % abraColors.length]} ${tableStyles.activeBundle}` : ''}
+                      ${isBundleDisabled(bundle, index) ? 'opacity-40 border-opacity-40 bg-gray-100' : ''}
                     `}>
                       <div className="flex flex-col items-center">
-                        <span>{bundle.name}</span>
+                        <span className={isBundleDisabled(bundle, index) ? 'text-gray-400' : ''}>
+                          {bundle.name}
+                        </span>
                         <span className={`
                           ${tableStyles.bundlePrice}
                           ${isBundleActive(bundle, index) ? tableStyles.activeBundle : ''}
+                          ${isBundleDisabled(bundle, index) ? '!text-gray-400' : ''}
                         `}>
                           {formatPrice(calculateBundleTotal(bundle.id))}
                         </span>
@@ -284,7 +295,12 @@ function BundleTable({ bundles = [], items = [], onAmountChange, amounts = {} })
                   {bundles.map((bundle, index) => (
                     <React.Fragment key={`${item.id}-${bundle.id}-group`}>
                       <td className="w-[20px]" />
-                      <td className={`${tableStyles.columnWidths.bundle} ${tableStyles.packageBodyCell} ${getBundleBorderClasses(index)}`}>
+                      <td className={`
+                        ${tableStyles.columnWidths.bundle} 
+                        ${tableStyles.packageBodyCell} 
+                        ${getBundleBorderClasses(index, isBundleDisabled(bundle, index))}
+                        ${isBundleDisabled(bundle, index) ? 'opacity-40 bg-gray-50' : ''}
+                      `}>
                         {item.type === 'item' && (
                           <div className="flex flex-col items-center">
                             {getItemPrice(item, bundle.id) === 0 ? (
