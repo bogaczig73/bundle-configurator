@@ -287,32 +287,36 @@ function BundleTable({ bundles = [], items = [], onAmountChange, amounts = {} })
                       <td className={`${tableStyles.columnWidths.bundle} ${tableStyles.packageBodyCell} ${getBundleBorderClasses(index)}`}>
                         {item.type === 'item' && (
                           <div className="flex flex-col items-center">
-                            {getItemPrice(item, bundle.id) === 0 ? (
-                              <span className="">
-                                {getItemSelected(item, bundle.id) ? (
-                                  <img 
-                                    src={getCheckmarkIcon(index)} 
-                                    alt="Included" 
-                                    className={`w-12 h-12 ${getColorClass(index)}`}
-                                  />
-                                ) : (
-                                  <img 
-                                    src={crossIcon} 
-                                    alt="Not included" 
-                                    className={`w-12 h-12 ${getColorClass(index)}`}
-                                  />
-                                )}
-                              </span>
-                            ) : (
-                              <span className="text-xs font-medium">
-                                {formatPrice(getItemPrice(item, bundle.id) * (Math.max(0, amounts[item.id] - getItemDiscount(item, bundle.id)) || 0))}
-                              </span>
-                            )}
-                            <span className="text-xs text-gray-500">
-                              {getItemPrice(item, bundle.id) === 0 ? '' : 
-                                item.individual ? 'individuální paušál' : `${formatPrice(getItemPrice(item, bundle.id))} per unit` + (getItemDiscount(item, bundle.id) > 0 ? ` / první ${getItemDiscount(item, bundle.id)} v ceně` : '')}
+                          {getItemPrice(item, bundle.id) === 0 ? (
+                            <span className="">
+                              {getItemSelected(item, bundle.id) ? (
+                                <img 
+                                  src={getCheckmarkIcon(index)} 
+                                  alt="Included" 
+                                  className={`w-12 h-12 ${getColorClass(index)}`}
+                                />
+                              ) : (
+                                <img 
+                                  src={crossIcon} 
+                                  alt="Not included" 
+                                  className={`w-12 h-12 ${getColorClass(index)}`}
+                                />
+                              )}
                             </span>
-                          </div>
+                          ) : (
+                            <span className="text-xs font-medium">
+                              {formatPrice(getItemPrice(item, bundle.id) * (Math.max(0, amounts[item.id] - getItemDiscount(item, bundle.id)) || 0))}
+                            </span>
+                          )}
+                          <span className="text-xs text-gray-500">
+                            {getItemPrice(item, bundle.id) === 0 ? '' : 
+                              item.individual ? 'individuální paušál' : `${formatPrice(getItemPrice(item, bundle.id))} per unit` + (getItemDiscount(item, bundle.id) > 0 ? ` / první ${getItemDiscount(item, bundle.id)} v ceně` : '')}
+                          </span>
+                          <span className="text-xs text-gray-500">
+                            {getItemPrice(item, bundle.id) === 0 ? '' : 
+                              `Počet zlevněných kusů: ${item.packages[0].old}`}
+                          </span>
+                        </div>
                         )}
                       </td>
                     </React.Fragment>
