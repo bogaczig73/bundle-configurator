@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useCallback, memo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import ActionButtons from '../components/ActionButtons';
 import { useParams, useNavigate } from 'react-router-dom';
 import Sidebar from '../components/Sidebar';
@@ -86,7 +86,7 @@ function BundleSettingsPage() {
         return { ...item, packages: newPackages };
       })
     );
-  }, []);
+  });
 
   const handleItemDiscountChange = useCallback((bundleId, itemId, discountedAmount) => {
     updateItemPrice(bundleId, itemId, {
@@ -117,7 +117,7 @@ function BundleSettingsPage() {
         return { ...item, packages: newPackages };
       })
     );
-  }, []);
+  });
   
   const handleItemPriceChange = useCallback((bundleId, itemId, price) => {
     setItemPrices(prev => ({
@@ -140,7 +140,7 @@ function BundleSettingsPage() {
         acc.push(...getAllItems(item.children));
       }
       return acc;
-    }, []);
+    });
   };
 
   // Add new handler for userLimit changes
@@ -152,7 +152,7 @@ function BundleSettingsPage() {
           : bundle
       )
     );
-  }, []);
+  });
 
   // Modify the save function to include userLimit
   const handleSave = async () => {
@@ -272,12 +272,12 @@ function BundleSettingsPage() {
   const handleEditItem = useCallback((item) => {
     setEditingItem(item);
     setShowItemModal(true);
-  }, []);
+  });
 
   const handleAddNewItem = useCallback(() => {
     setEditingItem(null);
     setShowItemModal(true);
-  }, []);
+  });
 
   const handleCheckboxChange = useCallback((itemId) => {
     setProcessedItems(prevItems => 
@@ -286,7 +286,7 @@ function BundleSettingsPage() {
         checkbox: !item.checkbox
       }))
     );
-  }, []);
+  });
 
   const handleIndividualChange = useCallback((itemId) => {
     setProcessedItems(prevItems => 
@@ -295,7 +295,7 @@ function BundleSettingsPage() {
         individual: !item.individual
       }))
     );
-  }, []);
+  });
 
   return (
     <div className="flex flex-col md:flex-row min-h-screen bg-gray-50">
@@ -368,14 +368,6 @@ function BundleSettingsPage() {
   );
 }
 
-const MemoizedBundleTable = memo(BundleTable, (prevProps, nextProps) => {
-  return (
-    prevProps.bundles === nextProps.bundles &&
-    prevProps.items === nextProps.items &&
-    prevProps.itemPrices === nextProps.itemPrices &&
-    prevProps.onCheckboxChange === nextProps.onCheckboxChange
-  );
-});
 
 function BundleTable({ 
   bundles, 
@@ -435,11 +427,11 @@ function BundleTable({
 
   const getItemSelected = useCallback((item, bundleId) => {
     return item.packages?.find(p => p.packageId === bundleId)?.selected ?? false;
-  }, []);
+  });
 
   const getItemDiscountedAmount = useCallback((item, bundleId) => {
     return item.packages?.find(p => p.packageId === bundleId)?.discountedAmount ?? 0;
-  }, []);
+  });
 
   // Create a shared colgroup component
   const TableColgroup = () => (

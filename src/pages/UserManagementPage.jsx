@@ -2,8 +2,6 @@ import { useState, useEffect } from 'react';
 import { createUser, getUsers } from '../api/users';
 import { Link } from 'react-router-dom';
 import Sidebar from '../components/Sidebar';
-import { db } from '../firebase';
-import { doc, getDoc } from 'firebase/firestore';
 
 function UserManagementPage() {
   const [users, setUsers] = useState([]);

@@ -9,7 +9,6 @@ export function BundleTable({ bundles = [], items = [], onAmountChange, amounts 
   const flattenedItems = useMemo(() => flattenItems(items), [items]);
 
   return (
-    <div className="">
       <div className={tableStyles.container}>
         <TableHeader 
           bundles={bundles}
@@ -25,6 +24,5 @@ export function BundleTable({ bundles = [], items = [], onAmountChange, amounts 
           tableStyles={tableStyles}
         />
       </div>
-    </div>
   );
 }

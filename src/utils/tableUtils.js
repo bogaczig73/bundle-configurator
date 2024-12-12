@@ -2,7 +2,7 @@ import { abraColors } from "../components/Table/useTableStyles";
 import checkmarkIconBasic  from '../images/symbols/Klad_znamenko_Basic.svg';
 import checkmarkIconStandard from '../images/symbols/Klad_znamenko_Standard.svg';
 import checkmarkIconPremium from '../images/symbols/Klad_znamenko_Premium.svg';
-
+import { useMemo } from 'react';
 
 
 export const flattenItems = (items, depth = 0, parentId = '') => {
@@ -98,4 +98,22 @@ export const getCheckmarkIcon = (index) => {
 export const getItemSelected = (item, bundleId) => {
     const selectionEntry = item.packages.find(p => p.packageId === bundleId);
     return selectionEntry?.selected ?? false;
+  };
+
+
+//   Add this function to calculate bundle totals
+export const calculateBundleTotal = (bundleId, flattenedItems, amounts) => {
+
+    return flattenedItems
+      .filter(item => item.type === 'item')
+      .reduce((total, item) => {
+        const amount = amounts[item.id] || 0;
+        const discount = getItemDiscount(item, bundleId);
+        const price = getItemPrice(item, bundleId);
+        
+        // Calculate charged units (amount minus discounted units, but not less than 0)
+        const chargedUnits = Math.max(0, amount - discount);
+        
+        return total + (price * chargedUnits);
+      }, 0);
   };

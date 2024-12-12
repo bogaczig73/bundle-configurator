@@ -9,8 +9,10 @@ import {
   formatPrice
 } from '../../utils/tableUtils';
 import crossIcon from '../../images/symbols/Zapor_znamenko.svg';
+import { useTableStyles } from './useTableStyles';
 
-export function TableRow({ item, bundles, amounts, onAmountChange, tableStyles }) {
+export function TableRow({ item, bundles, amounts, onAmountChange }) {
+    const tableStyles = useTableStyles();
   return (
     <tr 
       className={`

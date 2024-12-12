@@ -1,15 +1,15 @@
 import React from 'react';
-import { getBundleBorderClasses } from './useTableStyles';
-
-export function TableColgroup({ bundles, tableStyles }) {
-  return (
+import { useTableStyles } from './useTableStyles';
+export function TableColgroup({ bundles }) {
+  const tableStyles = useTableStyles();
+    return (
     <colgroup>
       <col className={tableStyles.columnWidths.details} />
       <col className={tableStyles.columnWidths.amount} />
       {bundles.map((bundle, index) => (
         <React.Fragment key={`${bundle.id}-group`}>
           <col className="w-[20px]" />
-          <col className={`${tableStyles.columnWidths.bundle} ${getBundleBorderClasses(index)}`} />
+          <col className={`${tableStyles.columnWidths.bundle} ${tableStyles.getBundleBorderClasses(index)}`} />
         </React.Fragment>
       ))}
     </colgroup>

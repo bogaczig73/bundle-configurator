@@ -2,6 +2,7 @@ import React from 'react';
 import { TableColgroup } from './TableColgroup';
 import { TableRow } from './TableRow';
 
+
 export function TableBody({ bundles, items, amounts, onAmountChange, tableStyles }) {
   return (
     <div className={tableStyles.tableWrapper}>

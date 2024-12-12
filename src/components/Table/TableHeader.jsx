@@ -1,7 +1,7 @@
 import React from 'react';
 import { TableColgroup } from './TableColgroup';
-import { formatPrice, calculateBundleTotal, isBundleActive } from '../../utils/tableUtils';
-import { getBundleHeaderBorderClasses, abraColors } from './useTableStyles';
+import { isBundleActive, formatPrice, calculateBundleTotal } from '../../utils/tableUtils';
+import { abraColors } from './useTableStyles';
 
 export function TableHeader({ bundles, amounts, tableStyles, flattenedItems }) {
   return (
@@ -23,7 +23,7 @@ export function TableHeader({ bundles, amounts, tableStyles, flattenedItems }) {
                 <th className="w-[20px] border-none" />
                 <th className={`
                   ${tableStyles.packageHeaderCell} 
-                  ${getBundleHeaderBorderClasses(index)}
+                  ${tableStyles.getBundleHeaderBorderClasses(index)}
                   ${isBundleActive(bundle, index, amounts, bundles) ? `bg-${abraColors[index]} ${tableStyles.activeBundle}` : ''}
                 `}>
                   <div className="flex flex-col items-center">
@@ -32,7 +32,7 @@ export function TableHeader({ bundles, amounts, tableStyles, flattenedItems }) {
                       ${tableStyles.bundlePrice}
                       ${isBundleActive(bundle, index, amounts, bundles) ? tableStyles.activeBundle : ''}
                     `}>
-                      {/* {formatPrice(calculateBundleTotal(bundle.id, flattenedItems, amounts))} */}
+                      {formatPrice(calculateBundleTotal(bundle.id, flattenedItems, amounts))}
                     </span>
                   </div>
                 </th>

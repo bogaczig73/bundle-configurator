@@ -1,9 +1,8 @@
-import React, { useState, useMemo } from "react";
-import { Link, useParams, useLocation } from 'react-router-dom';
+import React, { useState } from "react";
 import Sidebar from '../components/Sidebar';
 import { useConfigData } from '../hooks/useConfigData';
 import { BundleTable } from '../components/Table/BundleTable';
-import { flattenItems } from '../utils/tableUtils';
+
 
 // Bundle Picker Component - made more compact
 const BundlePicker = ({ bundles, users, selectedBundle, onBundleSelect }) => (
@@ -40,52 +39,13 @@ const BundlePicker = ({ bundles, users, selectedBundle, onBundleSelect }) => (
   </div>
 );
 
-// Table Components - made more compact
-const HeaderRow = ({ packages }) => (
-  <>
-    <div className="font-semibold p-2 bg-white border-b sticky top-0 z-10 text-sm">Items</div>
-    <div className="font-semibold p-2 bg-white border-b text-center sticky top-0 z-10 text-sm">Amount</div>
-    {packages.map(pkg => (
-      <div 
-        key={pkg.id} 
-        className="font-semibold p-2 bg-white border-b text-center sticky top-0 z-10 text-sm"
-      >
-        <div>{pkg.name}</div>
-        <div className="text-sm text-gray-600 mt-1">
-          {pkg.totalPrice || 0} CZK
-        </div>
-      </div>
-    ))}
-  </>
-);
-
-const ItemRow = ({ item, amounts, packages, calculateItemTotal, indent = false }) => (
-  <>
-    <div className={`p-2 border-b ${indent ? 'pl-6' : ''}`}>
-      <div className="text-sm truncate">{item.name || ''}</div>
-      {item.note && <div className="text-xs text-gray-500 truncate">{item.note}</div>}
-    </div>
-    <div className="p-2 border-b text-center text-sm">
-      {typeof item.amount === 'number' ? item.amount : 0}
-    </div>
-    {packages.map(pkg => (
-      <div key={pkg.id} className="p-2 border-b text-center text-sm">
-        {item.type === 'category' ? '' : (
-          calculateItemTotal(pkg.id, item.id) > 0 
-            ? `${calculateItemTotal(pkg.id, item.id)} CZK` 
-            : '-'
-        )}
-      </div>
-    ))}
-  </>
-);
 
 // Main Component
 function ViewOffersPage() {
-  const { loading, error, processedItems, packages, items } = useConfigData();
-  const [bundles, setBundles] = useState([]);
+  const { loading, error, processedItems, packages} = useConfigData();
+  const [bundles] = useState([]);
   const [selectedBundle, setSelectedBundle] = useState(null);
-  const [users, setUsers] = useState({});
+  const [users ] = useState({});
   const [amounts, setAmounts] = useState({});
 
   // Handle amount changes in the table
@@ -93,13 +53,6 @@ function ViewOffersPage() {
     setAmounts(prev => ({ ...prev, [itemId]: amount }));
   };
 
-  console.log(processedItems);
-  const calculateItemTotal = (packageId, itemId) => {
-    const item = items.find(i => i.id === itemId);
-    if (!item?.packages) return 0;
-    
-    const packageInfo = item.packages.find(p => p.packageId === packageId);
-  };
 
   if (loading) {
     return (
