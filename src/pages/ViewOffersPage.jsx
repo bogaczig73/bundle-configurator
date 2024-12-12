@@ -1,10 +1,9 @@
-import React, { useState, useEffect } from "react";
-import { defaultItems as items } from "../data/items";
+import React, { useState, useMemo } from "react";
 import { Link, useParams, useLocation } from 'react-router-dom';
 import Sidebar from '../components/Sidebar';
-import { db } from '../firebase';
-import { collection, getDocs, query, where, getDoc, doc } from 'firebase/firestore';
-import { flattenItems } from '../utils/itemUtils';
+import { useConfigData } from '../hooks/useConfigData';
+import { BundleTable } from '../components/Table/BundleTable';
+import { flattenItems } from '../utils/tableUtils';
 
 // Bundle Picker Component - made more compact
 const BundlePicker = ({ bundles, users, selectedBundle, onBundleSelect }) => (
@@ -63,101 +62,43 @@ const HeaderRow = ({ packages }) => (
 const ItemRow = ({ item, amounts, packages, calculateItemTotal, indent = false }) => (
   <>
     <div className={`p-2 border-b ${indent ? 'pl-6' : ''}`}>
-      <div className="text-sm truncate">{item.name}</div>
+      <div className="text-sm truncate">{item.name || ''}</div>
       {item.note && <div className="text-xs text-gray-500 truncate">{item.note}</div>}
     </div>
     <div className="p-2 border-b text-center text-sm">
-      {amounts[item.id] || 0}
+      {typeof item.amount === 'number' ? item.amount : 0}
     </div>
     {packages.map(pkg => (
       <div key={pkg.id} className="p-2 border-b text-center text-sm">
-        {calculateItemTotal(pkg.id, item.id)} CZK
+        {item.type === 'category' ? '' : (
+          calculateItemTotal(pkg.id, item.id) > 0 
+            ? `${calculateItemTotal(pkg.id, item.id)} CZK` 
+            : '-'
+        )}
       </div>
     ))}
   </>
 );
 
-const TotalsRow = ({ packages }) => (
-  <div className="col-span-full grid" style={{ 
-    gridTemplateColumns: `minmax(300px, 2fr) minmax(150px, 1fr) repeat(${packages.length}, minmax(200px, 1fr))` 
-  }}>
-    <div className="p-4 font-bold bg-gray-100">Total</div>
-    <div className="p-4 font-bold bg-gray-100 text-center"></div>
-    {packages.map(pkg => (
-      <div key={pkg.id} className="p-4 font-bold bg-gray-100 text-center">
-        {pkg.totalPrice || 0} CZK
-      </div>
-    ))}
-  </div>
-);
-
 // Main Component
 function ViewOffersPage() {
+  const { loading, error, processedItems, packages, items } = useConfigData();
   const [bundles, setBundles] = useState([]);
   const [selectedBundle, setSelectedBundle] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
   const [users, setUsers] = useState({});
-  const [amounts, setAmounts] = useState(() => JSON.parse(localStorage.getItem('amounts')) || {});
-  
-  const { userId } = useParams();
-  const location = useLocation();
-  const bundleId = new URLSearchParams(location.search).get('bundleId');
+  const [amounts, setAmounts] = useState({});
 
-  useEffect(() => {
-    const fetchBundles = async () => {
-      setLoading(true);
-      try {
-        const bundlesSnapshot = await getDocs(collection(db, 'bundles'));
-        const bundlesData = [];
-        const usersData = {};
-
-        for (const bundleDoc of bundlesSnapshot.docs) {
-          const bundleData = bundleDoc.data();
-          console.log('Bundle Data:', {
-            id: bundleDoc.id,
-            ...bundleData
-          });
-          
-          if (!usersData[bundleData.userId]) {
-            const userDoc = await getDoc(doc(db, 'users', bundleData.userId));
-            if (userDoc.exists()) {
-              usersData[bundleData.userId] = userDoc.data();
-              console.log('User Data for', bundleData.userId, ':', userDoc.data());
-            }
-          }
-          
-          bundlesData.push({
-            id: bundleDoc.id,
-            ...bundleData
-          });
-        }
-
-        setBundles(bundlesData);
-        setUsers(usersData);
-        if (bundlesData.length > 0) {
-          setSelectedBundle(bundlesData[0]);
-        }
-      } catch (err) {
-        console.error('Error fetching bundles:', err);
-        setError('Failed to load bundles');
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchBundles();
-  }, []);
-
+  // Handle amount changes in the table
   const handleAmountChange = (itemId, amount) => {
-    setAmounts(prev => ({ ...prev, [itemId]: Number(amount) }));
+    setAmounts(prev => ({ ...prev, [itemId]: amount }));
   };
 
+  console.log(processedItems);
   const calculateItemTotal = (packageId, itemId) => {
-    if (!selectedBundle?.packages) return 0;
-    const pkg = selectedBundle.packages.find(p => p.id === packageId);
-    const amount = amounts[itemId] || 0;
-    return pkg?.items?.[itemId]?.selected ? (pkg.items[itemId].price * amount) : 0;
+    const item = items.find(i => i.id === itemId);
+    if (!item?.packages) return 0;
+    
+    const packageInfo = item.packages.find(p => p.packageId === packageId);
   };
 
   if (loading) {
@@ -189,26 +130,12 @@ function ViewOffersPage() {
             </div>
           )}
           
-          {selectedBundle && selectedBundle.packages && (
-            <div className="h-[calc(100vh-200px)] overflow-y-auto relative">
-              <div className="grid" style={{ 
-                gridTemplateColumns: `minmax(300px, 2fr) minmax(150px, 1fr) repeat(${selectedBundle.packages.length}, minmax(200px, 1fr))` 
-              }}>
-                <HeaderRow packages={selectedBundle.packages} />
-                {flattenItems(items).map(item => (
-                  <ItemRow
-                    key={item.id}
-                    item={item}
-                    amounts={amounts}
-                    packages={selectedBundle.packages}
-                    calculateItemTotal={calculateItemTotal}
-                    indent={!!item.subcategoryId}
-                  />
-                ))}
-                <TotalsRow packages={selectedBundle.packages} />
-              </div>
-            </div>
-          )}
+          <BundleTable
+            bundles={packages}
+            items={processedItems}
+            onAmountChange={handleAmountChange}
+            amounts={amounts}
+          />
         </div>
       </div>
     </div>

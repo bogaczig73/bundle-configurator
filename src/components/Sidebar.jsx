@@ -1,22 +1,32 @@
-import { Link, useLocation } from 'react-router-dom';
-import { useState } from 'react';
+import React, { useState } from 'react';
+import { useLocation, Link, useNavigate } from 'react-router-dom';
 import logo from '../images/ABRA_White_Primary.png';
+import { logout } from '../api/auth';
 
 function Sidebar({ children }) {
   const location = useLocation();
+  const navigate = useNavigate();
   const [isOpen, setIsOpen] = useState(true);
 
   const navigation = [
     { name: 'Configurator', path: '/configurator' },
     { name: 'Bundle Settings', path: '/bundle' },
     { name: 'Users', path: '/users' },
-    { name: 'View Offers', path: '/viewoffers' },
+    { name: 'My offers', path: '/viewoffers' },
     { name: 'Home', path: '/' }
   ];
 
+  const handleLogout = async () => {
+    try {
+      await logout();
+      navigate('/login');
+    } catch (error) {
+      console.error('Logout failed:', error);
+    }
+  };
+
   return (
     <div className="flex">
-      {/* Sidebar */}
       <div 
         className={`fixed top-0 left-0 h-screen bg-gray-800 text-white p-4 transition-all duration-300 ${
           isOpen ? 'w-64' : 'w-16'
@@ -55,10 +65,16 @@ function Sidebar({ children }) {
               {isOpen ? item.name : item.name.charAt(0)}
             </Link>
           ))}
+          
+          <button
+            onClick={handleLogout}
+            className="w-full text-left menu-item block px-4 py-2 rounded-lg transition-colors text-red-400 hover:text-red-300 hover:bg-gray-700"
+          >
+            {isOpen ? 'Logout' : 'L'}
+          </button>
         </nav>
       </div>
 
-      {/* Main content */}
       <div 
         className={`flex-1 transition-all duration-300 ${
           isOpen ? 'ml-64' : 'ml-16'
