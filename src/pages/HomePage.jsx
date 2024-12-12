@@ -47,22 +47,6 @@ function HomePage() {
       <Sidebar />
       <h1 className="text-2xl font-bold mb-4 text-center">Bundle Configurator</h1>
 
-      <div
-        ref={elementRef}
-        className="absolute w-96 border-2 border-gray-400 rounded-lg p-4 bg-white cursor-pointer"
-        style={{ 
-          left: `${position.x}px`, 
-          top: `${position.y}px`,
-          transition: 'all 0.2s ease-out'
-        }}
-      >
-        <img 
-          src={vyplatnice} 
-          alt="Chytni si vyplatnici zmrde!"
-          className="w-full object-contain mb-2 rounded"
-        />
-        <p className="text-sm">Chytni si vyplatnici!</p>
-      </div>
 
     </div>
   );
