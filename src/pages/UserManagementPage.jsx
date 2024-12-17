@@ -9,7 +9,10 @@ function UserManagementPage() {
     email: '',
     username: '',
     password: '',
-    role: 'customer'
+    role: 'customer',
+    firstName: '',
+    lastName: '',
+    companyName: ''
   });
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
@@ -52,7 +55,15 @@ function UserManagementPage() {
     try {
       await createUser(formData);
       setSuccess('User created successfully');
-      setFormData({ email: '', username: '', password: '', role: 'customer' });
+      setFormData({ 
+        email: '', 
+        username: '', 
+        password: '', 
+        role: 'customer',
+        firstName: '',
+        lastName: '',
+        companyName: ''
+      });
       fetchUsers(); // Refresh the list
     } catch (err) {
       console.error('Error creating user:', err);
@@ -83,6 +94,39 @@ function UserManagementPage() {
           {success && <div className="text-green-500 mb-4">{success}</div>}
           
           <form onSubmit={handleSubmit}>
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700">First Name</label>
+              <input
+                type="text"
+                name="firstName"
+                value={formData.firstName}
+                onChange={handleInputChange}
+                className="mt-1 block w-full"
+                required
+              />
+            </div>
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700">Last Name</label>
+              <input
+                type="text"
+                name="lastName"
+                value={formData.lastName}
+                onChange={handleInputChange}
+                className="mt-1 block w-full"
+                required
+              />
+            </div>
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700">Company Name</label>
+              <input
+                type="text"
+                name="companyName"
+                value={formData.companyName}
+                onChange={handleInputChange}
+                className="mt-1 block w-full"
+                required
+              />
+            </div>
             <div className="mb-4">
               <label className="block text-sm font-medium text-gray-700">Email</label>
               <input

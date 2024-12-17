@@ -11,7 +11,8 @@ import LoginPage from "./pages/LoginPage";
 import { useEffect, useState } from "react";
 import { auth } from "./firebase";
 import { onAuthStateChanged } from "firebase/auth";
-
+import { TestPage } from "./pages/TestPage";
+import { TestPage2 } from "./pages/TestPage2";
 function App() {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -47,6 +48,8 @@ function App() {
                   <Route path="/configurator/create/:userId" element={<ConfiguratorPage />} />
                   <Route path="/configurator/:bundleId" element={<ConfiguratorPage />} />
                   <Route path="/viewoffers" element={<ViewOffersPage />} />
+                  <Route path="/test" element={<TestPage />} />
+                  <Route path="/test2" element={<TestPage2 />} />
                 </Routes>
               ) : (
                 <Navigate to="/login" />

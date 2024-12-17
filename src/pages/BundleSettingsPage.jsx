@@ -135,12 +135,12 @@ function BundleSettingsPage() {
   const getAllItems = (items) => {
     return items.reduce((acc, item) => {
       if (item.type === 'item') {
-        acc.push(item);
+        return [...acc, item];
       } else if (item.children) {
-        acc.push(...getAllItems(item.children));
+        return [...acc, ...getAllItems(item.children)];
       }
       return acc;
-    });
+    }, []);
   };
 
   // Add new handler for userLimit changes

@@ -3,7 +3,7 @@ import { TableColgroup } from './TableColgroup';
 import { TableRow } from './TableRow';
 
 
-export function TableBody({ bundles, items, amounts, onAmountChange, tableStyles }) {
+export function TableBody({ bundles, items, amounts, onAmountChange, tableStyles, readonly = false }) {
   return (
     <div className={tableStyles.tableWrapper}>
       <table className="w-full table-fixed">
@@ -17,6 +17,7 @@ export function TableBody({ bundles, items, amounts, onAmountChange, tableStyles
               amounts={amounts}
               onAmountChange={onAmountChange}
               tableStyles={tableStyles}
+              readonly={readonly}
             />
           ))}
         </tbody>

@@ -13,7 +13,7 @@ const getBundleHeaderBorderClasses = (index) => `
   border-${abraColors[index % abraColors.length]}
 `;
 
-export const useTableStyles = () => ({
+export const useTableStyles = (exporting = false) => ({
     headerCell: "px-2 md:px-4 py-2 text-xs font-bold text-gray-900 uppercase tracking-wider border-b-2 border-gray-200",
     packageHeaderCell: "px-2 md:px-4 py-2 text-xs font-medium text-gray-900 uppercase tracking-wider",
     bodyCell: "px-2 md:px-4 py-2",
@@ -33,7 +33,7 @@ export const useTableStyles = () => ({
     
     // New styles
     container: "min-w-[800px]",
-    tableWrapper: "overflow-y-auto max-h-[calc(100vh-200px)] bg-white scrollbar-hide",
+    tableWrapper: exporting ? "max-h-[calc(100vh-200px)] bg-white scrollbar-hide" : "overflow-y-auto max-h-[calc(100vh-200px)] bg-white scrollbar-hide",
     categoryRow: "border-b-2 border-b-abraMagenta",
     itemName: {
       category: "font-medium text-abraMagenta text-sm break-words",
