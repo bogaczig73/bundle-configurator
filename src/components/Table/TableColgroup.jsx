@@ -6,6 +6,7 @@ export function TableColgroup({ bundles }) {
     <colgroup>
       <col className={tableStyles.columnWidths.details} />
       <col className={tableStyles.columnWidths.amount} />
+      <col className={tableStyles.columnWidths.fixace} />
       {bundles.map((bundle, index) => (
         <React.Fragment key={`${bundle.id}-group`}>
           <col className="w-[20px]" />

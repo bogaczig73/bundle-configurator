@@ -18,6 +18,11 @@ export function TableHeader({ bundles, amounts, tableStyles, flattenedItems }) {
                 Amount
               </div>
             </th>
+            <th className={tableStyles.headerCell}>
+              <div className={tableStyles.centerWrapper}>
+                Fixace
+              </div>
+            </th>
             {bundles.map((bundle, index) => (
               <React.Fragment key={`${bundle.id}-header`}>
                 <th className="w-[20px] border-none" />

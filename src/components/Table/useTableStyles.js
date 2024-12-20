@@ -28,6 +28,7 @@ export const useTableStyles = (exporting = false) => ({
     columnWidths: {
       details: "w-48 min-w-[120px]",
       amount: "w-32",
+      fixace: "w-32",
       bundle: "w-32 px-[5px]",
     },
     
