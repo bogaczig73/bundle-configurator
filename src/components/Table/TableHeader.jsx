@@ -1,13 +1,36 @@
 import React from 'react';
 import { TableColgroup } from './TableColgroup';
-import { isBundleActive, formatPrice, calculateBundleTotal } from '../../utils/tableUtils';
-import { abraColors } from './useTableStyles';
+import { calculateBundleTotal, formatPrice, abraColors } from '../../utils/tableUtils';
 
-export function TableHeader({ bundles, amounts, tableStyles, flattenedItems, showIndividualDiscount = false, showFixace = false }) {
+export function TableHeader({ 
+  bundles, 
+  amounts, 
+  tableStyles, 
+  flattenedItems, 
+  showIndividualDiscount = false, 
+  showFixace = false 
+}) {
+  console.log('TableHeader render with:', { bundles, amounts, flattenedItems });
+  
+  const bundleTotals = React.useMemo(() => {
+    console.log('Calculating bundle totals with:', { bundles, amounts });
+    return bundles.map(bundle => ({
+      id: bundle.id,
+      total: calculateBundleTotal(bundle, flattenedItems, amounts)
+    }));
+  }, [bundles, flattenedItems, amounts]);
+
+  console.log('Bundle totals:', bundleTotals);
+
   return (
     <div className="sticky top-0 z-10">
       <table className="w-full table-fixed">
-        <TableColgroup bundles={bundles} tableStyles={tableStyles} showIndividualDiscount={showIndividualDiscount} showFixace={showFixace} />
+        <TableColgroup 
+          bundles={bundles} 
+          tableStyles={tableStyles} 
+          showIndividualDiscount={showIndividualDiscount} 
+          showFixace={showFixace} 
+        />
         <thead>
           <tr>
             <th className={`${tableStyles.columnWidths.details} text-left ${tableStyles.headerCell}`}>
@@ -32,26 +55,37 @@ export function TableHeader({ bundles, amounts, tableStyles, flattenedItems, sho
                 </div>
               </th>
             )}
-            {bundles.map((bundle, index) => (
-              <React.Fragment key={`${bundle.id}-header`}>
-                <th className="w-[20px] border-none" />
-                <th className={`
-                  ${tableStyles.packageHeaderCell} 
-                  ${tableStyles.getBundleHeaderBorderClasses(index)}
-                  ${isBundleActive(bundle, index, amounts.amounts, bundles) ? `bg-${abraColors[index]} ${tableStyles.activeBundle}` : ''}
-                `}>
-                  <div className="flex flex-col items-center">
-                    <span>{bundle.name}</span>
-                    <span className={`
-                      ${tableStyles.bundlePrice}
-                      ${isBundleActive(bundle, index, amounts.amounts, bundles) ? tableStyles.activeBundle : ''}
-                    `}>
-                      {formatPrice(calculateBundleTotal(bundle.id, flattenedItems, amounts.amounts))}
-                    </span>
-                  </div>
-                </th>
-              </React.Fragment>
-            ))}
+            {bundles.map((bundle, index) => {
+              const bundleTotal = bundleTotals.find(bt => bt.id === bundle.id)?.total ?? 0;
+              const isActive = bundle.userLimit > 0;
+
+              console.log(`Bundle ${bundle.id}:`, { 
+                total: bundleTotal,
+                userLimit: bundle.userLimit,
+                isActive
+              });
+
+              return (
+                <React.Fragment key={`${bundle.id}-header`}>
+                  <th className="w-[20px] border-none" />
+                  <th className={`
+                    ${tableStyles.packageHeaderCell} 
+                    ${tableStyles.getBundleHeaderBorderClasses(index)}
+                    ${isActive ? `bg-${abraColors[index]} ${tableStyles.activeBundle}` : ''}
+                  `}>
+                    <div className="flex flex-col items-center">
+                      <span>{bundle.name}</span>
+                      <span className={`
+                        ${tableStyles.bundlePrice}
+                        ${isActive ? tableStyles.activeBundle : ''}
+                      `}>
+                        {formatPrice(bundleTotal)}
+                      </span>
+                    </div>
+                  </th>
+                </React.Fragment>
+              );
+            })}
           </tr>
         </thead>
       </table>

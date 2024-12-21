@@ -152,7 +152,19 @@ function ConfiguratorPage() {
           ) : (
             <div className="p-6">
               <BundleTable
-                bundles={packages}
+                bundles={packages.map((pkg, index) => {
+                  const userCount = amounts?.amounts?.[1] || 0;
+                  const prevThreshold = index > 0 ? packages[index - 1]?.userLimit || 0 : 0;
+                  const currentThreshold = pkg.userLimit || 0;
+                  
+                  // Bundle is active if user count is > previous threshold and <= current threshold
+                  const isActive = userCount > prevThreshold && userCount <= currentThreshold;
+                  
+                  return {
+                    ...pkg,
+                    userLimit: isActive ? userCount : 0
+                  };
+                })}
                 items={processedItems || []}
                 onAmountChange={handleAmountChange}
                 amounts={amounts}

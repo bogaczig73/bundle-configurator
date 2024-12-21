@@ -70,22 +70,23 @@ export function SubItemRow({
     if (type === 'fixace') {
       applicableUnits = amounts.fixace[parentItem.id] || 0;
     } else if (type === 'over') {
-      applicableUnits = Math.max(0, 
-        (amounts.amounts[parentItem.id] || 0) - 
-        (amounts.fixace[parentItem.id] || 0) - 
-        discountedAmount
-      );
-    } else {
-      applicableUnits = amounts.amounts[parentItem.id] || 0;
+      const totalAmount = amounts.amounts[parentItem.id] || 0;
+      const fixaceAmount = amounts.fixace[parentItem.id] || 0;
+      applicableUnits = Math.max(0, totalAmount - fixaceAmount - discountedAmount);
     }
 
+    // Apply the discount to the price
     const priceAfterDiscount = basePrice * (1 - discountPercentage / 100);
 
+    // Calculate final price
+    const finalPrice = priceAfterDiscount * applicableUnits;
+
     return {
-      finalPrice: priceAfterDiscount * applicableUnits,
+      finalPrice,
       applicableUnits,
       pricePerUnit: basePrice,
-      discountedAmount
+      discountedAmount,
+      discountPercentage
     };
   };
 
@@ -200,7 +201,7 @@ export function SubItemRow({
                 </span>
               ) : (
                 <>
-                  <span className="text-xs font-medium">
+                  <span className="text-[11px] font-medium italic">
                     {(() => {
                       const priceInfo = calculateFinalPrice(
                         getItemPrice(parentItem, bundle.id),
@@ -212,14 +213,14 @@ export function SubItemRow({
                       return formatPrice(priceInfo.finalPrice);
                     })()}
                   </span>
-                  <span className="text-xs text-gray-500">
+                  {/* <span className="text-[10px] text-gray-500 italic">
                     {parentItem.individual ? 'individuální paušál' : `${formatPrice(getItemPrice(parentItem, bundle.id))} za kus`}
-                  </span>
-                  <span className="text-xs text-gray-500">
+                  </span> */}
+                  <span className="text-[10px] text-gray-500 italic">
                     {(getItemDiscount(parentItem, bundle.id) > 0 ? ` První ${getItemDiscount(parentItem, bundle.id)} v ceně` : '')}
                   </span>
                   {((amounts.discount?.[content] ?? parentItem.discount ?? 0) > 0) && (
-                    <span className="text-xs text-gray-500">
+                    <span className="text-[10px] text-gray-500 italic">
                       {`Sleva: ${amounts.discount?.[content] ?? parentItem.discount ?? 0}%`}
                     </span>
                   )}
