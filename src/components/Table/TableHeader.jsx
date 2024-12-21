@@ -38,15 +38,15 @@ export function TableHeader({ bundles, amounts, tableStyles, flattenedItems, sho
                 <th className={`
                   ${tableStyles.packageHeaderCell} 
                   ${tableStyles.getBundleHeaderBorderClasses(index)}
-                  ${isBundleActive(bundle, index, amounts, bundles) ? `bg-${abraColors[index]} ${tableStyles.activeBundle}` : ''}
+                  ${isBundleActive(bundle, index, amounts.amounts, bundles) ? `bg-${abraColors[index]} ${tableStyles.activeBundle}` : ''}
                 `}>
                   <div className="flex flex-col items-center">
                     <span>{bundle.name}</span>
                     <span className={`
                       ${tableStyles.bundlePrice}
-                      ${isBundleActive(bundle, index, amounts, bundles) ? tableStyles.activeBundle : ''}
+                      ${isBundleActive(bundle, index, amounts.amounts, bundles) ? tableStyles.activeBundle : ''}
                     `}>
-                      {formatPrice(calculateBundleTotal(bundle.id, flattenedItems, amounts))}
+                      {formatPrice(calculateBundleTotal(bundle.id, flattenedItems, amounts.amounts))}
                     </span>
                   </div>
                 </th>

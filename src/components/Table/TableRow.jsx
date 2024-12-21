@@ -13,7 +13,7 @@ import { useTableStyles, getColorHex } from './useTableStyles';
 import { SubItemRow } from './SubItemRow';
 
 export function TableRow({ item, bundles, amounts, onAmountChange, readonly = false, showIndividualDiscount = false, showFixace = false }) {
-    const tableStyles = useTableStyles();
+  const tableStyles = useTableStyles();
     const [isExpanded, setIsExpanded] = React.useState(false);
 
     // Skip if this is a category row
@@ -78,33 +78,47 @@ export function TableRow({ item, bundles, amounts, onAmountChange, readonly = fa
       );
     }
 
+    const getDisplayedDiscount = () => {
+      const hasIndividualDiscounts = item.subItems?.some(
+        subItem => amounts.discount[subItem.content] !== undefined
+      );
+      
+      if (hasIndividualDiscounts) {
+        return "individuální sleva";
+      }
+      
+      return amounts.discount[item.id] || 0;
+    };
+
     return (
       <>
         <tr 
           className={`
             ${tableStyles.itemRow}
             ${item.depth > 0 ? `pl-${item.depth * 4}` : ''}
-            cursor-pointer
+            ${showFixace ? 'cursor-pointer' : ''}
           `}
-          onClick={() => setIsExpanded(!isExpanded)}
+          onClick={() => showFixace && setIsExpanded(!isExpanded)}
         >
           <td className={`${tableStyles.columnWidths.details} ${tableStyles.bodyCell}`}>
             <div className={tableStyles.accordionWrapper}>
-                  <svg
-                    className={`${tableStyles.accordionIcon} ${
-                      isExpanded ? tableStyles.accordionIconExpanded : ''
-                    }`}
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M19 9l-7 7-7-7"
-                    />
-                  </svg>
+              {showFixace && (
+                <svg
+                  className={`${tableStyles.accordionIcon} ${
+                    isExpanded ? tableStyles.accordionIconExpanded : ''
+                  }`}
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M19 9l-7 7-7-7"
+                  />
+                </svg>
+              )}
               <div className={tableStyles.accordionContent}>
                 <div className={tableStyles.accordionName}>
                 </div>
@@ -129,7 +143,7 @@ export function TableRow({ item, bundles, amounts, onAmountChange, readonly = fa
               ) : item.checkbox ? (
                 <input
                   type="checkbox"
-                  checked={amounts[item.id] === 1}
+                  checked={amounts.amounts[item.id] === 1}
                   onChange={readonly ? undefined : (e) => onAmountChange(item.id, e.target.checked ? 1 : 0)}
                   onClick={(e) => e.stopPropagation()}
                   disabled={readonly}
@@ -137,14 +151,14 @@ export function TableRow({ item, bundles, amounts, onAmountChange, readonly = fa
                 />
               ) : readonly ? (
                 <span className={`text-gray-700`}>
-                  {amounts[item.id] || 0}
+                  {amounts.amounts[item.id] || 0}
                 </span>
               ) : (
                 <div className="flex items-center" onClick={(e) => e.stopPropagation()}>
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
-                      onAmountChange(item.id, Math.max(0, (amounts[item.id] || 0) - 1));
+                      onAmountChange(item.id, Math.max(0, (amounts.amounts[item.id] || 0) - 1));
                     }}
                     className={tableStyles.inputCounterButton + " rounded-s-md"}
                   >
@@ -156,7 +170,7 @@ export function TableRow({ item, bundles, amounts, onAmountChange, readonly = fa
                   <input
                     type="text"
                     min={0}
-                    value={amounts[item.id] || 0}
+                    value={amounts.amounts[item.id] || 0}
                     onChange={(e) => {
                       e.stopPropagation();
                       onAmountChange(item.id, Number(e.target.value));
@@ -167,7 +181,7 @@ export function TableRow({ item, bundles, amounts, onAmountChange, readonly = fa
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
-                      onAmountChange(item.id, (amounts[item.id] || 0) + 1);
+                      onAmountChange(item.id, (amounts.amounts[item.id] || 0) + 1);
                     }}
                     className={tableStyles.inputCounterButton + " rounded-e-md"}
                   >
@@ -183,42 +197,62 @@ export function TableRow({ item, bundles, amounts, onAmountChange, readonly = fa
           {showFixace && (
             <td className={`${tableStyles.columnWidths.fixace} ${tableStyles.bodyCell}`}>
               <div className={tableStyles.centerWrapper}>
-                <div className="flex items-center" onClick={(e) => e.stopPropagation()}>
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onAmountChange(item.id, Math.max(0, (item.fixace || 0) - 1), 'fixace');
-                    }}
-                    className={tableStyles.inputCounterButton + " rounded-s-md"}
-                  >
-                    <svg className={tableStyles.counterButtonSymbols} aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 18 2">
-                      <path stroke="currentColor" strokeLinejoin="round" strokeWidth="2" d="M1 1h16"/>
-                    </svg>
-                  </button>
-                  
+                {isFreeForAllBundles(item) ? (
+                  <span className={tableStyles.freeItemText}>
+                    -
+                  </span>
+                ) : item.checkbox ? (
                   <input
-                    type="text"
-                    min={0}
-                    value={item.fixace || 0}
-                    onChange={(e) => {
-                      e.stopPropagation();
-                      onAmountChange(item.id, Number(e.target.value), 'fixace');
-                    }}
+                    type="checkbox"
+                    checked={amounts.fixace[item.id] === 1}
+                    onChange={readonly ? undefined : (e) => onAmountChange(item.id, e.target.checked ? 1 : 0, 'fixace')}
                     onClick={(e) => e.stopPropagation()}
-                    className={tableStyles.numberInput}
+                    disabled={readonly}
+                    className={tableStyles.checkbox}
                   />
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onAmountChange(item.id, (item.fixace || 0) + 1, 'fixace');
-                    }}
-                    className={tableStyles.inputCounterButton + " rounded-e-md"}
-                  >
-                    <svg className={tableStyles.counterButtonSymbols} aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 18 18">
-                      <path stroke="currentColor" strokeLinejoin="round" strokeWidth="2" d="M9 1v16M1 9h16"/>
-                    </svg>
-                  </button>
-                </div>
+                ) : readonly ? (
+                  <span className={`text-gray-700`}>
+                    {amounts.fixace[item.id] || 0}
+                  </span>
+                ) : (
+                  <div className="flex items-center" onClick={(e) => e.stopPropagation()}>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        const currentFixace = amounts.fixace[item.id] || 0;
+                        onAmountChange(item.id, Math.max(0, currentFixace - 1), 'fixace');
+                      }}
+                      className={tableStyles.inputCounterButton + " rounded-s-md"}
+                    >
+                      <svg className={tableStyles.counterButtonSymbols} aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 18 2">
+                        <path stroke="currentColor" strokeLinejoin="round" strokeWidth="2" d="M1 1h16"/>
+                      </svg>
+                    </button>
+                    
+                    <input
+                      type="text"
+                      min={0}
+                      value={amounts.fixace[item.id] || 0}
+                      onChange={(e) => {
+                        e.stopPropagation();
+                        onAmountChange(item.id, Number(e.target.value), 'fixace');
+                      }}
+                      onClick={(e) => e.stopPropagation()}
+                      className={tableStyles.numberInput}
+                    />
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onAmountChange(item.id, (amounts.fixace[item.id] || 0) + 1, 'fixace');
+                      }}
+                      className={tableStyles.inputCounterButton + " rounded-e-md"}
+                    >
+                      <svg className={tableStyles.counterButtonSymbols} aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 18 18">
+                        <path stroke="currentColor" strokeLinejoin="round" strokeWidth="2" d="M9 1v16M1 9h16"/>
+                      </svg>
+                    </button>
+                  </div>
+                )}
               </div>
             </td>
           )}
@@ -226,42 +260,65 @@ export function TableRow({ item, bundles, amounts, onAmountChange, readonly = fa
           {showIndividualDiscount && (
             <td className={`${tableStyles.columnWidths.fixace} ${tableStyles.bodyCell}`}>
               <div className={tableStyles.centerWrapper}>
-                <div className="flex items-center" onClick={(e) => e.stopPropagation()}>
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onAmountChange(item.id, Math.max(0, (item.discount || 0) - 1), 'discount');
-                    }}
-                    className={tableStyles.inputCounterButton + " rounded-s-md"}
-                  >
-                    <svg className={tableStyles.counterButtonSymbols} aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 18 2">
-                      <path stroke="currentColor" strokeLinejoin="round" strokeWidth="2" d="M1 1h16"/>
-                    </svg>
-                  </button>
-                  
+                {isFreeForAllBundles(item) ? (
+                  <span className={tableStyles.freeItemText}>
+                    -
+                  </span>
+                ) : item.checkbox ? (
                   <input
-                    type="text"
-                    min={0}
-                    value={item.discount || 0}
-                    onChange={(e) => {
-                      e.stopPropagation();
-                      onAmountChange(item.id, Number(e.target.value), 'discount');
-                    }}
+                    type="checkbox"
+                    checked={amounts.discount[item.id] === 1}
+                    onChange={readonly ? undefined : (e) => onAmountChange(item.id, e.target.checked ? 1 : 0, 'discount')}
                     onClick={(e) => e.stopPropagation()}
-                    className={tableStyles.numberInput}
+                    disabled={readonly}
+                    className={tableStyles.checkbox}
                   />
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onAmountChange(item.id, (item.discount || 0) + 1, 'discount');
-                    }}
-                    className={tableStyles.inputCounterButton + " rounded-e-md"}
-                  >
-                    <svg className={tableStyles.counterButtonSymbols} aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 18 18">
-                      <path stroke="currentColor" strokeLinejoin="round" strokeWidth="2" d="M9 1v16M1 9h16"/>
-                    </svg>
-                  </button>
-                </div>
+                ) : readonly ? (
+                  <span className={`text-gray-700`}>
+                    {amounts.discount[item.id] || 0}
+                  </span>
+                ) : (
+                  <div className="flex items-center" onClick={(e) => e.stopPropagation()}>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        const currentDiscount = amounts.discount[item.id] || 0;
+                        onAmountChange(item.id, Math.max(0, currentDiscount - 5), 'discount');
+                      }}
+                      className={tableStyles.inputCounterButton + " rounded-s-md"}
+                    >
+                      <svg className={tableStyles.counterButtonSymbols} aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 18 2">
+                        <path stroke="currentColor" strokeLinejoin="round" strokeWidth="2" d="M1 1h16"/>
+                      </svg>
+                    </button>
+                    
+                    <input
+                      type="text"
+                      min={0}
+                      max={100}
+                      value={amounts.discount[item.id] || 0}
+                      onChange={(e) => {
+                        e.stopPropagation();
+                        const value = Math.min(100, Math.max(0, Number(e.target.value)));
+                        onAmountChange(item.id, value, 'discount');
+                      }}
+                      onClick={(e) => e.stopPropagation()}
+                      className={tableStyles.numberInput}
+                    />
+                    
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onAmountChange(item.id, Math.min(100, (amounts.discount[item.id] || 0) + 5), 'discount');
+                      }}
+                      className={tableStyles.inputCounterButton + " rounded-e-md"}
+                    >
+                      <svg className={tableStyles.counterButtonSymbols} aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 18 18">
+                        <path stroke="currentColor" strokeLinejoin="round" strokeWidth="2" d="M9 1v16M1 9h16"/>
+                      </svg>
+                    </button>
+                  </div>
+                )}
               </div>
             </td>
           )}
@@ -290,13 +347,30 @@ export function TableRow({ item, bundles, amounts, onAmountChange, readonly = fa
                     </span>
                   ) : (
                     <span className="text-xs font-medium">
-                      {formatPrice(getItemPrice(item, bundle.id) * (Math.max(0, amounts[item.id] - getItemDiscount(item, bundle.id)) || 0))}
+                      {formatPrice(
+                        getItemPrice(item, bundle.id) * 
+                        (Math.max(0, amounts.amounts[item.id] - getItemDiscount(item, bundle.id)) || 0) * 
+                        (1 - (amounts.discount[item.id] || 0) / 100)
+                      )}
                     </span>
                   )}
                   <span className="text-xs text-gray-500">
                     {getItemPrice(item, bundle.id) === 0 ? '' : 
-                      item.individual ? 'individuální paušál' : `${formatPrice(getItemPrice(item, bundle.id))} per unit` + (getItemDiscount(item, bundle.id) > 0 ? ` / první ${getItemDiscount(item, bundle.id)} v ceně` : '')}
+                      item.individual ? 'individuální paušál' : (
+                        <>
+                          {`${formatPrice(getItemPrice(item, bundle.id))} za kus`}
+                        </>
+                      )
+                    }
                   </span>
+                  <span className="text-xs text-gray-500">
+                    {(getItemDiscount(item, bundle.id) > 0 ? ` První ${getItemDiscount(item, bundle.id)} v ceně` : '')}
+                  </span>
+                  {((amounts.discount?.[item.id] ?? item.discount ?? 0) > 0) && (
+                    <span className="text-xs text-gray-500">
+                      {`Sleva: ${amounts.discount?.[item.id] ?? item.discount ?? 0}%`}
+                    </span>
+                  )}
                 </div>
               </td>
             </React.Fragment>
@@ -304,7 +378,7 @@ export function TableRow({ item, bundles, amounts, onAmountChange, readonly = fa
         </tr>
 
         {/* Accordion subitems */}
-        {isExpanded && (
+        {showFixace && isExpanded && (
           <>
             <SubItemRow 
               content="Fixované položky"
@@ -312,8 +386,13 @@ export function TableRow({ item, bundles, amounts, onAmountChange, readonly = fa
               amounts={amounts}
               tableStyles={tableStyles}
               parentItem={item}
+              type="fixace"
               showIndividualDiscount={showIndividualDiscount}
               showFixace={showFixace}
+              onDiscountChange={(subItemId, value) => {
+                // Update the amounts state with the new discount value
+                onAmountChange(item.id, value, 'discount', subItemId);
+              }}
             />
             <SubItemRow 
               content="Položky nad rámec fixace"
@@ -321,6 +400,7 @@ export function TableRow({ item, bundles, amounts, onAmountChange, readonly = fa
               amounts={amounts}
               tableStyles={tableStyles}
               parentItem={item}
+              type="over"
               showIndividualDiscount={showIndividualDiscount}
               showFixace={showFixace}
             />

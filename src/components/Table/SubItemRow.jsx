@@ -15,9 +15,79 @@ export function SubItemRow({
   amounts, 
   tableStyles, 
   parentItem, 
+  type,
   showIndividualDiscount = false, 
   showFixace = false,
+  onDiscountChange
 }) {
+
+  // Calculate displayed amount based on type
+  const getDisplayedAmount = () => {
+    if (type === 'fixace') {
+      return '-';
+    } else if (type === 'over') {
+      const parentAmount = amounts.amounts[parentItem.id] || 0;
+      const parentFixace = amounts.fixace[parentItem.id] || 0;
+      // Sum up all discounted amounts across bundles
+      const totalDiscountedAmount = bundles.reduce((sum, bundle) => {
+        const packageInfo = parentItem.packages?.find(p => p.packageId === bundle.id);
+        return sum + (packageInfo?.discountedAmount || 0);
+      }, 0);
+      return Math.max(0, parentAmount - parentFixace - totalDiscountedAmount);
+    }
+    return parentItem.amount;
+  };
+
+  // Add helper function to get discount note
+  const getDiscountNote = () => {
+    if (type === 'over') {
+      // Sum up all discounted amounts across bundles
+      const totalDiscountedAmount = bundles.reduce((sum, bundle) => {
+        const packageInfo = parentItem.packages?.find(p => p.packageId === bundle.id);
+        return sum + (packageInfo?.discountedAmount || 0);
+      }, 0);
+      return totalDiscountedAmount > 0 ? `První ${totalDiscountedAmount} v ceně` : '';
+    }
+    return '';
+  };
+
+  // Calculate displayed fixace based on type
+  const getDisplayedFixace = () => {
+    if (type === 'fixace') {
+      return amounts.fixace[parentItem.id] || 0;
+    } else if (type === 'over') {
+      return '-';
+    }
+    return parentItem.fixace;
+  };
+
+  const calculateFinalPrice = (basePrice, type, amounts, parentItem, bundle) => {
+    const discountedAmount = getItemDiscount(parentItem, bundle.id);
+    const discountPercentage = amounts.discount?.[content] ?? parentItem.discount ?? 0;
+    
+    // Calculate applicable units based on type
+    let applicableUnits = 0;
+    if (type === 'fixace') {
+      applicableUnits = amounts.fixace[parentItem.id] || 0;
+    } else if (type === 'over') {
+      applicableUnits = Math.max(0, 
+        (amounts.amounts[parentItem.id] || 0) - 
+        (amounts.fixace[parentItem.id] || 0) - 
+        discountedAmount
+      );
+    } else {
+      applicableUnits = amounts.amounts[parentItem.id] || 0;
+    }
+
+    const priceAfterDiscount = basePrice * (1 - discountPercentage / 100);
+
+    return {
+      finalPrice: priceAfterDiscount * applicableUnits,
+      applicableUnits,
+      pricePerUnit: basePrice,
+      discountedAmount
+    };
+  };
 
   return (
     <tr className={`${tableStyles.itemRow} bg-gray-50`}>
@@ -39,9 +109,16 @@ export function SubItemRow({
               className={tableStyles.checkbox}
             />
           ) : (
-            <span className="text-gray-700">
-              {parentItem.amount}
-            </span>
+            <div className="flex flex-col items-center">
+              <span className="text-gray-700 text-xs">
+                {getDisplayedAmount()}
+              </span>
+              {getDiscountNote() && (
+                <span className="text-xs text-gray-500">
+                  {getDiscountNote()}
+                </span>
+              )}
+            </div>
           )}
         </div>
       </td>
@@ -49,8 +126,8 @@ export function SubItemRow({
       {showFixace && (
         <td className={`${tableStyles.columnWidths.fixace} ${tableStyles.bodyCell}`}>
           <div className={tableStyles.centerWrapper}>
-            <span className="text-gray-700">
-                {parentItem.fixace}
+            <span className="text-gray-700 text-xs">
+              {getDisplayedFixace()}
             </span>
           </div>
         </td>
@@ -59,9 +136,47 @@ export function SubItemRow({
       {showIndividualDiscount && (
         <td className={`${tableStyles.columnWidths.fixace} ${tableStyles.bodyCell}`}>
           <div className={tableStyles.centerWrapper}>
-            <span className="text-gray-700">
-                {parentItem.discount}
-            </span>
+            <div className="flex items-center" onClick={(e) => e.stopPropagation()}>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  const currentDiscount = amounts.discount?.[content] ?? parentItem.discount ?? 0;
+                  onDiscountChange(content, Math.max(0, currentDiscount - 5));
+                }}
+                className={tableStyles.inputCounterButton + " rounded-s-md"}
+              >
+                <svg className={tableStyles.counterButtonSymbols} aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 18 2">
+                  <path stroke="currentColor" strokeLinejoin="round" strokeWidth="2" d="M1 1h16"/>
+                </svg>
+              </button>
+              
+              <input
+                type="text"
+                min={0}
+                max={100}
+                value={amounts.discount?.[content] ?? parentItem.discount ?? 0}
+                onChange={(e) => {
+                  e.stopPropagation();
+                  const value = Math.min(100, Math.max(0, Number(e.target.value)));
+                  onDiscountChange(content, value);
+                }}
+                onClick={(e) => e.stopPropagation()}
+                className={tableStyles.numberInput}
+              />
+              
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  const currentDiscount = amounts.discount?.[content] ?? parentItem.discount ?? 0;
+                  onDiscountChange(content, Math.min(100, currentDiscount + 5));
+                }}
+                className={tableStyles.inputCounterButton + " rounded-e-md"}
+              >
+                <svg className={tableStyles.counterButtonSymbols} aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 18 18">
+                  <path stroke="currentColor" strokeLinejoin="round" strokeWidth="2" d="M9 1v16M1 9h16"/>
+                </svg>
+              </button>
+            </div>
           </div>
         </td>
       )}
@@ -86,11 +201,28 @@ export function SubItemRow({
               ) : (
                 <>
                   <span className="text-xs font-medium">
-                    {formatPrice(parentItem.price * parentItem.amount)}
+                    {(() => {
+                      const priceInfo = calculateFinalPrice(
+                        getItemPrice(parentItem, bundle.id),
+                        type,
+                        amounts,
+                        parentItem,
+                        bundle
+                      );
+                      return formatPrice(priceInfo.finalPrice);
+                    })()}
                   </span>
                   <span className="text-xs text-gray-500">
-                    {parentItem.individual ? 'individuální paušál' : `${formatPrice(getItemPrice(parentItem, bundle.id))} per unit`}
+                    {parentItem.individual ? 'individuální paušál' : `${formatPrice(getItemPrice(parentItem, bundle.id))} za kus`}
                   </span>
+                  <span className="text-xs text-gray-500">
+                    {(getItemDiscount(parentItem, bundle.id) > 0 ? ` První ${getItemDiscount(parentItem, bundle.id)} v ceně` : '')}
+                  </span>
+                  {((amounts.discount?.[content] ?? parentItem.discount ?? 0) > 0) && (
+                    <span className="text-xs text-gray-500">
+                      {`Sleva: ${amounts.discount?.[content] ?? parentItem.discount ?? 0}%`}
+                    </span>
+                  )}
                 </>
               )}
             </div>

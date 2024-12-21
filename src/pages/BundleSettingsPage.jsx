@@ -13,7 +13,20 @@ import ItemFormModal from '../components/ItemFormModal';
 function BundleSettingsPage() {
   const { userId } = useParams();
   const navigate = useNavigate();
-  const { loading, setLoading, error, setError, processedItems, packages, setProcessedItems, items } = useConfigData();
+  const { 
+    loading, 
+    setLoading, 
+    error, 
+    setError, 
+    processedItems, 
+    packages, 
+    setProcessedItems,
+    items,
+    updateItemPrice,
+    saveItems,
+    updateItemInTree,
+    getAllItems
+  } = useConfigData();
 
   const [bundlesState, setBundlesState] = useState([]);
 
@@ -38,56 +51,7 @@ function BundleSettingsPage() {
     }
   }, [packages, items]);
 
-
-  // 1. Fix the updateItemInTree helper function
-  const updateItemInTree = (items, itemId, updateFn) => {
-    return items.map(item => {
-      // If this is the target item, update it
-      if (item.id === itemId) {
-        return updateFn(item);
-      }
-      
-      // If this is a category, recursively check its children
-      if (item.type === 'category' && item.children) {
-        const updatedChildren = updateItemInTree(item.children, itemId, updateFn);
-        // Only update the item if children actually changed
-        if (updatedChildren !== item.children) {
-          return {
-            ...item,
-            children: updatedChildren
-          };
-        }
-      }
-      return item;
-    });
-  };
-
   // 2. Simplify the handlers using the shared function
-  const updateItemPrice = useCallback((bundleId, itemId, updates) => {
-    setProcessedItems(prevItems => 
-      updateItemInTree(prevItems, itemId, (item) => {
-        const newPackages = [...(item.packages || [])];
-        const packageIndex = newPackages.findIndex(p => p.packageId === bundleId);
-        
-        if (packageIndex >= 0) {
-          newPackages[packageIndex] = {
-            ...newPackages[packageIndex],
-            ...updates
-          };
-        } else {
-          newPackages.push({
-            packageId: bundleId,
-            price: 0,
-            selected: false,
-            ...updates
-          });
-        }
-        
-        return { ...item, packages: newPackages };
-      })
-    );
-  });
-
   const handleItemDiscountChange = useCallback((bundleId, itemId, discountedAmount) => {
     updateItemPrice(bundleId, itemId, {
       discountedAmount: Number(discountedAmount)
@@ -130,19 +94,6 @@ function BundleSettingsPage() {
     });
   }, [updateItemPrice]);
 
-
-  // 3. Extract the getAllItems helper function since it's used in save
-  const getAllItems = (items) => {
-    return items.reduce((acc, item) => {
-      if (item.type === 'item') {
-        return [...acc, item];
-      } else if (item.children) {
-        return [...acc, ...getAllItems(item.children)];
-      }
-      return acc;
-    }, []);
-  };
-
   // Add new handler for userLimit changes
   const handleUserLimitChange = useCallback((bundleId, limit) => {
     setBundlesState(prevBundles => 
@@ -160,20 +111,8 @@ function BundleSettingsPage() {
     setError('');
     
     try {
-      const currentItems = getAllItems(processedItems);
-      const updatedItems = currentItems.map(({ id, name, categoryId, packages, note, checkbox, individual }) => ({
-        id,
-        name,
-        categoryId,
-        packages: packages || [],
-        amount: 0,
-        checkbox: checkbox ?? false,
-        individual: individual ?? false,
-        ...(note && { note })
-      }));
-
-      // Save items
-      await updateDoc(doc(db, 'default', 'items'), { items: updatedItems });
+      // Save items using the hook's method
+      await saveItems(processedItems);
 
       // Save packages with userLimit
       const updatedPackages = bundlesState.map(({ id, name, userLimit }) => ({

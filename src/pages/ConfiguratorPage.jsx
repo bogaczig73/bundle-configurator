@@ -5,7 +5,7 @@ import { useConfigData } from '../hooks/useConfigData';
 import { BundleTable } from '../components/Table/BundleTable';
 import Modal from '../components/Modal';
 import SettingsModal from '../components/SettingsModal';
-
+import { usePersistedSettings } from '../hooks/usePersistedSettings';
 function ConfiguratorPage() {
   const { bundleId } = useParams();
   const { 
@@ -19,13 +19,17 @@ function ConfiguratorPage() {
     setError,
     setProcessedItems
   } = useConfigData(bundleId);
-  const [amounts, setAmounts] = useState({});
+  const [amounts, setAmounts] = useState({
+    amounts: {},
+    discount: {},
+    fixace: {}
+  });
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [configName, setConfigName] = useState('');
   const [selectedCustomer, setSelectedCustomer] = useState('');
-  const [showIndividualDiscount, setShowIndividualDiscount] = useState(false);
+  const [showIndividualDiscount, setShowIndividualDiscount] = usePersistedSettings('showIndividualDiscount', false);
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
-  const [showFixace, setShowFixace] = useState(false);
+  const [showFixace, setShowFixace] = usePersistedSettings('showFixace', false);
 
   const customers = useMemo(() => {
     return users.filter(user => user.role === 'customer');
@@ -33,22 +37,42 @@ function ConfiguratorPage() {
 
   useEffect(() => {
     if (bundleData?.amounts) {
-      setAmounts(bundleData.amounts);
+      setAmounts({
+        amounts: bundleData.amounts,
+        discount: {},
+        fixace: {}
+      });
     }
   }, [bundleData]);
 
-  const handleAmountChange = (itemId, amount, field = 'amount') => {
-    if (field === 'amount') {
-      setAmounts(prev => ({ ...prev, [itemId]: Number(amount) }));
-    } else if (field === 'fixace') {
-      setProcessedItems(prev => prev.map(item => 
-        item.id === itemId ? { ...item, fixace: Number(amount) } : item
-      ));
-    } else if (field === 'discount') {
-      setProcessedItems(prev => prev.map(item => 
-        item.id === itemId ? { ...item, discount: Number(amount) } : item
-      ));
-    }
+  const handleAmountChange = (itemId, value, field = 'amounts', subItemId = null) => {
+    setAmounts(prev => {
+      const newAmounts = { ...prev };
+      
+      if (subItemId) {
+        // Handle subitem discounts
+        if (!newAmounts[field]) {
+          newAmounts[field] = {};
+        }
+        newAmounts[field][subItemId] = Number(value);
+
+        // If parent discount changes, reset subitem discounts
+        if (field === 'discount' && !subItemId) {
+          const subitems = ['Fixované položky', 'Položky nad rámec fixace'];
+          subitems.forEach(subitem => {
+            delete newAmounts[field][subitem];
+          });
+        }
+      } else {
+        // Handle regular amount changes
+        if (!newAmounts[field]) {
+          newAmounts[field] = {};
+        }
+        newAmounts[field][itemId] = Number(value);
+      }
+      
+      return newAmounts;
+    });
   };
 
   const handleSaveConfig = async () => {
@@ -61,11 +85,12 @@ function ConfiguratorPage() {
       await saveConfiguration({
         name: configName,
         customerId: selectedCustomer,
-        amounts
+        amounts: amounts.amounts,
+        discount: amounts.discount,
+        fixace: amounts.fixace
       });
       
       setIsModalOpen(false);
-      // Optionally show success message or redirect
     } catch (err) {
       setError(err.message);
     }

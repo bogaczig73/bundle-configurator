@@ -43,7 +43,8 @@ export const useTableStyles = (exporting = false) => ({
     categoryRow: "border-b-2 border-b-abraMagenta",
     itemName: {
       category: "font-medium text-abraMagenta text-sm break-words",
-      item: "text-gray-700 text-sm break-words"
+      item: "text-xs text-gray-700 break-words opacity-90",
+      detail: "text-[10px] text-gray-500 break-words opacity-75"
     },
     itemNote: "text-xs text-gray-500 break-words",
     freeItemText: "text-xs font-medium text-gray-400",
@@ -62,4 +63,26 @@ export const useTableStyles = (exporting = false) => ({
 
     getBundleHeaderBorderClasses,
     getBundleBorderClasses,
+
+    // New styles for bundle values
+    bundleValues: {
+      wrapper: "flex flex-col items-center",
+      mainValue: "text-xs font-medium text-gray-700",
+      detail: "text-[10px] text-gray-500 mt-0.5",
+      detailWrapper: "flex flex-col items-center opacity-75"
+    },
+
+    // Updated styles for detail rows
+    detailRow: {
+        wrapper: "flex flex-col items-center",
+        mainValue: "text-xs font-medium text-gray-700",
+        detail: "text-[10px] text-gray-500 mt-0.5",
+        detailWrapper: "flex flex-col items-center opacity-75"
+    },
+
+    // Update amount and fixace display
+    amountDisplay: {
+        value: "text-xs text-gray-700",
+        note: "text-[10px] text-gray-500 opacity-75"
+    },
 }); 

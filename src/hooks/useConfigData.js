@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { db } from '../firebase';
-import { doc, getDoc, getDocs, collection, addDoc, serverTimestamp } from 'firebase/firestore';
+import { doc, getDoc, getDocs, collection, addDoc, serverTimestamp, updateDoc } from 'firebase/firestore';
 import { auth } from '../firebase';
 
 export function useConfigData(bundleId = null, configId = null) {
@@ -34,7 +34,9 @@ export function useConfigData(bundleId = null, configId = null) {
                 type: 'item',
                 name: item.name,
                 description: item.note || '',
-                packages: item.packages
+                packages: item.packages,
+                fixace: item.fixace || 0,
+                discount: item.discount || 0
               }))
             ]
           };
@@ -52,9 +54,20 @@ export function useConfigData(bundleId = null, configId = null) {
       console.log('Raw snapshot data:', docSnap.data());
       
       if (docSnap.exists()) {
+        const data = docSnap.data();
+        // Update processedItems with fixace and discount values from the configuration
+        if (data.items) {
+          setProcessedItems(prevItems => 
+            prevItems.map(item => ({
+              ...item,
+              fixace: data.items[item.id]?.fixace || 0,
+              discount: data.items[item.id]?.discount || 0
+            }))
+          );
+        }
         return {
           id: docSnap.id,
-          ...docSnap.data()
+          ...data
         };
       } else {
         console.log('No configuration found with ID:', configId);
@@ -181,7 +194,9 @@ export function useConfigData(bundleId = null, configId = null) {
             price: item.price || 0,
             amount: configData.amounts[item.id] || 0,
             selected: item.selected || false,
-            individual: item.individual || false
+            individual: item.individual || false,
+            fixace: item.fixace || 0,
+            discount: item.discount || 0
           };
           return acc;
         }, {})
@@ -203,6 +218,54 @@ export function useConfigData(bundleId = null, configId = null) {
     }, 0);
   };
 
+  const updateItemPrice = useCallback((bundleId, itemId, updates) => {
+    setProcessedItems(prevItems => 
+      updateItemInTree(prevItems, itemId, (item) => {
+        const newPackages = [...(item.packages || [])];
+        const packageIndex = newPackages.findIndex(p => p.packageId === bundleId);
+        
+        if (packageIndex >= 0) {
+          newPackages[packageIndex] = {
+            ...newPackages[packageIndex],
+            ...updates
+          };
+        } else {
+          newPackages.push({
+            packageId: bundleId,
+            price: 0,
+            selected: false,
+            ...updates
+          });
+        }
+        
+        return { ...item, packages: newPackages };
+      })
+    );
+  }, []);
+
+  const saveItems = async (items) => {
+    try {
+      const currentItems = getAllItems(items);
+      const updatedItems = currentItems.map(({ id, name, categoryId, packages, note, checkbox, individual, fixace, discount }) => ({
+        id,
+        name,
+        categoryId,
+        packages: packages || [],
+        amount: 0,
+        checkbox: checkbox ?? false,
+        individual: individual ?? false,
+        fixace: fixace ?? 0,
+        discount: discount ?? 0,
+        ...(note && { note })
+      }));
+
+      await updateDoc(doc(db, 'default', 'items'), { items: updatedItems });
+    } catch (error) {
+      console.error('Error saving items:', error);
+      throw error;
+    }
+  };
+
   return {
     loading,
     setLoading,
@@ -219,6 +282,40 @@ export function useConfigData(bundleId = null, configId = null) {
     saveConfiguration,
     configurations,
     currentConfig,
-    getConfigurationById
+    getConfigurationById,
+    updateItemPrice,
+    saveItems,
+    updateItemInTree,
+    getAllItems
   };
-} 
+}
+
+export const updateItemInTree = (items, itemId, updateFn) => {
+  return items.map(item => {
+    if (item.id === itemId) {
+      return updateFn(item);
+    }
+    
+    if (item.type === 'category' && item.children) {
+      const updatedChildren = updateItemInTree(item.children, itemId, updateFn);
+      if (updatedChildren !== item.children) {
+        return {
+          ...item,
+          children: updatedChildren
+        };
+      }
+    }
+    return item;
+  });
+};
+
+export const getAllItems = (items) => {
+  return items.reduce((acc, item) => {
+    if (item.type === 'item') {
+      return [...acc, item];
+    } else if (item.children) {
+      return [...acc, ...getAllItems(item.children)];
+    }
+    return acc;
+  }, []);
+}; 
