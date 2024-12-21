@@ -18,7 +18,7 @@ function LoginPage() {
 
     try {
       await signInWithEmailAndPassword(auth, email, password);
-      navigate('/users'); // Redirect to users page after successful login
+      navigate('/'); // Redirect to users page after successful login
     } catch (err) {
       console.error('Login error:', err);
       setError('Failed to log in. Please check your credentials.');

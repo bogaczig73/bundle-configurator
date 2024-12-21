@@ -13,6 +13,9 @@ import { auth } from "./firebase";
 import { onAuthStateChanged } from "firebase/auth";
 import { TestPage } from "./pages/TestPage";
 import { TestPage2 } from "./pages/TestPage2";
+import ProtectedRoute from "./components/ProtectedRoute";
+import UnauthorizedPage from "./pages/UnauthorizedPage";
+
 function App() {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -34,28 +37,54 @@ function App() {
     <BundleProvider>
       <Router>
         <Routes>
-          <Route path="/login" element={!user ? <LoginPage /> : <Navigate to="/users" />} />
-          <Route
-            path="/*"
-            element={
-              user ? (
-                <Routes>
-                  <Route path="/" element={<HomePage />} />
-                  <Route path="/configurator" element={<ConfiguratorPage />} />
-                  <Route path="/bundle" element={<BundleSettingsPage />} />
-                  <Route path="/bundle/create/:userId" element={<BundleSettingsPage />} />
-                  <Route path="/users" element={<UserManagementPage />} />
-                  <Route path="/configurator/create/:userId" element={<ConfiguratorPage />} />
-                  <Route path="/configurator/:bundleId" element={<ConfiguratorPage />} />
-                  <Route path="/viewoffers" element={<ViewOffersPage />} />
-                  <Route path="/test" element={<TestPage />} />
-                  <Route path="/test2" element={<TestPage2 />} />
-                </Routes>
-              ) : (
-                <Navigate to="/login" />
-              )
-            }
-          />
+          <Route path="/login" element={!user ? <LoginPage /> : <Navigate to="/" />} />
+          <Route path="/unauthorized" element={<UnauthorizedPage />} />
+          
+          <Route path="/*" element={
+            <Routes>
+              <Route path="/" element={
+                <ProtectedRoute allowedRoles={['admin', 'account', 'customer']}>
+                  <HomePage />
+                </ProtectedRoute>
+              } />
+              
+              <Route path="/configurator" element={
+                <ProtectedRoute allowedRoles={['admin', 'account']}>
+                  <ConfiguratorPage />
+                </ProtectedRoute>
+              } />
+              
+              <Route path="/bundle" element={
+                <ProtectedRoute allowedRoles={['admin']}>
+                  <BundleSettingsPage />
+                </ProtectedRoute>
+              } />
+              
+              <Route path="/users" element={
+                <ProtectedRoute allowedRoles={['admin']}>
+                  <UserManagementPage />
+                </ProtectedRoute>
+              } />
+              
+              <Route path="/viewoffers" element={
+                <ProtectedRoute allowedRoles={['admin', 'account']}>
+                  <ViewOffersPage />
+                </ProtectedRoute>
+              } />
+              
+              <Route path="/configurator/create/:userId" element={
+                <ProtectedRoute allowedRoles={['admin', 'account']}>
+                  <ConfiguratorPage />
+                </ProtectedRoute>
+              } />
+              
+              <Route path="/configurator/:bundleId" element={
+                <ProtectedRoute allowedRoles={['admin', 'account', 'customer']}>
+                  <ConfiguratorPage />
+                </ProtectedRoute>
+              } />
+            </Routes>
+          } />
         </Routes>
       </Router>
     </BundleProvider>

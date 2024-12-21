@@ -1,53 +1,29 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useLocation, Link, useNavigate } from 'react-router-dom';
 import logo from '../images/ABRA_White_Primary.png';
-import { logout } from '../api/auth';
+import { signOut } from 'firebase/auth';
 import { auth } from '../firebase';
-import { doc, getDoc } from 'firebase/firestore';
-import { db } from '../firebase';
+import { useCurrentUser } from '../api/users';
 
 function Sidebar({ children }) {
   const location = useLocation();
   const navigate = useNavigate();
   const [isOpen, setIsOpen] = useState(true);
-  const [username, setUsername] = useState('');
+  const { user, logout } = useCurrentUser();
 
-  useEffect(() => {
-    const fetchUserData = async () => {
-      if (auth.currentUser) {
+  const getNavigationItems = (userRole) => {
+    const allNavigation = [
+      { name: 'Home', path: '/', roles: ['admin', 'account', 'customer'] },
+      { name: 'Configurator', path: '/configurator', roles: ['admin', 'account'] },
+      { name: 'Bundle Settings', path: '/bundle', roles: ['admin'] },
+      { name: 'Users', path: '/users', roles: ['admin'] },
+      { name: 'View Offers', path: '/viewoffers', roles: ['admin', 'account'] },
+    ];
 
-        try {
-          const userDoc = await getDoc(doc(db, 'users', auth.currentUser.uid));
-          
-          if (userDoc.exists()) {
-            const userData = userDoc.data();
-            if (userData?.username) {
-              setUsername(userData.username);
-            } else {
-              console.warn('Username field is missing in user document');
-              setUsername('User'); // Fallback value
-            }
-          } else {
-            console.warn('User document does not exist');
-            setUsername('User'); // Fallback value
-          }
-        } catch (error) {
-          console.error('Error fetching user data:', error);
-          setUsername('User'); // Fallback value
-        }
-      }
-    };
+    if (!userRole) return [];
 
-    fetchUserData();
-  }, []);
-
-  const navigation = [
-    { name: 'Configurator', path: '/configurator' },
-    { name: 'Bundle Settings', path: '/bundle' },
-    { name: 'Users', path: '/users' },
-    { name: 'My offers', path: '/viewoffers' },
-    { name: 'Home', path: '/' }
-  ];
+    return allNavigation.filter(item => item.roles.includes(userRole));
+  };
 
   const handleLogout = async () => {
     try {
@@ -57,6 +33,8 @@ function Sidebar({ children }) {
       console.error('Logout failed:', error);
     }
   };
+
+  const navigationItems = getNavigationItems(user?.role);
 
   return (
     <div className="flex">
@@ -85,36 +63,34 @@ function Sidebar({ children }) {
         </div>
         
         <nav className="space-y-2 flex-1">
-          {navigation.map((item) => (
+          {navigationItems.map((item) => (
             <Link
               key={item.path}
               to={item.path}
-              className={`menu-item block px-4 py-2 rounded-lg transition-colors ${
-                location.pathname === item.path
-                  ? 'menu-item-selected'
-                  : ''
-              } ${!isOpen && 'px-2'}`}
+              className={`block px-4 py-2 rounded-lg transition-colors duration-200
+                ${location.pathname === item.path 
+                  ? 'bg-gray-700 text-white' 
+                  : 'text-gray-300 hover:bg-gray-700 hover:text-white'}
+                ${!isOpen && 'px-2 text-center'}`}
             >
               {isOpen ? item.name : item.name.charAt(0)}
             </Link>
           ))}
         </nav>
 
-        {/* User Profile Section */}
-        <div className="border-t border-gray-700 pt-4 mt-4">
-          <div className={`flex items-center space-x-3 px-4 py-2 ${!isOpen && 'justify-center'}`}>
-            <div className="w-8 h-8 rounded-full bg-gray-600 flex items-center justify-center">
-              {username.charAt(0).toUpperCase()}
+        <div className="mt-auto">
+          {user && (
+            <div className={`mb-4 ${!isOpen && 'text-center'}`}>
+              <p className="text-sm text-gray-400">Logged in as:</p>
+              <p className="text-sm">{user.email}</p>
+              <p className="text-xs text-gray-400">({user.role})</p>
             </div>
-            {isOpen && (
-              <span className="text-sm font-medium">{username}</span>
-            )}
-          </div>
+          )}
           <button
             onClick={handleLogout}
-            className="w-full text-left menu-item block px-4 py-2 rounded-lg transition-colors text-red-400 hover:text-red-300 hover:bg-gray-700 mt-2"
+            className="w-full px-4 py-2 text-sm text-white bg-red-600 rounded-lg hover:bg-red-700"
           >
-            {isOpen ? 'Logout' : 'L'}
+            {isOpen ? 'Logout' : '×'}
           </button>
         </div>
       </div>

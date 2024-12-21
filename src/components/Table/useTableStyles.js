@@ -1,5 +1,10 @@
 export const abraColors = ['abraYellow', 'abraOrange', 'abraMagenta'];
 
+export const getColorHex = (index) => {
+  const colors = ['#f6b200', '#e96b46', '#e1007b'];
+  return colors[index % colors.length];
+};
+
 const getBundleBorderClasses = (index) => `
   border-l-2 border-r-2
   border-${abraColors[index % abraColors.length]}
@@ -47,6 +52,13 @@ export const useTableStyles = (exporting = false) => ({
     priceNote: "text-xs text-gray-500",
     itemRow: "hover:bg-gray-50/70 transition-colors duration-150",
     activeBundle: "!text-white !font-bold",
+
+    // Add new accordion-related styles
+    accordionWrapper: "flex items-center gap-2 w-full",
+    accordionIcon: "w-4 h-4 text-gray-500 transition-transform duration-200",
+    accordionIconExpanded: "transform rotate-180",
+    accordionContent: "flex flex-col flex-1",
+    accordionName: "flex items-center justify-between w-full",
 
     getBundleHeaderBorderClasses,
     getBundleBorderClasses,

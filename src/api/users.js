@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { collection, getDocs, setDoc, doc, getDoc } from 'firebase/firestore';
 import { createUserWithEmailAndPassword } from 'firebase/auth';
 import { db, auth } from '../firebase';
+import { signOut } from 'firebase/auth';
 
 // API Functions
 export const createUser = async ({ email, password, username, role }) => {
@@ -87,6 +88,15 @@ export function useCurrentUser() {
   return {
     user,
     loading,
-    error
+    error,
+    logout: async () => {
+      try {
+        await signOut(auth);
+        setUser(null);
+      } catch (err) {
+        console.error('Error signing out:', err);
+        throw err;
+      }
+    }
   };
 } 
