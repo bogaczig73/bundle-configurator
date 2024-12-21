@@ -310,7 +310,12 @@ export function TableRow({ item, bundles, amounts, onAmountChange, readonly = fa
         {bundles.map((bundle, index) => (
           <React.Fragment key={`${itemInstance.id}-${bundle.id}-group`}>
             <td className="w-[20px]" />
-            <td className={`${tableStyles.columnWidths.bundle} ${tableStyles.packageBodyCell} ${tableStyles.getBundleBorderClasses(index)}`}>
+            <td className={`
+              ${tableStyles.columnWidths.bundle} 
+              ${tableStyles.packageBodyCell} 
+              ${tableStyles.getBundleBorderClasses(index)}
+              ${!bundle.userLimit > 0 ? tableStyles.inactiveBundle.cell : ''}
+            `}>
               <div className="flex flex-col items-center">
                 {itemInstance.getPrice(bundle.id) === 0 ? (
                   <span className="">

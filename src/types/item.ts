@@ -33,7 +33,7 @@ export class Item implements ItemData {
   readonly id: number;
   readonly name: string;
   readonly categoryId: number;
-  readonly type?: ItemType;
+  readonly type: ItemType;
   readonly description?: string;
   readonly note?: string;
   readonly packages: Package[];
@@ -47,6 +47,12 @@ export class Item implements ItemData {
   price?: number;
   selected?: boolean;
 
+  // New fields for better calculation handling
+  private _fixaceAmount: number = 0;
+  private _overAmount: number = 0;
+  private _fixaceDiscount: number = 0;
+  private _overDiscount: number = 0;
+
   static create(data: ItemData | Partial<ItemData>): Item {
     return new Item(data);
   }
@@ -55,7 +61,7 @@ export class Item implements ItemData {
     this.id = data.id ?? 0;
     this.name = data.name ?? '';
     this.categoryId = data.categoryId ?? 0;
-    this.type = data.type;
+    this.type = data.type ?? 'item';
     this.description = data.description;
     this.note = data.note;
     this.packages = data.packages ?? [];
@@ -70,6 +76,34 @@ export class Item implements ItemData {
     this.selected = data.selected;
 
     Object.freeze(this.packages); // Make packages immutable
+  }
+
+  // Setters for amounts and discounts
+  setAmounts(totalAmount: number, fixaceAmount: number) {
+    this._fixaceAmount = Math.min(totalAmount, fixaceAmount);
+    this._overAmount = Math.max(0, totalAmount - fixaceAmount);
+  }
+
+  setDiscounts(fixaceDiscount: number, overDiscount: number) {
+    this._fixaceDiscount = fixaceDiscount;
+    this._overDiscount = overDiscount;
+  }
+
+  // Getters for internal values
+  getFixaceAmount(): number {
+    return this._fixaceAmount;
+  }
+
+  getOverAmount(): number {
+    return this._overAmount;
+  }
+
+  getFixaceDiscount(): number {
+    return this._fixaceDiscount;
+  }
+
+  getOverDiscount(): number {
+    return this._overDiscount;
   }
 
   getPrice(bundleId: number): number {
@@ -91,19 +125,35 @@ export class Item implements ItemData {
     return this.packages.every(pkg => pkg.price === 0);
   }
 
-  calculateTotalPrice(bundleId: number, amounts: Record<number, number>, discounts: Record<number, number>): number {
+  calculateTotalPrice(bundleId: number): number {
     const basePrice = this.getPrice(bundleId);
-    const amount = amounts[this.id] ?? 0;
-    const discount = discounts[this.id] ?? 0;
     const discountedAmount = this.getDiscount(bundleId);
     
-    return basePrice * Math.max(0, amount - discountedAmount) * (1 - discount / 100);
+    // Calculate fixace part
+    const fixacePrice = basePrice * this._fixaceAmount * (1 - this._fixaceDiscount / 100);
+    
+    // Calculate over-fixace part (taking into account discounted amount)
+    const overAmount = Math.max(0, this._overAmount - discountedAmount);
+    const overPrice = basePrice * overAmount * (1 - this._overDiscount / 100);
+    
+    console.log('Item price calculation:', {
+      id: this.id,
+      basePrice,
+      fixaceAmount: this._fixaceAmount,
+      fixaceDiscount: this._fixaceDiscount,
+      fixacePrice,
+      overAmount,
+      overDiscount: this._overDiscount,
+      overPrice,
+      total: fixacePrice + overPrice
+    });
+    
+    return fixacePrice + overPrice;
   }
 
   hasIndividualDiscounts(amounts: { discount: Record<string, number> }): boolean {
-    return this.children?.some(
-      subItem => amounts.discount[subItem.id] !== undefined
-    ) ?? false;
+    return amounts.discount?.['Fixované položky'] !== undefined || 
+           amounts.discount?.['Položky nad rámec fixace'] !== undefined;
   }
 
   clone(overrides: Partial<ItemData> = {}): Item {

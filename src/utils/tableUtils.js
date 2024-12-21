@@ -17,6 +17,7 @@ export const processItems = (items, depth = 0, parentId = '') => {
       const uniqueId = currentParentId ? `${currentParentId}-${index}` : `${index}`;
       
       if (item.type === 'category') {
+        // Keep categories as plain objects
         const category = {
           ...item,
           uniqueId,
@@ -28,11 +29,12 @@ export const processItems = (items, depth = 0, parentId = '') => {
           process(item.children, currentDepth + 1, uniqueId);
         }
       } else {
+        // Convert to Item instance if it isn't already
         const itemInstance = Item.create({
           ...item,
           uniqueId,
           depth: currentDepth,
-          type: 'item'
+          type: 'item' // Only set type 'item' for non-categories
         });
         result.push(itemInstance);
       }
@@ -54,6 +56,7 @@ export const flattenItems = (items, depth = 0, parentId = '') => {
       const uniqueId = currentParentId ? `${currentParentId}-${index}` : `${index}`;
       
       if (item.type === 'category') {
+        // Keep categories as plain objects
         result.push({
           ...item,
           uniqueId,
@@ -64,12 +67,14 @@ export const flattenItems = (items, depth = 0, parentId = '') => {
           flatten(item.children, currentDepth + 1, uniqueId);
         }
       } else {
-        result.push({
+        // Convert to Item instance if it isn't already
+        const itemInstance = item instanceof Item ? item : Item.create({
           ...item,
           uniqueId,
           depth: currentDepth,
-          type: 'item'
+          type: 'item' // Only set type 'item' for non-categories
         });
+        result.push(itemInstance);
       }
     });
   };
@@ -143,59 +148,67 @@ export const getCheckmarkIcon = (index) => {
 };
 
 export const calculateBundleTotal = (bundle, items, amounts) => {
-  console.log('\nCalculating total for bundle:', bundle?.id);
-  console.log('Items count:', items?.length);
-  console.log('Amounts:', JSON.stringify(amounts, null, 2));
+  console.log('\nCalculating total for bundle:', {
+    bundleId: bundle?.id,
+    bundleUserLimit: bundle?.userLimit,
+    itemsCount: items?.length,
+    amounts: amounts
+  });
 
   if (!items || !Array.isArray(items)) {
     console.warn('No items provided or items is not an array');
     return 0;
   }
 
-  // Check if bundle is active
-  if (!bundle?.userLimit || bundle.userLimit <= 0) {
-    console.log('Bundle is inactive:', bundle?.id);
+  // Check if bundle is active based on userLimit
+  const userCount = amounts?.amounts?.[1] || 0;
+  if (!bundle?.userLimit || userCount > bundle.userLimit) {
+    console.log('Bundle is inactive:', {
+      bundleId: bundle?.id,
+      userCount,
+      userLimit: bundle?.userLimit
+    });
     return 0;
   }
 
   const total = items
     .filter(item => {
-      const isItem = item.type === 'item';
-      console.log(`Filtering item ${item.id}: type=${item.type}, isItem=${isItem}`);
-      return isItem;
+      // An item is valid if it's an Item instance and not a category
+      const isValidItem = item instanceof Item && item.type !== 'category';
+      console.log(`Filtering item ${item.id}:`, {
+        type: item.type,
+        isValidItem,
+        isItemInstance: item instanceof Item
+      });
+      return isValidItem;
     })
     .reduce((total, item) => {
-      console.log('\nProcessing item:', item.id, item.name);
+      // Update item's internal state
+      const amount = amounts?.amounts?.[item.id.toString()] ?? 0;
+      const fixaceAmount = amounts?.fixace?.[item.id.toString()] ?? 0;
+      const fixaceDiscount = amounts?.discount?.['Fixované položky'] ?? item.discount ?? 0;
+      const overDiscount = amounts?.discount?.['Položky nad rámec fixace'] ?? item.discount ?? 0;
       
-      // Use the Item class's calculateTotalPrice method if available
-      if (item instanceof Item) {
-        const itemTotal = item.calculateTotalPrice(
-          bundle.id,
-          amounts?.amounts || {},
-          amounts?.discount || {}
-        );
-        console.log('Item total (using Item class):', itemTotal);
-        return total + itemTotal;
-      }
+      // Set the amounts and discounts
+      item.setAmounts(amount, fixaceAmount);
+      item.setDiscounts(fixaceDiscount, overDiscount);
       
-      // Fallback to manual calculation for non-Item instances
-      const amount = amounts?.amounts?.[item.id] ?? 0;
-      const basePrice = getItemPrice(item, bundle.id);
-      const discountPercentage = amounts?.discount?.[item.id] ?? item.discount ?? 0;
-      const discountMultiplier = 1 - (discountPercentage / 100);
-      const itemTotal = basePrice * amount * discountMultiplier;
-      
-      console.log('Item total (manual calculation):', {
+      // Calculate total price using the item's method
+      const itemTotal = item.calculateTotalPrice(bundle.id);
+      console.log('Item calculation result:', {
+        id: item.id,
+        name: item.name,
         amount,
-        basePrice,
-        discountPercentage,
-        discountMultiplier,
+        fixaceAmount,
+        fixaceDiscount,
+        overDiscount,
+        basePrice: item.getPrice(bundle.id),
         itemTotal
       });
       
       return total + itemTotal;
     }, 0);
 
-  console.log('Final total for bundle:', bundle?.id, '=', total);
+  console.log('Bundle total:', total);
   return total;
 };

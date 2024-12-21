@@ -37,8 +37,13 @@ function ConfiguratorPage() {
 
   useEffect(() => {
     if (bundleData?.amounts) {
+      const convertedAmounts = Object.entries(bundleData.amounts).reduce((acc, [key, value]) => {
+        acc[key.toString()] = value;
+        return acc;
+      }, {});
+
       setAmounts({
-        amounts: bundleData.amounts,
+        amounts: convertedAmounts,
         discount: {},
         fixace: {}
       });
@@ -68,9 +73,12 @@ function ConfiguratorPage() {
         if (!newAmounts[field]) {
           newAmounts[field] = {};
         }
-        newAmounts[field][itemId] = Number(value);
+        // Convert itemId to string to ensure consistent key type
+        const key = itemId.toString();
+        newAmounts[field][key] = Number(value);
       }
       
+      console.log('Updated amounts:', newAmounts);
       return newAmounts;
     });
   };
@@ -154,15 +162,18 @@ function ConfiguratorPage() {
               <BundleTable
                 bundles={packages.map((pkg, index) => {
                   const userCount = amounts?.amounts?.[1] || 0;
-                  const prevThreshold = index > 0 ? packages[index - 1]?.userLimit || 0 : 0;
-                  const currentThreshold = pkg.userLimit || 0;
+                  console.log('Bundle activation check:', {
+                    bundleId: pkg.id,
+                    packageUserLimit: pkg.userLimit,
+                    userCount
+                  });
                   
-                  // Bundle is active if user count is > previous threshold and <= current threshold
-                  const isActive = userCount > prevThreshold && userCount <= currentThreshold;
+                  // Bundle is active if the user count (item ID 1) is less than or equal to its userLimit
+                  const isActive = userCount <= pkg.userLimit;
                   
                   return {
                     ...pkg,
-                    userLimit: isActive ? userCount : 0
+                    userLimit: isActive ? pkg.userLimit : 0
                   };
                 })}
                 items={processedItems || []}

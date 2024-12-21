@@ -85,4 +85,11 @@ export const useTableStyles = (exporting = false) => ({
         value: "text-xs text-gray-700",
         note: "text-[10px] text-gray-500 opacity-75"
     },
+
+    // Add new styles for inactive bundles
+    inactiveBundle: {
+      header: "bg-gray-50 text-gray-400",
+      cell: "bg-gray-50/50",
+      price: "text-gray-400"
+    },
 }); 

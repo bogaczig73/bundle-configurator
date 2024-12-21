@@ -71,13 +71,19 @@ export function TableHeader({
                   <th className={`
                     ${tableStyles.packageHeaderCell} 
                     ${tableStyles.getBundleHeaderBorderClasses(index)}
-                    ${isActive ? `bg-${abraColors[index]} ${tableStyles.activeBundle}` : ''}
+                    ${isActive 
+                      ? `bg-${abraColors[index]} ${tableStyles.activeBundle}` 
+                      : tableStyles.inactiveBundle.header
+                    }
                   `}>
                     <div className="flex flex-col items-center">
                       <span>{bundle.name}</span>
                       <span className={`
                         ${tableStyles.bundlePrice}
-                        ${isActive ? tableStyles.activeBundle : ''}
+                        ${isActive 
+                          ? tableStyles.activeBundle 
+                          : tableStyles.inactiveBundle.price
+                        }
                       `}>
                         {formatPrice(bundleTotal)}
                       </span>
