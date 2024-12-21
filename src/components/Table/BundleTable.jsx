@@ -5,7 +5,7 @@ import { flattenItems } from '../../utils/tableUtils';
 import { useTableStyles } from './useTableStyles';
 
 
-export const BundleTable = forwardRef(({ bundles = [], items = [], onAmountChange, amounts = {}, readonly = false, exporting = false }, ref) => {
+export const BundleTable = forwardRef(({ bundles = [], items = [], onAmountChange, amounts = {}, readonly = false, exporting = false, showIndividualDiscount = false, showFixace = false }, ref) => {
   const tableStyles = useTableStyles(exporting);
   const flattenedItems = useMemo(() => flattenItems(items), [items]);
 
@@ -16,6 +16,8 @@ export const BundleTable = forwardRef(({ bundles = [], items = [], onAmountChang
           amounts={amounts}
           tableStyles={tableStyles}
           flattenedItems={flattenedItems}
+          showIndividualDiscount={showIndividualDiscount}
+          showFixace={showFixace}
         />
         <TableBody 
           bundles={bundles}
@@ -24,6 +26,8 @@ export const BundleTable = forwardRef(({ bundles = [], items = [], onAmountChang
           onAmountChange={onAmountChange}
           tableStyles={tableStyles}
           readonly={readonly}
+          showIndividualDiscount={showIndividualDiscount}
+          showFixace={showFixace}
         />
       </div>
   );

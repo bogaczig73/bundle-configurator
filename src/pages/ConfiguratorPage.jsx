@@ -4,6 +4,7 @@ import Sidebar from '../components/Sidebar';
 import { useConfigData } from '../hooks/useConfigData';
 import { BundleTable } from '../components/Table/BundleTable';
 import Modal from '../components/Modal';
+import SettingsModal from '../components/SettingsModal';
 
 function ConfiguratorPage() {
   const { bundleId } = useParams();
@@ -15,12 +16,16 @@ function ConfiguratorPage() {
     bundleData,
     users,
     saveConfiguration,
-    setError
+    setError,
+    setProcessedItems
   } = useConfigData(bundleId);
   const [amounts, setAmounts] = useState({});
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [configName, setConfigName] = useState('');
   const [selectedCustomer, setSelectedCustomer] = useState('');
+  const [showIndividualDiscount, setShowIndividualDiscount] = useState(false);
+  const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
+  const [showFixace, setShowFixace] = useState(false);
 
   const customers = useMemo(() => {
     return users.filter(user => user.role === 'customer');
@@ -32,8 +37,18 @@ function ConfiguratorPage() {
     }
   }, [bundleData]);
 
-  const handleAmountChange = (itemId, amount) => {
-    setAmounts(prev => ({ ...prev, [itemId]: Number(amount) }));
+  const handleAmountChange = (itemId, amount, field = 'amount') => {
+    if (field === 'amount') {
+      setAmounts(prev => ({ ...prev, [itemId]: Number(amount) }));
+    } else if (field === 'fixace') {
+      setProcessedItems(prev => prev.map(item => 
+        item.id === itemId ? { ...item, fixace: Number(amount) } : item
+      ));
+    } else if (field === 'discount') {
+      setProcessedItems(prev => prev.map(item => 
+        item.id === itemId ? { ...item, discount: Number(amount) } : item
+      ));
+    }
   };
 
   const handleSaveConfig = async () => {
@@ -56,6 +71,14 @@ function ConfiguratorPage() {
     }
   };
 
+  const handleSettingChange = (setting, value) => {
+    if (setting === 'showIndividualDiscount') {
+      setShowIndividualDiscount(value);
+    } else if (setting === 'showFixace') {
+      setShowFixace(value);
+    }
+  };
+
   return (
     <div className="flex h-screen bg-gray-50">
       <Sidebar />
@@ -66,12 +89,22 @@ function ConfiguratorPage() {
               <h1 className="text-2xl font-bold text-gray-900">
                 {bundleId ? `Bundle ${bundleId}` : 'New Bundle Configuration'}
               </h1>
-              <button
-                onClick={() => setIsModalOpen(true)}
-                className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
-              >
-                Save Configuration
-              </button>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setIsSettingsModalOpen(true)}
+                  className="bg-gray-100 text-gray-700 px-4 py-2 rounded hover:bg-gray-200"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                    <path fillRule="evenodd" d="M11.49 3.17c-.38-1.56-2.6-1.56-2.98 0a1.532 1.532 0 01-2.286.948c-1.372-.836-2.942.734-2.106 2.106.54.886.061 2.042-.947 2.287-1.561.379-1.561 2.6 0 2.978a1.532 1.532 0 01.947 2.287c-.836 1.372.734 2.942 2.106 2.106a1.532 1.532 0 012.287.947c.379 1.561 2.6 1.561 2.978 0a1.533 1.533 0 012.287-.947c1.372.836 2.942-.734 2.106-2.106a1.533 1.533 0 01.947-2.287c1.561-.379 1.561-2.6 0-2.978a1.532 1.532 0 01-.947-2.287c.836-1.372-.734-2.942-2.106-2.106a1.532 1.532 0 01-2.287-.947zM10 13a3 3 0 100-6 3 3 0 000 6z" clipRule="evenodd" />
+                  </svg>
+                </button>
+                <button
+                  onClick={() => setIsModalOpen(true)}
+                  className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+                >
+                  Save Configuration
+                </button>
+              </div>
             </div>
             {error && (
               <div className="mt-4 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">
@@ -98,6 +131,8 @@ function ConfiguratorPage() {
                 items={processedItems || []}
                 onAmountChange={handleAmountChange}
                 amounts={amounts}
+                showIndividualDiscount={showIndividualDiscount}
+                showFixace={showFixace}
               />
               
             </div>
@@ -153,6 +188,17 @@ function ConfiguratorPage() {
             </div>
           </Modal>
         )}
+
+        {/* Add Settings Modal */}
+        <SettingsModal
+          show={isSettingsModalOpen}
+          onClose={() => setIsSettingsModalOpen(false)}
+          settings={{ 
+            showIndividualDiscount,
+            showFixace
+          }}
+          onSettingChange={handleSettingChange}
+        />
       </div>
     </div>
   );

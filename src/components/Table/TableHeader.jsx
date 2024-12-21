@@ -3,11 +3,11 @@ import { TableColgroup } from './TableColgroup';
 import { isBundleActive, formatPrice, calculateBundleTotal } from '../../utils/tableUtils';
 import { abraColors } from './useTableStyles';
 
-export function TableHeader({ bundles, amounts, tableStyles, flattenedItems }) {
+export function TableHeader({ bundles, amounts, tableStyles, flattenedItems, showIndividualDiscount = false, showFixace = false }) {
   return (
     <div className="sticky top-0 z-10">
       <table className="w-full table-fixed">
-        <TableColgroup bundles={bundles} tableStyles={tableStyles} />
+        <TableColgroup bundles={bundles} tableStyles={tableStyles} showIndividualDiscount={showIndividualDiscount} showFixace={showFixace} />
         <thead>
           <tr>
             <th className={`${tableStyles.columnWidths.details} text-left ${tableStyles.headerCell}`}>
@@ -18,11 +18,20 @@ export function TableHeader({ bundles, amounts, tableStyles, flattenedItems }) {
                 Amount
               </div>
             </th>
-            <th className={tableStyles.headerCell}>
-              <div className={tableStyles.centerWrapper}>
-                Fixace
-              </div>
-            </th>
+            {showFixace && (
+              <th className={tableStyles.headerCell}>
+                <div className={tableStyles.centerWrapper}>
+                  Fixace
+                </div>
+              </th>
+            )}
+            {showIndividualDiscount && (
+              <th className={tableStyles.headerCell}>
+                <div className={tableStyles.centerWrapper}>
+                  Individual Discount
+                </div>
+              </th>
+            )}
             {bundles.map((bundle, index) => (
               <React.Fragment key={`${bundle.id}-header`}>
                 <th className="w-[20px] border-none" />

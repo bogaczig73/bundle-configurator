@@ -3,11 +3,11 @@ import { TableColgroup } from './TableColgroup';
 import { TableRow } from './TableRow';
 
 
-export function TableBody({ bundles, items, amounts, onAmountChange, tableStyles, readonly = false }) {
+export function TableBody({ bundles, items, amounts, onAmountChange, tableStyles, readonly = false, showIndividualDiscount = false, showFixace = false }) {
   return (
     <div className={tableStyles.tableWrapper}>
       <table className="w-full table-fixed">
-        <TableColgroup bundles={bundles} tableStyles={tableStyles} />
+        <TableColgroup bundles={bundles} tableStyles={tableStyles} showIndividualDiscount={showIndividualDiscount} showFixace={showFixace} />
         <tbody className="divide-y-0">
           {items.map((item) => (
             <TableRow 
@@ -18,6 +18,8 @@ export function TableBody({ bundles, items, amounts, onAmountChange, tableStyles
               onAmountChange={onAmountChange}
               tableStyles={tableStyles}
               readonly={readonly}
+              showIndividualDiscount={showIndividualDiscount}
+              showFixace={showFixace}
             />
           ))}
         </tbody>

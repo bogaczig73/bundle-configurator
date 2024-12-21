@@ -12,7 +12,7 @@ import crossIcon from '../../images/symbols/Zapor_znamenko.svg';
 import { useTableStyles, getColorHex } from './useTableStyles';
 import { SubItemRow } from './SubItemRow';
 
-export function TableRow({ item, bundles, amounts, onAmountChange, readonly = false }) {
+export function TableRow({ item, bundles, amounts, onAmountChange, readonly = false, showIndividualDiscount = false, showFixace = false }) {
     const tableStyles = useTableStyles();
     const [isExpanded, setIsExpanded] = React.useState(false);
 
@@ -47,13 +47,25 @@ export function TableRow({ item, bundles, amounts, onAmountChange, readonly = fa
             <div className={tableStyles.centerWrapper}></div>
           </td>
 
-          <td className={`
-            ${tableStyles.columnWidths.fixace} 
-            ${tableStyles.bodyCell}
-            ${tableStyles.categoryRow}
-          `}>
-            <div className={tableStyles.centerWrapper}></div>
-          </td>
+          {showFixace && (
+            <td className={`
+              ${tableStyles.columnWidths.fixace} 
+              ${tableStyles.bodyCell}
+              ${tableStyles.categoryRow}
+            `}>
+              <div className={tableStyles.centerWrapper}></div>
+            </td>
+          )}
+
+          {showIndividualDiscount && (
+            <td className={`
+              ${tableStyles.columnWidths.fixace} 
+              ${tableStyles.bodyCell}
+              ${tableStyles.categoryRow}
+            `}>
+              <div className={tableStyles.centerWrapper}></div>
+            </td>
+          )}
 
           {bundles.map((bundle, index) => (
             <React.Fragment key={`${item.id}-${bundle.id}-group`}>
@@ -119,6 +131,7 @@ export function TableRow({ item, bundles, amounts, onAmountChange, readonly = fa
                   type="checkbox"
                   checked={amounts[item.id] === 1}
                   onChange={readonly ? undefined : (e) => onAmountChange(item.id, e.target.checked ? 1 : 0)}
+                  onClick={(e) => e.stopPropagation()}
                   disabled={readonly}
                   className={tableStyles.checkbox}
                 />
@@ -127,7 +140,7 @@ export function TableRow({ item, bundles, amounts, onAmountChange, readonly = fa
                   {amounts[item.id] || 0}
                 </span>
               ) : (
-                <div className="flex items-center">
+                <div className="flex items-center" onClick={(e) => e.stopPropagation()}>
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
@@ -148,6 +161,7 @@ export function TableRow({ item, bundles, amounts, onAmountChange, readonly = fa
                       e.stopPropagation();
                       onAmountChange(item.id, Number(e.target.value));
                     }}
+                    onClick={(e) => e.stopPropagation()}
                     className={tableStyles.numberInput}
                   />
                   <button
@@ -166,45 +180,91 @@ export function TableRow({ item, bundles, amounts, onAmountChange, readonly = fa
             </div>
           </td>
 
-          <td className={`${tableStyles.columnWidths.fixace} ${tableStyles.bodyCell}`}>
-            <div className={tableStyles.centerWrapper}>
-              <div className="flex items-center">
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onAmountChange(item.id, Math.max(0, (amounts[item.id] || 0) - 1));
-                  }}
-                  className={tableStyles.inputCounterButton + " rounded-s-md"}
-                >
-                  <svg className={tableStyles.counterButtonSymbols} aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 18 2">
-                    <path stroke="currentColor" strokeLinejoin="round" strokeWidth="2" d="M1 1h16"/>
-                  </svg>
-                </button>
-                
-                <input
-                  type="text"
-                  min={0}
-                  value={amounts[item.id] || 0}
-                  onChange={(e) => {
-                    e.stopPropagation();
-                    onAmountChange(item.id, Number(e.target.value));
-                  }}
-                  className={tableStyles.numberInput}
-                />
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onAmountChange(item.id, (amounts[item.id] || 0) + 1);
-                  }}
-                  className={tableStyles.inputCounterButton + " rounded-e-md"}
-                >
-                  <svg className={tableStyles.counterButtonSymbols} aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 18 18">
-                    <path stroke="currentColor" strokeLinejoin="round" strokeWidth="2" d="M9 1v16M1 9h16"/>
-                  </svg>
-                </button>
+          {showFixace && (
+            <td className={`${tableStyles.columnWidths.fixace} ${tableStyles.bodyCell}`}>
+              <div className={tableStyles.centerWrapper}>
+                <div className="flex items-center" onClick={(e) => e.stopPropagation()}>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onAmountChange(item.id, Math.max(0, (item.fixace || 0) - 1), 'fixace');
+                    }}
+                    className={tableStyles.inputCounterButton + " rounded-s-md"}
+                  >
+                    <svg className={tableStyles.counterButtonSymbols} aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 18 2">
+                      <path stroke="currentColor" strokeLinejoin="round" strokeWidth="2" d="M1 1h16"/>
+                    </svg>
+                  </button>
+                  
+                  <input
+                    type="text"
+                    min={0}
+                    value={item.fixace || 0}
+                    onChange={(e) => {
+                      e.stopPropagation();
+                      onAmountChange(item.id, Number(e.target.value), 'fixace');
+                    }}
+                    onClick={(e) => e.stopPropagation()}
+                    className={tableStyles.numberInput}
+                  />
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onAmountChange(item.id, (item.fixace || 0) + 1, 'fixace');
+                    }}
+                    className={tableStyles.inputCounterButton + " rounded-e-md"}
+                  >
+                    <svg className={tableStyles.counterButtonSymbols} aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 18 18">
+                      <path stroke="currentColor" strokeLinejoin="round" strokeWidth="2" d="M9 1v16M1 9h16"/>
+                    </svg>
+                  </button>
+                </div>
               </div>
-            </div>
-          </td>
+            </td>
+          )}
+
+          {showIndividualDiscount && (
+            <td className={`${tableStyles.columnWidths.fixace} ${tableStyles.bodyCell}`}>
+              <div className={tableStyles.centerWrapper}>
+                <div className="flex items-center" onClick={(e) => e.stopPropagation()}>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onAmountChange(item.id, Math.max(0, (item.discount || 0) - 1), 'discount');
+                    }}
+                    className={tableStyles.inputCounterButton + " rounded-s-md"}
+                  >
+                    <svg className={tableStyles.counterButtonSymbols} aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 18 2">
+                      <path stroke="currentColor" strokeLinejoin="round" strokeWidth="2" d="M1 1h16"/>
+                    </svg>
+                  </button>
+                  
+                  <input
+                    type="text"
+                    min={0}
+                    value={item.discount || 0}
+                    onChange={(e) => {
+                      e.stopPropagation();
+                      onAmountChange(item.id, Number(e.target.value), 'discount');
+                    }}
+                    onClick={(e) => e.stopPropagation()}
+                    className={tableStyles.numberInput}
+                  />
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onAmountChange(item.id, (item.discount || 0) + 1, 'discount');
+                    }}
+                    className={tableStyles.inputCounterButton + " rounded-e-md"}
+                  >
+                    <svg className={tableStyles.counterButtonSymbols} aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 18 18">
+                      <path stroke="currentColor" strokeLinejoin="round" strokeWidth="2" d="M9 1v16M1 9h16"/>
+                    </svg>
+                  </button>
+                </div>
+              </div>
+            </td>
+          )}
 
           {bundles.map((bundle, index) => (
             <React.Fragment key={`${item.id}-${bundle.id}-group`}>
@@ -247,18 +307,22 @@ export function TableRow({ item, bundles, amounts, onAmountChange, readonly = fa
         {isExpanded && (
           <>
             <SubItemRow 
-              content="Test 1"
+              content="Fixované položky"
               bundles={bundles}
               amounts={amounts}
               tableStyles={tableStyles}
               parentItem={item}
+              showIndividualDiscount={showIndividualDiscount}
+              showFixace={showFixace}
             />
             <SubItemRow 
-              content="Test 2"
+              content="Položky nad rámec fixace"
               bundles={bundles}
               amounts={amounts}
               tableStyles={tableStyles}
               parentItem={item}
+              showIndividualDiscount={showIndividualDiscount}
+              showFixace={showFixace}
             />
           </>
         )}
