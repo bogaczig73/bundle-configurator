@@ -152,8 +152,8 @@ export class Item implements ItemData {
   }
 
   hasIndividualDiscounts(amounts: { discount: Record<string, number> }): boolean {
-    return amounts.discount?.['Fixované položky'] !== undefined || 
-           amounts.discount?.['Položky nad rámec fixace'] !== undefined;
+    return amounts.discount?.[`${this.id}_fixed_items`] !== undefined || 
+           amounts.discount?.[`${this.id}_over_fixation_items`] !== undefined;
   }
 
   clone(overrides: Partial<ItemData> = {}): Item {

@@ -88,8 +88,8 @@ export const useTableStyles = (exporting = false) => ({
 
     // Add new styles for inactive bundles
     inactiveBundle: {
-      header: "bg-gray-50 text-gray-400",
-      cell: "bg-gray-50/50",
+      header: "opacity-40 border-opacity-40 bg-gray-100",
+      cell: "opacity-40 border-opacity-40 bg-gray-100",
       price: "text-gray-400"
     },
 }); 

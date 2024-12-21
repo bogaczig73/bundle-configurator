@@ -186,8 +186,8 @@ export const calculateBundleTotal = (bundle, items, amounts) => {
       // Update item's internal state
       const amount = amounts?.amounts?.[item.id.toString()] ?? 0;
       const fixaceAmount = amounts?.fixace?.[item.id.toString()] ?? 0;
-      const fixaceDiscount = amounts?.discount?.['Fixované položky'] ?? item.discount ?? 0;
-      const overDiscount = amounts?.discount?.['Položky nad rámec fixace'] ?? item.discount ?? 0;
+      const fixaceDiscount = amounts?.discount?.[`${item.id}_fixed_items`] ?? item.discount ?? 0;
+      const overDiscount = amounts?.discount?.[`${item.id}_over_fixation_items`] ?? item.discount ?? 0;
       
       // Set the amounts and discounts
       item.setAmounts(amount, fixaceAmount);

@@ -46,7 +46,7 @@ export function SubItemRow({
         const packageInfo = parentItem.packages?.find(p => p.packageId === bundle.id);
         return sum + (packageInfo?.discountedAmount || 0);
       }, 0);
-      return totalDiscountedAmount > 0 ? `První ${totalDiscountedAmount} v ceně` : '';
+      return totalDiscountedAmount > 0 ? `First ${totalDiscountedAmount} in price` : '';
     }
     return '';
   };
@@ -62,8 +62,9 @@ export function SubItemRow({
   };
 
   const calculateFinalPrice = (basePrice, type, amounts, parentItem, bundle) => {
+    const discountKey = `${parentItem.id}_${type === 'fixace' ? 'fixed_items' : 'over_fixation_items'}`;
     const discountedAmount = getItemDiscount(parentItem, bundle.id);
-    const discountPercentage = amounts.discount?.[content] ?? parentItem.discount ?? 0;
+    const discountPercentage = amounts.discount?.[discountKey] ?? parentItem.discount ?? 0;
     
     // Calculate applicable units based on type
     let applicableUnits = 0;
@@ -141,8 +142,9 @@ export function SubItemRow({
               <button
                 onClick={(e) => {
                   e.stopPropagation();
-                  const currentDiscount = amounts.discount?.[content] ?? parentItem.discount ?? 0;
-                  onDiscountChange(content, Math.max(0, currentDiscount - 5));
+                  const discountKey = `${parentItem.id}_${type === 'fixace' ? 'fixed_items' : 'over_fixation_items'}`;
+                  const currentDiscount = amounts.discount?.[discountKey] ?? parentItem.discount ?? 0;
+                  onDiscountChange(discountKey, Math.max(0, currentDiscount - 5));
                 }}
                 className={tableStyles.inputCounterButton + " rounded-s-md"}
               >
@@ -155,11 +157,11 @@ export function SubItemRow({
                 type="text"
                 min={0}
                 max={100}
-                value={amounts.discount?.[content] ?? parentItem.discount ?? 0}
+                value={amounts.discount?.[`${parentItem.id}_${type === 'fixace' ? 'fixed_items' : 'over_fixation_items'}`] ?? parentItem.discount ?? 0}
                 onChange={(e) => {
                   e.stopPropagation();
                   const value = Math.min(100, Math.max(0, Number(e.target.value)));
-                  onDiscountChange(content, value);
+                  onDiscountChange(`${parentItem.id}_${type === 'fixace' ? 'fixed_items' : 'over_fixation_items'}`, value);
                 }}
                 onClick={(e) => e.stopPropagation()}
                 className={tableStyles.numberInput}
@@ -168,8 +170,9 @@ export function SubItemRow({
               <button
                 onClick={(e) => {
                   e.stopPropagation();
-                  const currentDiscount = amounts.discount?.[content] ?? parentItem.discount ?? 0;
-                  onDiscountChange(content, Math.min(100, currentDiscount + 5));
+                  const discountKey = `${parentItem.id}_${type === 'fixace' ? 'fixed_items' : 'over_fixation_items'}`;
+                  const currentDiscount = amounts.discount?.[discountKey] ?? parentItem.discount ?? 0;
+                  onDiscountChange(discountKey, Math.min(100, currentDiscount + 5));
                 }}
                 className={tableStyles.inputCounterButton + " rounded-e-md"}
               >
@@ -185,7 +188,12 @@ export function SubItemRow({
       {bundles.map((bundle, index) => (
         <React.Fragment key={`subitem-${content}-${bundle.id}`}>
           <td className="w-[20px]" />
-          <td className={`${tableStyles.columnWidths.bundle} ${tableStyles.packageBodyCell} ${tableStyles.getBundleBorderClasses(index)}`}>
+          <td className={`
+            ${tableStyles.columnWidths.bundle} 
+            ${tableStyles.packageBodyCell} 
+            ${tableStyles.getBundleBorderClasses(index)}
+            ${!bundle.userLimit > 0 ? tableStyles.inactiveBundle.cell : ''}
+          `}>
             <div className="flex flex-col items-center">
               {getItemPrice(parentItem, bundle.id) === 0 ? (
                 <span className="">
@@ -217,11 +225,11 @@ export function SubItemRow({
                     {parentItem.individual ? 'individuální paušál' : `${formatPrice(getItemPrice(parentItem, bundle.id))} za kus`}
                   </span> */}
                   <span className="text-[10px] text-gray-500 italic">
-                    {(getItemDiscount(parentItem, bundle.id) > 0 ? ` První ${getItemDiscount(parentItem, bundle.id)} v ceně` : '')}
+                    {(getItemDiscount(parentItem, bundle.id) > 0 ? ` First ${getItemDiscount(parentItem, bundle.id)} in price` : '')}
                   </span>
-                  {((amounts.discount?.[content] ?? parentItem.discount ?? 0) > 0) && (
+                  {((amounts.discount?.[`${parentItem.id}_${type === 'fixace' ? 'fixed_items' : 'over_fixation_items'}`] ?? parentItem.discount ?? 0) > 0) && (
                     <span className="text-[10px] text-gray-500 italic">
-                      {`Sleva: ${amounts.discount?.[content] ?? parentItem.discount ?? 0}%`}
+                      {`Discount: ${amounts.discount?.[`${parentItem.id}_${type === 'fixace' ? 'fixed_items' : 'over_fixation_items'}`] ?? parentItem.discount ?? 0}%`}
                     </span>
                   )}
                 </>

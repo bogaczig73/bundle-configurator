@@ -9,6 +9,7 @@ export function TableRow({ item, bundles, amounts, onAmountChange, readonly = fa
   const tableStyles = useTableStyles();
   const [isExpanded, setIsExpanded] = React.useState(false);
 
+
   // Convert plain item object to Item instance if it isn't already
   const itemInstance = item instanceof Item ? item : new Item(item);
 
@@ -66,7 +67,12 @@ export function TableRow({ item, bundles, amounts, onAmountChange, readonly = fa
         {bundles.map((bundle, index) => (
           <React.Fragment key={`${itemInstance.id}-${bundle.id}-group`}>
             <td className="w-[20px]" />
-            <td className={`${tableStyles.columnWidths.bundle} ${tableStyles.packageBodyCell} ${tableStyles.getBundleBorderClasses(index)}`}>
+            <td className={`
+              ${tableStyles.columnWidths.bundle} 
+              ${tableStyles.packageBodyCell} 
+              ${tableStyles.getBundleBorderClasses(index)} 
+              ${!bundle.userLimit > 0 ? tableStyles.inactiveBundle.cell : ''}
+            `}>
             </td>
           </React.Fragment>
         ))}
@@ -334,13 +340,13 @@ export function TableRow({ item, bundles, amounts, onAmountChange, readonly = fa
                     {showFixace ? (
                       (() => {
                         // Calculate price for fixed items with its own discount
-                        const fixedDiscount = amounts.discount?.['Fixované položky'] ?? itemInstance.discount ?? 0;
+                        const fixedDiscount = amounts.discount?.[`${itemInstance.id}_fixed_items`] ?? itemInstance.discount ?? 0;
                         const fixedAmount = amounts.fixace[itemInstance.id] || 0;
                         const baseFixedPrice = itemInstance.getPrice(bundle.id);
                         const fixedPrice = baseFixedPrice * fixedAmount * (1 - fixedDiscount / 100);
 
                         // Calculate price for items over fixace with its own discount
-                        const overFixaceDiscount = amounts.discount?.['Položky nad rámec fixace'] ?? itemInstance.discount ?? 0;
+                        const overFixaceDiscount = amounts.discount?.[`${itemInstance.id}_over_fixation_items`] ?? itemInstance.discount ?? 0;
                         const totalAmount = amounts.amounts[itemInstance.id] || 0;
                         const overFixaceAmount = Math.max(0, totalAmount - fixedAmount - itemInstance.getDiscount(bundle.id));
                         const overFixacePrice = baseFixedPrice * overFixaceAmount * (1 - overFixaceDiscount / 100);
