@@ -350,11 +350,18 @@ export function TableRow({ item, bundles, amounts, onAmountChange, readonly = fa
                         const totalAmount = amounts.amounts[itemInstance.id] || 0;
                         const overFixaceAmount = Math.max(0, totalAmount - fixedAmount - itemInstance.getDiscount(bundle.id));
                         const overFixacePrice = baseFixedPrice * overFixaceAmount * (1 - overFixaceDiscount / 100);
+                        const discount = amounts.discount?.[itemInstance.id] ?? itemInstance.discount ?? 0;
 
-                        return formatPrice(fixedPrice + overFixacePrice);
+                        return formatPrice((fixedPrice + overFixacePrice) * (1 - discount / 100));
                       })()
                     ) : (
-                      formatPrice(itemInstance.calculateTotalPrice(bundle.id, amounts.amounts, amounts.discount))
+                      (() => {
+                        const discount = amounts.discount?.[itemInstance.id] ?? itemInstance.discount ?? 0;
+                        const amount = amounts.amounts[itemInstance.id] || 0;
+                        const basePrice = itemInstance.getPrice(bundle.id);
+                        const discountedAmount = Math.max(0, amount - itemInstance.getDiscount(bundle.id));
+                        return formatPrice(basePrice * discountedAmount * (1 - discount / 100));
+                      })()
                     )}
                   </span>
                 )}

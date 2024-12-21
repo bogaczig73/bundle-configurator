@@ -84,12 +84,13 @@ export const flattenItems = (items, depth = 0, parentId = '') => {
 };
 
 export const formatPrice = (price) => {
+  const roundedPrice = Math.ceil(price);
   return new Intl.NumberFormat('cs-CZ', {
     style: 'currency',
     currency: 'CZK',
     minimumFractionDigits: 0,
     maximumFractionDigits: 0,
-  }).format(price);
+  }).format(roundedPrice);
 };
 
 // Legacy utility functions (keeping for backward compatibility)
@@ -186,23 +187,36 @@ export const calculateBundleTotal = (bundle, items, amounts) => {
       // Update item's internal state
       const amount = amounts?.amounts?.[item.id.toString()] ?? 0;
       const fixaceAmount = amounts?.fixace?.[item.id.toString()] ?? 0;
+      const discount = amounts?.discount?.[item.id.toString()] ?? item.discount ?? 0;
       const fixaceDiscount = amounts?.discount?.[`${item.id}_fixed_items`] ?? item.discount ?? 0;
       const overDiscount = amounts?.discount?.[`${item.id}_over_fixation_items`] ?? item.discount ?? 0;
+      const basePrice = item.getPrice(bundle.id);
+
+      let itemTotal = 0;
+      if (amounts.fixace) {
+        // Calculate price for fixed items with its own discount
+        const fixedPrice = basePrice * fixaceAmount * (1 - fixaceDiscount / 100);
+
+        // Calculate price for items over fixace with its own discount
+        const overFixaceAmount = Math.max(0, amount - fixaceAmount - item.getDiscount(bundle.id));
+        const overFixacePrice = basePrice * overFixaceAmount * (1 - overDiscount / 100);
+
+        itemTotal = (fixedPrice + overFixacePrice) * (1 - discount / 100);
+      } else {
+        // Non-fixace case
+        const discountedAmount = Math.max(0, amount - item.getDiscount(bundle.id));
+        itemTotal = basePrice * discountedAmount * (1 - discount / 100);
+      }
       
-      // Set the amounts and discounts
-      item.setAmounts(amount, fixaceAmount);
-      item.setDiscounts(fixaceDiscount, overDiscount);
-      
-      // Calculate total price using the item's method
-      const itemTotal = item.calculateTotalPrice(bundle.id);
       console.log('Item calculation result:', {
         id: item.id,
         name: item.name,
         amount,
         fixaceAmount,
+        discount,
         fixaceDiscount,
         overDiscount,
-        basePrice: item.getPrice(bundle.id),
+        basePrice,
         itemTotal
       });
       
