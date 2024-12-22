@@ -10,39 +10,63 @@ import jsPDF from 'jspdf';
 import { useCurrentUser } from '../api/users';
 
 // Bundle Picker Component - made more compact
-const ConfigurationsPicker = ({ configurations, users, selectedConfiguration, onConfigurationSelect }) => (
-  <div className="px-8 py-4 bg-white border-b">
-    <div className="flex space-x-2 overflow-x-auto">
-      {configurations.map((configuration) => (
-        <div
-          key={configuration.id}
-          onClick={() => onConfigurationSelect(configuration)}
-          className={`p-3 rounded-lg cursor-pointer border min-w-[180px] ${
-            selectedConfiguration?.id === configuration.id
-              ? 'border-blue-500 bg-blue-50'
-              : 'border-gray-200 hover:bg-gray-50'
-          }`}
+const ConfigurationsPicker = ({ configurations, users, selectedConfiguration, onConfigurationSelect }) => {
+  const [selectedCustomer, setSelectedCustomer] = useState('all');
+  
+  const filteredConfigurations = useMemo(() => {
+    if (selectedCustomer === 'all') return configurations;
+    return configurations.filter(config => config.customer === selectedCustomer);
+  }, [configurations, selectedCustomer]);
+
+  return (
+    <div className="px-8 py-4 bg-white border-b">
+      <div className="mb-4">
+        <select 
+          value={selectedCustomer}
+          onChange={(e) => setSelectedCustomer(e.target.value)}
+          className="block w-48 px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
         >
-          <div className="font-medium text-sm">
-            {configuration.name}
+          <option value="all">All Customers</option>
+          {users.map((user) => (
+            <option key={user.id} value={user.id}>
+              {user.username || user.email || 'Unknown'}
+            </option>
+          ))}
+        </select>
+      </div>
+      
+      <div className="flex space-x-2 overflow-x-auto">
+        {filteredConfigurations.map((configuration) => (
+          <div
+            key={configuration.id}
+            onClick={() => onConfigurationSelect(configuration)}
+            className={`p-3 rounded-lg cursor-pointer border min-w-[180px] ${
+              selectedConfiguration?.id === configuration.id
+                ? 'border-blue-500 bg-blue-50'
+                : 'border-gray-200 hover:bg-gray-50'
+            }`}
+          >
+            <div className="font-medium text-sm">
+              {configuration.name}
+            </div>
+            <div className="text-xs text-gray-500 mt-1">
+             {users.find(user => user.id === configuration.customer)?.username || 'Unknown customer'}
+            </div>
+            <div className="mt-1">
+              <span className={`px-2 py-0.5 rounded-full text-xs ${
+                configuration.status === 'completed' 
+                  ? 'bg-green-100 text-green-800' 
+                  : 'bg-yellow-100 text-yellow-800'
+              }`}>
+                {configuration.status || 'draft'}
+              </span>
+            </div>
           </div>
-          <div className="text-xs text-gray-500 mt-1">
-           {users.find(user => user.id === configuration.customer)?.username || 'Unknown customer'}
-          </div>
-          <div className="mt-1">
-            <span className={`px-2 py-0.5 rounded-full text-xs ${
-              configuration.status === 'completed' 
-                ? 'bg-green-100 text-green-800' 
-                : 'bg-yellow-100 text-yellow-800'
-            }`}>
-              {configuration.status || 'draft'}
-            </span>
-          </div>
-        </div>
-      ))}
+        ))}
+      </div>
     </div>
-  </div>
-);
+  );
+};
 
 
 // Main Component
