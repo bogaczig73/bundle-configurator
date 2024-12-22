@@ -64,19 +64,35 @@ function ViewOffersPage() {
   // Add useEffect to update amounts when a configuration is selected
   useEffect(() => {
     if (selectedConfiguration && selectedConfiguration.items) {
-      const configAmounts = {};
+      const configAmounts = {
+        amounts: {},
+        discount: {},
+        fixace: {}
+      };
       Object.entries(selectedConfiguration.items).forEach(([itemId, itemData]) => {
-        configAmounts[itemId] = itemData.amount || 0;
+        configAmounts.amounts[itemId] = itemData.amount || 0;
+        if (itemData.discount) configAmounts.discount[itemId] = itemData.discount;
+        if (itemData.fixace) configAmounts.fixace[itemId] = itemData.fixace;
       });
       setAmounts(configAmounts);
     } else {
-      setAmounts({});
+      setAmounts({
+        amounts: {},
+        discount: {},
+        fixace: {}
+      });
     }
   }, [selectedConfiguration]);
 
   // Handle amount changes in the table
-  const handleAmountChange = (itemId, amount) => {
-    setAmounts(prev => ({ ...prev, [itemId]: amount }));
+  const handleAmountChange = (itemId, amount, field = 'amounts') => {
+    setAmounts(prev => ({
+      ...prev,
+      [field]: {
+        ...prev[field],
+        [itemId]: amount
+      }
+    }));
   };
 
   // Handle print button click
@@ -262,6 +278,9 @@ function ViewOffersPage() {
               readonly={true}
               ref={printRef}
               exporting={exporting}
+              showFixace={true}
+              showIndividualDiscount={true}
+              selectedConfiguration={selectedConfiguration}
             />
           </div>
         </div>

@@ -403,6 +403,7 @@ export function TableRow({ item, bundles, amounts, onAmountChange, readonly = fa
             onDiscountChange={(subItemId, value) => {
               onAmountChange(itemInstance.id, value, 'discount', subItemId);
             }}
+            readonly={readonly}
           />
           <SubItemRow 
             content="Položky nad rámec fixace"
@@ -416,6 +417,7 @@ export function TableRow({ item, bundles, amounts, onAmountChange, readonly = fa
             onDiscountChange={(subItemId, value) => {
               onAmountChange(itemInstance.id, value, 'discount', subItemId);
             }}
+            readonly={readonly}
           />
         </>
       )}

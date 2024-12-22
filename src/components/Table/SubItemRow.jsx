@@ -18,7 +18,8 @@ export function SubItemRow({
   type,
   showIndividualDiscount = false, 
   showFixace = false,
-  onDiscountChange
+  onDiscountChange,
+  readonly = false
 }) {
 
   // Calculate displayed amount based on type
@@ -138,49 +139,55 @@ export function SubItemRow({
       {showIndividualDiscount && (
         <td className={`${tableStyles.columnWidths.fixace} ${tableStyles.bodyCell}`}>
           <div className={tableStyles.centerWrapper}>
-            <div className="flex items-center" onClick={(e) => e.stopPropagation()}>
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  const discountKey = `${parentItem.id}_${type === 'fixace' ? 'fixed_items' : 'over_fixation_items'}`;
-                  const currentDiscount = amounts.discount?.[discountKey] ?? parentItem.discount ?? 0;
-                  onDiscountChange(discountKey, Math.max(0, currentDiscount - 5));
-                }}
-                className={tableStyles.inputCounterButton + " rounded-s-md"}
-              >
-                <svg className={tableStyles.counterButtonSymbols} aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 18 2">
-                  <path stroke="currentColor" strokeLinejoin="round" strokeWidth="2" d="M1 1h16"/>
-                </svg>
-              </button>
-              
-              <input
-                type="text"
-                min={0}
-                max={100}
-                value={amounts.discount?.[`${parentItem.id}_${type === 'fixace' ? 'fixed_items' : 'over_fixation_items'}`] ?? parentItem.discount ?? 0}
-                onChange={(e) => {
-                  e.stopPropagation();
-                  const value = Math.min(100, Math.max(0, Number(e.target.value)));
-                  onDiscountChange(`${parentItem.id}_${type === 'fixace' ? 'fixed_items' : 'over_fixation_items'}`, value);
-                }}
-                onClick={(e) => e.stopPropagation()}
-                className={tableStyles.numberInput}
-              />
-              
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  const discountKey = `${parentItem.id}_${type === 'fixace' ? 'fixed_items' : 'over_fixation_items'}`;
-                  const currentDiscount = amounts.discount?.[discountKey] ?? parentItem.discount ?? 0;
-                  onDiscountChange(discountKey, Math.min(100, currentDiscount + 5));
-                }}
-                className={tableStyles.inputCounterButton + " rounded-e-md"}
-              >
-                <svg className={tableStyles.counterButtonSymbols} aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 18 18">
-                  <path stroke="currentColor" strokeLinejoin="round" strokeWidth="2" d="M9 1v16M1 9h16"/>
-                </svg>
-              </button>
-            </div>
+            {readonly ? (
+              <span className="text-gray-700 text-xs">
+                {amounts.discount?.[`${parentItem.id}_${type === 'fixace' ? 'fixed_items' : 'over_fixation_items'}`] ?? parentItem.discount ?? 0}%
+              </span>
+            ) : (
+              <div className="flex items-center" onClick={(e) => e.stopPropagation()}>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    const discountKey = `${parentItem.id}_${type === 'fixace' ? 'fixed_items' : 'over_fixation_items'}`;
+                    const currentDiscount = amounts.discount?.[discountKey] ?? parentItem.discount ?? 0;
+                    onDiscountChange(discountKey, Math.max(0, currentDiscount - 5));
+                  }}
+                  className={tableStyles.inputCounterButton + " rounded-s-md"}
+                >
+                  <svg className={tableStyles.counterButtonSymbols} aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 18 2">
+                    <path stroke="currentColor" strokeLinejoin="round" strokeWidth="2" d="M1 1h16"/>
+                  </svg>
+                </button>
+                
+                <input
+                  type="text"
+                  min={0}
+                  max={100}
+                  value={amounts.discount?.[`${parentItem.id}_${type === 'fixace' ? 'fixed_items' : 'over_fixation_items'}`] ?? parentItem.discount ?? 0}
+                  onChange={(e) => {
+                    e.stopPropagation();
+                    const value = Math.min(100, Math.max(0, Number(e.target.value)));
+                    onDiscountChange(`${parentItem.id}_${type === 'fixace' ? 'fixed_items' : 'over_fixation_items'}`, value);
+                  }}
+                  onClick={(e) => e.stopPropagation()}
+                  className={tableStyles.numberInput}
+                />
+                
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    const discountKey = `${parentItem.id}_${type === 'fixace' ? 'fixed_items' : 'over_fixation_items'}`;
+                    const currentDiscount = amounts.discount?.[discountKey] ?? parentItem.discount ?? 0;
+                    onDiscountChange(discountKey, Math.min(100, currentDiscount + 5));
+                  }}
+                  className={tableStyles.inputCounterButton + " rounded-e-md"}
+                >
+                  <svg className={tableStyles.counterButtonSymbols} aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 18 18">
+                    <path stroke="currentColor" strokeLinejoin="round" strokeWidth="2" d="M9 1v16M1 9h16"/>
+                  </svg>
+                </button>
+              </div>
+            )}
           </div>
         </td>
       )}
