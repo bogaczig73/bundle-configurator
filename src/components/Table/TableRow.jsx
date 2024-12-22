@@ -1,15 +1,14 @@
 import React from 'react';
-import { getColorClass, getColorHex } from './useTableStyles';
+import { getColorHex, abraColors } from './useTableStyles';
 import { SubItemRow } from './SubItemRow';
 import { useTableStyles } from './useTableStyles';
 import { Item } from '../../types/Item';
 import { formatPrice } from '../../utils/tableUtils';
+import { isBundleActive, isBundleDisabled } from '../../utils/tableUtils';
 
 export function TableRow({ item, bundles, amounts, onAmountChange, readonly = false, showIndividualDiscount = false, showFixace = false }) {
   const tableStyles = useTableStyles();
   const [isExpanded, setIsExpanded] = React.useState(false);
-
-
   // Convert plain item object to Item instance if it isn't already
   const itemInstance = item instanceof Item ? item : new Item(item);
 
@@ -71,7 +70,7 @@ export function TableRow({ item, bundles, amounts, onAmountChange, readonly = fa
               ${tableStyles.columnWidths.bundle} 
               ${tableStyles.packageBodyCell} 
               ${tableStyles.getBundleBorderClasses(index)} 
-              ${!bundle.userLimit > 0 ? tableStyles.inactiveBundle.cell : ''}
+              ${isBundleDisabled(bundle, index, amounts.amounts) ? tableStyles.inactiveBundle.cell : ''}
             `}>
             </td>
           </React.Fragment>
@@ -320,7 +319,7 @@ export function TableRow({ item, bundles, amounts, onAmountChange, readonly = fa
               ${tableStyles.columnWidths.bundle} 
               ${tableStyles.packageBodyCell} 
               ${tableStyles.getBundleBorderClasses(index)}
-              ${!bundle.userLimit > 0 ? tableStyles.inactiveBundle.cell : ''}
+              ${isBundleDisabled(bundle, index, amounts.amounts) ? tableStyles.inactiveBundle.cell : ''}
             `}>
               <div className="flex flex-col items-center">
                 {itemInstance.getPrice(bundle.id) === 0 ? (

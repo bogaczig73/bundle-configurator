@@ -45,6 +45,26 @@ export const processItems = (items, depth = 0, parentId = '') => {
   return result;
 };
 
+ // Update this function to check if bundle should be active based on userLimit range
+ export const isBundleActive = (bundle, index, amounts, bundles) => {
+  const userAmount = amounts[1] || 0; // Check amount for item with id=1
+  
+  // Get the previous bundle's limit (or 0 if it's the first bundle)
+  const previousLimit = index > 0 ? bundles[index - 1].userLimit : 0;
+  
+  // Bundle is active if user amount is greater than previous limit and less than or equal to current limit
+  return userAmount > previousLimit && userAmount <= bundle.userLimit;
+};
+
+
+// Add this helper function near other bundle-related functions
+export const isBundleDisabled = (bundle, index, amounts) => {
+  const userAmount = amounts[1] || 0;
+  console.log('userAmount', amounts);
+  console.log('bundle.userLimit', bundle.userLimit);
+  return userAmount > bundle.userLimit;
+};
+
 // Legacy approach (keeping for backward compatibility)
 export const flattenItems = (items, depth = 0, parentId = '') => {
   const result = [];
@@ -126,11 +146,6 @@ export const isFreeForAllBundles = (item) => {
   }
   if (!item.packages) return false;
   return item.packages.every(price => price.price === 0) && !item.individual;
-};
-
-export const isBundleActive = (bundle, index, amounts, items) => {
-  // A bundle is active if it has a userLimit greater than 0
-  return bundle.userLimit > 0;
 };
 
 export const getColorClass = (index) => `text-${abraColors[index % abraColors.length]}`;

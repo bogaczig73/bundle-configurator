@@ -1,6 +1,6 @@
 import React from 'react';
 import { TableColgroup } from './TableColgroup';
-import { calculateBundleTotal, formatPrice, abraColors } from '../../utils/tableUtils';
+import { calculateBundleTotal, formatPrice, abraColors, isBundleActive, isBundleDisabled } from '../../utils/tableUtils';
 
 export function TableHeader({ 
   bundles, 
@@ -57,13 +57,8 @@ export function TableHeader({
             )}
             {bundles.map((bundle, index) => {
               const bundleTotal = bundleTotals.find(bt => bt.id === bundle.id)?.total ?? 0;
-              const isActive = bundle.userLimit > 0;
-
-              console.log(`Bundle ${bundle.id}:`, { 
-                total: bundleTotal,
-                userLimit: bundle.userLimit,
-                isActive
-              });
+              const isActive = isBundleActive(bundle, index, amounts.amounts, bundles);
+              const isDisabled = isBundleDisabled(bundle, index, amounts.amounts);
 
               return (
                 <React.Fragment key={`${bundle.id}-header`}>
@@ -71,19 +66,15 @@ export function TableHeader({
                   <th className={`
                     ${tableStyles.packageHeaderCell} 
                     ${tableStyles.getBundleHeaderBorderClasses(index)}
-                    ${isActive 
-                      ? `bg-${abraColors[index]} ${tableStyles.activeBundle}` 
-                      : tableStyles.inactiveBundle.header
-                    }
+                    ${isActive ? `bg-${abraColors[index]} ${tableStyles.activeBundle}` : ''}
+                    ${isDisabled ? tableStyles.inactiveBundle.header : ''}
                   `}>
                     <div className="flex flex-col items-center">
                       <span>{bundle.name}</span>
                       <span className={`
                         ${tableStyles.bundlePrice}
-                        ${isActive 
-                          ? tableStyles.activeBundle 
-                          : tableStyles.inactiveBundle.price
-                        }
+                        ${isActive ? tableStyles.activeBundle : ''}
+                        ${isDisabled ? tableStyles.inactiveBundle.price : ''}
                       `}>
                         {formatPrice(bundleTotal)}
                       </span>

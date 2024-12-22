@@ -3,7 +3,9 @@ import {
   getItemPrice, 
   getItemSelected, 
   getItemDiscount,
-  formatPrice
+  formatPrice,
+  isBundleActive,
+  isBundleDisabled
 } from '../../utils/tableUtils';
 
 import { getColorHex } from './useTableStyles';
@@ -199,7 +201,7 @@ export function SubItemRow({
             ${tableStyles.columnWidths.bundle} 
             ${tableStyles.packageBodyCell} 
             ${tableStyles.getBundleBorderClasses(index)}
-            ${!bundle.userLimit > 0 ? tableStyles.inactiveBundle.cell : ''}
+            ${isBundleDisabled(bundle, index, amounts.amounts) ? tableStyles.inactiveBundle.cell : ''}
           `}>
             <div className="flex flex-col items-center">
               {getItemPrice(parentItem, bundle.id) === 0 ? (
