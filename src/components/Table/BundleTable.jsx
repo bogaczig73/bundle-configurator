@@ -8,17 +8,9 @@ import { useTableStyles } from './useTableStyles';
 export const BundleTable = forwardRef(({ bundles = [], items = [], onAmountChange, amounts = {}, readonly = false, exporting = false, showIndividualDiscount = false, showFixace = false }, ref) => {
   const tableStyles = useTableStyles(exporting);
   const flattenedItems = useMemo(() => {
-    console.log('BundleTable items:', items);
     const flattened = flattenItems(items);
-    console.log('BundleTable flattenedItems:', flattened);
     return flattened;
   }, [items]);
-
-  console.log('BundleTable render:', {
-    bundles,
-    amounts,
-    flattenedItemsCount: flattenedItems?.length
-  });
 
   const isBundleActive = (bundle) => {
     return bundle.userLimit > 0;

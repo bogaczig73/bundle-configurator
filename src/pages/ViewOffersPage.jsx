@@ -58,6 +58,8 @@ function ViewOffersPage() {
   // Filter configurations based on current user
   const filteredConfigurations = useMemo(() => {
     if (!user || !configurations) return [];
+    console.log('configurations', configurations);
+    console.log('Filtered configurations:', configurations.filter(config => config.createdBy === user.id));
     return configurations.filter(config => config.createdBy === user.id);
   }, [configurations, user]);
 

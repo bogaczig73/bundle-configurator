@@ -37,9 +37,20 @@ interface UseConfigDataReturn {
 }
 
 interface SaveConfigurationData {
+  bundleId: string;
   name: string;
   customerId: string;
-  amounts: Record<number, number>;
+  items: Record<string, {
+    amount: number;
+    discount: number;
+    fixace: number;
+    individual: boolean;
+    checkbox: boolean;
+    price: number;
+    selected: boolean;
+  }>;
+  status: string;
+  createdBy: string | null;
 }
 
 export function useConfigData(bundleId: string | null = null, configId: string | null = null): UseConfigDataReturn {
@@ -173,24 +184,16 @@ export function useConfigData(bundleId: string | null = null, configId: string |
     setLoading(true);
     try {
       const configRef = collection(db, 'configurations');
-      
-      const configurationData: Omit<Configuration, 'id'> = {
+      console.log('auth.currentUser?.uid', auth.currentUser?.uid);
+      console.log('configData.createdBy', configData.createdBy);
+      const configurationData = {
         name: configData.name,
         createdAt: serverTimestamp(),
-        createdBy: auth.currentUser?.uid || '',
+        createdBy: auth.currentUser?.uid || configData.createdBy ||  null,
         customer: configData.customerId,
-        bundleId: bundleId || '',
-        items: items.reduce<Record<number, ItemPrice>>((acc, item) => {
-          acc[item.id] = {
-            price: item.price ?? 0,
-            amount: configData.amounts[item.id] ?? 0,
-            selected: item.selected ?? false,
-            individual: item.individual ?? false,
-            fixace: item.fixace ?? 0,
-            discount: item.discount ?? 0
-          };
-          return acc;
-        }, {})
+        bundleId: configData.bundleId || null,
+        status: configData.status || 'draft',
+        items: configData.items
       };
 
       const docRef = await addDoc(configRef, configurationData);
@@ -201,7 +204,7 @@ export function useConfigData(bundleId: string | null = null, configId: string |
     } finally {
       setLoading(false);
     }
-  }, [bundleId, items]);
+  }, [bundleId]);
 
   return {
     loading,

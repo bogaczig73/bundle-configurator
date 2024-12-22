@@ -90,17 +90,43 @@ function ConfiguratorPage() {
     }
 
     try {
+      const bundleId = `bundle_${Date.now()}_${Math.random().toString(36)}`;
+      
+      // Ensure we have valid amounts data
+      const validItems = {};
+      
+      // Only include items that have actual values
+      Object.entries(amounts.amounts || {}).forEach(([itemId, amount]) => {
+        if (amount !== undefined && amount !== null) {
+          validItems[itemId.toString()] = {
+            amount: Number(amount) || 0,
+            discount: Number(amounts.discount?.[itemId]) || 0,
+            fixace: Number(amounts.fixace?.[itemId]) || 0
+          };
+        }
+      });
+
+      // Ensure we have at least one valid item
+      if (Object.keys(validItems).length === 0) {
+        setError('Please add at least one item amount');
+        return;
+      }
+
+      
+
       await saveConfiguration({
+        id: bundleId,
         name: configName,
         customerId: selectedCustomer,
-        amounts: amounts.amounts,
-        discount: amounts.discount,
-        fixace: amounts.fixace
+        items: validItems,
+        status: 'draft',
+        createdBy: ''
       });
       
       setIsModalOpen(false);
     } catch (err) {
-      setError(err.message);
+      console.error('Save configuration error:', err);
+      setError(err.message || 'Error saving configuration');
     }
   };
 

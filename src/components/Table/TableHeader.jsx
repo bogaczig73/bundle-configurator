@@ -10,17 +10,13 @@ export function TableHeader({
   showIndividualDiscount = false, 
   showFixace = false 
 }) {
-  console.log('TableHeader render with:', { bundles, amounts, flattenedItems });
   
   const bundleTotals = React.useMemo(() => {
-    console.log('Calculating bundle totals with:', { bundles, amounts });
     return bundles.map(bundle => ({
       id: bundle.id,
       total: calculateBundleTotal(bundle, flattenedItems, amounts)
     }));
   }, [bundles, flattenedItems, amounts]);
-
-  console.log('Bundle totals:', bundleTotals);
 
   return (
     <div className="sticky top-0 z-10">

@@ -60,8 +60,6 @@ export const processItems = (items, depth = 0, parentId = '') => {
 // Add this helper function near other bundle-related functions
 export const isBundleDisabled = (bundle, index, amounts) => {
   const userAmount = amounts[1] || 0;
-  console.log('userAmount', amounts);
-  console.log('bundle.userLimit', bundle.userLimit);
   return userAmount > bundle.userLimit;
 };
 
@@ -179,11 +177,6 @@ export const calculateBundleTotal = (bundle, items, amounts) => {
   // Check if bundle is active based on userLimit
   const userCount = amounts?.amounts?.[1] || 0;
   if (!bundle?.userLimit || userCount > bundle.userLimit) {
-    console.log('Bundle is inactive:', {
-      bundleId: bundle?.id,
-      userCount,
-      userLimit: bundle?.userLimit
-    });
     return 0;
   }
 
@@ -191,11 +184,6 @@ export const calculateBundleTotal = (bundle, items, amounts) => {
     .filter(item => {
       // An item is valid if it's an Item instance and not a category
       const isValidItem = item instanceof Item && item.type !== 'category';
-      console.log(`Filtering item ${item.id}:`, {
-        type: item.type,
-        isValidItem,
-        isItemInstance: item instanceof Item
-      });
       return isValidItem;
     })
     .reduce((total, item) => {
@@ -223,21 +211,8 @@ export const calculateBundleTotal = (bundle, items, amounts) => {
         itemTotal = basePrice * discountedAmount * (1 - discount / 100);
       }
       
-      console.log('Item calculation result:', {
-        id: item.id,
-        name: item.name,
-        amount,
-        fixaceAmount,
-        discount,
-        fixaceDiscount,
-        overDiscount,
-        basePrice,
-        itemTotal
-      });
-      
       return total + itemTotal;
     }, 0);
 
-  console.log('Bundle total:', total);
   return total;
 };
