@@ -294,10 +294,10 @@ function ViewOffersPage() {
   }
 
   return (
-    <div className="flex">
+    <div className="flex h-screen overflow-hidden">
       <Sidebar />
-      <div className="flex-1 h-screen flex flex-col">
-        <header className="bg-white shadow-sm">
+      <div className="flex-1 flex flex-col overflow-hidden">
+        <header className="flex-none bg-white shadow-sm">
           <div className="p-6">
             <div className="flex justify-between items-center">
               <h1 className="text-2xl font-bold text-gray-900">
@@ -340,8 +340,7 @@ function ViewOffersPage() {
           </div>
         </header>
         
-        {/* Add ref to the content you want to capture */}
-        <div className="flex-1 overflow-hidden">
+        <div className="flex-1 flex flex-col min-h-0">
           <ConfigurationsPicker 
             configurations={filteredConfigurations}
             users={users}
@@ -349,25 +348,27 @@ function ViewOffersPage() {
             onConfigurationSelect={setSelectedConfiguration}
           />
           
-          <div className="flex-1 px-8 pb-8 bg-white" ref={printRef}>
+          <div className={`flex-1 ${!exporting ? 'overflow-auto' : ''} px-8 pb-8 bg-white flex flex-col`} ref={printRef}>
             {error && (
               <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
                 {error}
               </div>
             )}
             
-            <BundleTable
-              bundles={packages}
-              items={processedItems}
-              onAmountChange={handleAmountChange}
-              amounts={amounts}
-              readonly={true}
-              ref={printRef}
-              exporting={exporting}
-              showFixace={showFixace}
-              showIndividualDiscount={showIndividualDiscount}
-              selectedConfiguration={selectedConfiguration}
-            />
+            <div className="flex-1">
+              <BundleTable
+                bundles={packages}
+                items={processedItems}
+                onAmountChange={handleAmountChange}
+                amounts={amounts}
+                readonly={true}
+                ref={printRef}
+                exporting={exporting}
+                showFixace={showFixace}
+                showIndividualDiscount={showIndividualDiscount}
+                selectedConfiguration={selectedConfiguration}
+              />
+            </div>
           </div>
         </div>
 

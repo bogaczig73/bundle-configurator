@@ -36,10 +36,9 @@ export const useTableStyles = (exporting = false) => ({
       fixace: "w-32",
       bundle: "w-32 px-[5px]",
     },
-    
     // New styles
-    container: "min-w-[800px]",
-    tableWrapper: exporting ? "max-h-[calc(100vh-200px)] bg-white scrollbar-hide" : "overflow-y-auto max-h-[calc(100vh-200px)] bg-white scrollbar-hide",
+    container: "min-w-[800px] inline-block w-full",
+    tableWrapper: "bg-white scrollbar-hide",
     categoryRow: "border-b-2 border-b-abraMagenta",
     itemName: {
       category: "font-medium text-abraMagenta text-sm break-words",

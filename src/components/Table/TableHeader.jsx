@@ -19,7 +19,7 @@ export function TableHeader({
   }, [bundles, flattenedItems, amounts]);
 
   return (
-    <div className="sticky top-0 z-10">
+    <div className="sticky top-0 z-10 bg-white">
       <table className="w-full table-fixed">
         <TableColgroup 
           bundles={bundles} 
