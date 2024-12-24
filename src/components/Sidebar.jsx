@@ -15,9 +15,9 @@ function Sidebar({ children }) {
     const allNavigation = [
       { name: 'Home', path: '/', roles: ['admin', 'account', 'customer'] },
       { name: 'Configurator', path: '/configurator', roles: ['admin', 'account'] },
+      { name: 'View Offers', path: '/viewoffers', roles: ['admin', 'account'] },
       { name: 'Bundle Settings', path: '/bundle', roles: ['admin'] },
       { name: 'Users', path: '/users', roles: ['admin'] },
-      { name: 'View Offers', path: '/viewoffers', roles: ['admin', 'account'] },
     ];
 
     if (!userRole) return [];

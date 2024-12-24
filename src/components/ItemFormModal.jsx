@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect } from 'react';
 
-function ItemFormModal({ show, onClose, onSubmit, items, packages, editingItem = null }) {
+function ItemFormModal({ show, onClose, onSubmit, onDelete, items, packages, editingItem = null, isLoading = false }) {
   const [formData, setFormData] = useState({
     name: '',
     type: 'item',
@@ -16,9 +16,6 @@ function ItemFormModal({ show, onClose, onSubmit, items, packages, editingItem =
       discountedAmount: 0
     })),
     id: null,
-    userLimit: 0,
-    discountAmount: 0,
-    discountType: 'percentage'
   });
 
   useEffect(() => {
@@ -29,9 +26,7 @@ function ItemFormModal({ show, onClose, onSubmit, items, packages, editingItem =
     if (editingItem) {
       setFormData({
         ...editingItem,
-        discountType: editingItem.discountType || 'percentage',
-        userLimit: editingItem.userLimit || 0,
-        discountAmount: editingItem.discountAmount || 0,
+        id: editingItem.id,
         packages: packages.map(pkg => {
           const existingPackage = editingItem.packages?.find(p => p.packageId === pkg.id);
           return existingPackage || {
@@ -51,9 +46,6 @@ function ItemFormModal({ show, onClose, onSubmit, items, packages, editingItem =
         checkbox: false,
         individual: false,
         amount: 0,
-        userLimit: 0,
-        discountAmount: 0,
-        discountType: 'percentage',
         packages: packages.map(pkg => ({
           packageId: pkg.id,
           price: 0,
@@ -100,6 +92,7 @@ function ItemFormModal({ show, onClose, onSubmit, items, packages, editingItem =
   const handleSubmit = (e) => {
     e.preventDefault();
     const submitData = {
+      id: formData.id,
       name: formData.name,
       type: formData.type,
       categoryId: formData.categoryId,
@@ -130,7 +123,7 @@ function ItemFormModal({ show, onClose, onSubmit, items, packages, editingItem =
           {/* Basic Information */}
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block mb-1">Name * uaaaas</label>
+              <label className="block mb-1">Name * </label>
               <input
                 type="text"
                 value={formData.name}
@@ -177,57 +170,6 @@ function ItemFormModal({ show, onClose, onSubmit, items, packages, editingItem =
                     onChange={(e) => setFormData(prev => ({ ...prev, note: e.target.value }))}
                     className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
-                </div>
-              </div>
-
-              {/* User Limit and Discount Settings */}
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block mb-1">User Limit</label>
-                  <input
-                    type="number"
-                    min="0"
-                    value={formData.userLimit || 0}
-                    onChange={(e) => setFormData(prev => ({ ...prev, userLimit: Number(e.target.value) }))}
-                    className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
-
-                <div>
-                  <label className="block mb-1">Amount</label>
-                  <input
-                    type="number"
-                    min="0"
-                    value={formData.amount || 0}
-                    onChange={(e) => setFormData(prev => ({ ...prev, amount: Number(e.target.value) }))}
-                    className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
-              </div>
-
-              {/* Discount Settings */}
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block mb-1">Discount Amount</label>
-                  <input
-                    type="number"
-                    min="0"
-                    value={formData.discountAmount || 0}
-                    onChange={(e) => setFormData(prev => ({ ...prev, discountAmount: Number(e.target.value) }))}
-                    className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
-
-                <div>
-                  <label className="block mb-1">Discount Type</label>
-                  <select
-                    value={formData.discountType}
-                    onChange={(e) => setFormData(prev => ({ ...prev, discountType: e.target.value }))}
-                    className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  >
-                    <option value="percentage">Percentage</option>
-                    <option value="fixed">Fixed Amount</option>
-                  </select>
                 </div>
               </div>
 
@@ -317,20 +259,50 @@ function ItemFormModal({ show, onClose, onSubmit, items, packages, editingItem =
         </div>
 
         {/* Action Buttons */}
-        <div className="flex justify-end gap-2 mt-6">
-          <button 
-            onClick={onClose}
-            className="px-4 py-2 border border-gray-300 rounded hover:bg-gray-50"
-          >
-            Cancel
-          </button>
-          <button 
-            onClick={handleSubmit}
-            disabled={!formData.name}
-            className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50"
-          >
-            {editingItem ? 'Save Changes' : 'Add'}
-          </button>
+        <div className="flex justify-between mt-6">
+          {editingItem && (
+            <button 
+              onClick={() => onDelete(editingItem.id)}
+              disabled={isLoading}
+              className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+            >
+              {isLoading ? (
+                <>
+                  <svg className="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  Deleting...
+                </>
+              ) : 'Delete Item'}
+            </button>
+          )}
+          <div className="flex gap-2">
+            <button 
+              onClick={onClose}
+              disabled={isLoading}
+              className="px-4 py-2 border border-gray-300 rounded hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Cancel
+            </button>
+            <button 
+              onClick={handleSubmit}
+              disabled={!formData.name || isLoading}
+              className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+            >
+              {isLoading ? (
+                <>
+                  <svg className="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  {editingItem ? 'Saving...' : 'Adding...'}
+                </>
+              ) : (
+                editingItem ? 'Save Changes' : 'Add'
+              )}
+            </button>
+          </div>
         </div>
       </div>
     </div>

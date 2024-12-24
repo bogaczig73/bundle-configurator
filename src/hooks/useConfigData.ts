@@ -1,9 +1,10 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { db } from '../firebase';
-import { doc, getDoc, getDocs, collection, addDoc, serverTimestamp } from 'firebase/firestore';
+import { doc, getDoc, getDocs, collection, addDoc, serverTimestamp, setDoc, updateDoc, arrayUnion } from 'firebase/firestore';
 import { auth } from '../firebase';
 import { Item, Category, Configuration, ItemPrice, ItemData } from '../types/Item';
 import { DocumentSnapshot, DocumentData } from 'firebase/firestore';
+import { defaultItems } from '../data/items';
 
 interface Package {
   id: string;
@@ -34,6 +35,9 @@ interface UseConfigDataReturn {
   configurations: Configuration[];
   currentConfig: Configuration | null;
   getConfigurationById: (configId: string) => Promise<Configuration>;
+  saveItems: (items: (ItemData | Category)[]) => Promise<void>;
+  handleNewItem: (formData: NewItemFormData) => Promise<ItemData>;
+  handleDeleteItem: (itemId: number) => Promise<void>;
 }
 
 interface SaveConfigurationData {
@@ -52,6 +56,34 @@ interface SaveConfigurationData {
   status: string;
   createdBy: string | null;
 }
+
+interface NewItemFormData {
+  id?: number;
+  name: string;
+  categoryId: number | null;
+  packages: Array<{
+    packageId: number;
+    price: number | string;
+    selected: boolean;
+    discountedAmount?: number;
+  }>;
+  amount: number;
+  checkbox: boolean;
+  individual: boolean;
+  note?: string;
+}
+
+// Helper function to get all items from the tree structure
+const getAllItems = (items: (ItemData | Category)[]): ItemData[] => {
+  return items.reduce<ItemData[]>((acc, item) => {
+    if ('type' in item && item.type === 'item') {
+      return [...acc, item];
+    } else if ('children' in item && Array.isArray(item.children)) {
+      return [...acc, ...getAllItems(item.children as (ItemData | Category)[])];
+    }
+    return acc;
+  }, []);
+};
 
 export function useConfigData(bundleId: string | null = null, configId: string | null = null): UseConfigDataReturn {
   const [loading, setLoading] = useState(false);
@@ -184,8 +216,6 @@ export function useConfigData(bundleId: string | null = null, configId: string |
     setLoading(true);
     try {
       const configRef = collection(db, 'configurations');
-      console.log('auth.currentUser?.uid', auth.currentUser?.uid);
-      console.log('configData.createdBy', configData.createdBy);
       const configurationData = {
         name: configData.name,
         createdAt: serverTimestamp(),
@@ -206,6 +236,92 @@ export function useConfigData(bundleId: string | null = null, configId: string |
     }
   }, [bundleId]);
 
+  const saveItems = useCallback(async (items: (ItemData | Category)[]) => {
+    setLoading(true);
+    try {
+      // Get all items (including nested ones in categories)
+      const allItems = getAllItems(items);
+      // const allItems = defaultItems;
+      
+      // Save to Firestore
+      await setDoc(doc(db, 'default', 'items'), {
+        items: allItems,
+        updatedAt: serverTimestamp()
+      });
+
+      console.log('Items saved successfully:', allItems.length);
+    } catch (err) {
+      console.error('Error saving items:', err);
+      setError('Failed to save items. Please try again.');
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  }, [setLoading, setError]);
+
+  const handleNewItem = useCallback(async (formData: NewItemFormData) => {
+    console.log('Submitting form data:', formData);
+    
+    try {
+      const itemsRef = doc(db, 'default', 'items');
+      const itemsSnap = await getDoc(itemsRef);
+      const currentItems = itemsSnap.data()?.items || [];
+
+      const newItemData = {
+        id: formData.id || Date.now(),
+        name: formData.name,
+        categoryId: Number(formData.categoryId) || 0,
+        packages: formData.packages.map(pkg => ({
+          packageId: Number(pkg.packageId),
+          price: Number(pkg.price) || 0,
+          selected: pkg.selected || false,
+          discountedAmount: Number(pkg.discountedAmount) || 0
+        })),
+        amount: Number(formData.amount) || 0,
+        checkbox: formData.checkbox || false,
+        individual: formData.individual || false,
+        note: formData.note || ""
+      };
+
+      console.log(formData.id);
+      console.log(currentItems);
+      if (formData.id) {
+        // Editing existing item
+        const updatedItems = currentItems.map((item: ItemData) => 
+          item.id === formData.id ? newItemData : item
+        );
+        await setDoc(itemsRef, { items: updatedItems });
+      } else {
+        // Creating new item
+        await updateDoc(itemsRef, {
+          items: arrayUnion(newItemData)
+        });
+      }
+
+      await fetchData();
+      return Item.create(newItemData);
+    } catch (error) {
+      console.error('Error saving item:', error);
+      throw error;
+    }
+  }, [fetchData]);
+
+  const handleDeleteItem = useCallback(async (itemId: number) => {
+    try {
+      const itemsRef = doc(db, 'default', 'items');
+      const itemsSnap = await getDoc(itemsRef);
+      const currentItems = itemsSnap.data()?.items || [];
+
+      const updatedItems = currentItems.filter((item: ItemData) => item.id !== itemId);
+      await setDoc(itemsRef, { items: updatedItems });
+
+      await fetchData();
+    } catch (error) {
+      console.error('Error deleting item:', error);
+      throw error;
+    }
+  }, [fetchData]);
+
   return {
     loading,
     setLoading,
@@ -222,6 +338,9 @@ export function useConfigData(bundleId: string | null = null, configId: string |
     saveConfiguration,
     configurations,
     currentConfig,
-    getConfigurationById
+    getConfigurationById,
+    saveItems,
+    handleNewItem,
+    handleDeleteItem
   };
 } 

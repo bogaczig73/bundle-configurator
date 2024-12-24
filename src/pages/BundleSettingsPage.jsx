@@ -3,12 +3,15 @@ import ActionButtons from '../components/ActionButtons';
 import { useParams, useNavigate } from 'react-router-dom';
 import Sidebar from '../components/Sidebar';
 import { db } from '../firebase';
-import { doc, updateDoc, setDoc } from 'firebase/firestore';  
+import { doc, updateDoc, setDoc, arrayUnion } from 'firebase/firestore';  
 import { useConfigData } from '../hooks/useConfigData';
 import { defaultItems } from '../data/items';
 import { defaultCategories } from '../data/categories';
 import { defaultPackages } from '../data/packages';
 import ItemFormModal from '../components/ItemFormModal';
+
+
+
 
 function BundleSettingsPage() {
   const { userId } = useParams();
@@ -25,7 +28,9 @@ function BundleSettingsPage() {
     updateItemPrice,
     saveItems,
     updateItemInTree,
-    getAllItems
+    getAllItems,
+    handleNewItem,
+    handleDeleteItem
   } = useConfigData();
 
   const [bundlesState, setBundlesState] = useState([]);
@@ -34,6 +39,7 @@ function BundleSettingsPage() {
 
   const [editingItem, setEditingItem] = useState(null);
   const [showItemModal, setShowItemModal] = useState(false);
+  const [isItemSaving, setIsItemSaving] = useState(false);
 
   // Initialize bundles state from packages
   useEffect(() => {
@@ -155,57 +161,18 @@ function BundleSettingsPage() {
   }
 
   // 2. Update the handleItemSubmit function
-  const handleItemSubmit = useCallback((formData) => {
-    console.log('Submitting form data:', formData);
-    
-    if (editingItem) {
-      // Update existing item
-      setProcessedItems(prevItems => 
-        updateItemInTree(prevItems, editingItem.id, (item) => ({
-          ...item,
-          ...formData,
-          packages: formData.type === 'item' ? (formData.packages || item.packages || []) : undefined,
-          children: formData.type === 'category' ? (item.children || []) : undefined,
-        }))
-      );
-    } else {
-      // Create new item or category
-      const newItem = {
-        ...formData,
-        id: `${formData.type}-${Date.now()}`,
-        type: formData.type,
-        ...(formData.type === 'category' ? {
-          children: [],
-        } : {
-          packages: formData.packages || [],
-        }),
-      };
-      
-      console.log('New item to be added:', newItem);
-
-      setProcessedItems(prevItems => {
-        if (!formData.categoryId) {
-          // Add to root level
-          return [...prevItems, newItem];
-        }
-        
-        // Add to selected category
-        return updateItemInTree(prevItems, formData.categoryId, (category) => {
-          if (category.type === 'category') {
-            console.log('Adding to category:', category.name);
-            return {
-              ...category,
-              children: [...(category.children || []), newItem]
-            };
-          }
-          return category;
-        });
-      });
+  const handleItemSubmit = useCallback(async (formData) => {
+    setIsItemSaving(true);
+    try {
+      await handleNewItem(formData);
+      setShowItemModal(false);
+      setEditingItem(null);
+    } catch (err) {
+      setError('Failed to save item. Please try again.');
+    } finally {
+      setIsItemSaving(false);
     }
-    
-    setShowItemModal(false);
-    setEditingItem(null);
-  }, [editingItem]);
+  }, [handleNewItem, setError]);
 
   // Add missing handlers
   const handleEditItem = useCallback((item) => {
@@ -235,6 +202,21 @@ function BundleSettingsPage() {
       }))
     );
   });
+
+  // Add handleItemDelete function
+  const handleItemDelete = useCallback(async (itemId) => {
+    setIsItemSaving(true);
+    try {
+      await handleDeleteItem(itemId);
+      setShowItemModal(false);
+      setEditingItem(null);
+    } catch (err) {
+      console.error('Error deleting item:', err);
+      setError('Failed to delete item. Please try again.');
+    } finally {
+      setIsItemSaving(false);
+    }
+  }, [handleDeleteItem, setError]);
 
   return (
     <div className="flex flex-col md:flex-row min-h-screen bg-gray-50">
@@ -299,9 +281,11 @@ function BundleSettingsPage() {
         show={showItemModal}
         onClose={() => setShowItemModal(false)}
         onSubmit={handleItemSubmit}
+        onDelete={handleItemDelete}
         items={processedItems}
         packages={packages}
         editingItem={editingItem}
+        isLoading={isItemSaving}
       />
     </div>
   );
@@ -354,7 +338,7 @@ function BundleTable({
       details: "w-40 min-w-[100px]",
       checkbox: "w-10",
       individual: "w-10",
-      bundle: "w-44",
+      bundle: "w-24",
     }
   };
 
