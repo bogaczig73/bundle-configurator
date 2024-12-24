@@ -7,7 +7,7 @@ import { DocumentSnapshot, DocumentData } from 'firebase/firestore';
 import { defaultItems } from '../data/items';
 
 interface Package {
-  id: string;
+  id: string | number;
   name: string;
   userLimit: number;
 }
@@ -16,6 +16,13 @@ interface User {
   id: string;
   email: string;
   name: string;
+}
+
+interface ItemPackage {
+  packageId: number;
+  price: number;
+  selected: boolean;
+  discountedAmount?: number;
 }
 
 interface UseConfigDataReturn {
@@ -38,6 +45,8 @@ interface UseConfigDataReturn {
   saveItems: (items: (ItemData | Category)[]) => Promise<void>;
   handleNewItem: (formData: NewItemFormData) => Promise<ItemData>;
   handleDeleteItem: (itemId: number) => Promise<void>;
+  updateItemPrice: (bundleId: string | number, itemId: number, updates: { price?: number; discountedAmount?: number }) => void;
+  handleItemToggle: (bundleId: string | number, itemId: number) => void;
 }
 
 interface SaveConfigurationData {
@@ -73,11 +82,32 @@ interface NewItemFormData {
   note?: string;
 }
 
+// Helper function to clean objects before saving to Firestore
+const cleanObject = (obj: any): any => {
+  if (Array.isArray(obj)) {
+    return obj.map(cleanObject).filter(item => item !== undefined);
+  }
+  
+  if (obj && typeof obj === 'object') {
+    return Object.entries(obj).reduce((acc, [key, value]) => {
+      const cleanValue = cleanObject(value);
+      if (cleanValue !== undefined) {
+        acc[key] = cleanValue;
+      }
+      return acc;
+    }, {} as any);
+  }
+  
+  return obj === undefined ? null : obj;
+};
+
 // Helper function to get all items from the tree structure
 const getAllItems = (items: (ItemData | Category)[]): ItemData[] => {
   return items.reduce<ItemData[]>((acc, item) => {
     if ('type' in item && item.type === 'item') {
-      return [...acc, item];
+      // Convert Item instance to plain object if it's an Item instance
+      const plainItem = item instanceof Item ? item.toPlainObject() : item;
+      return [...acc, cleanObject(plainItem)];
     } else if ('children' in item && Array.isArray(item.children)) {
       return [...acc, ...getAllItems(item.children as (ItemData | Category)[])];
     }
@@ -239,9 +269,10 @@ export function useConfigData(bundleId: string | null = null, configId: string |
   const saveItems = useCallback(async (items: (ItemData | Category)[]) => {
     setLoading(true);
     try {
-      // Get all items (including nested ones in categories)
-      const allItems = getAllItems(items);
-      // const allItems = defaultItems;
+      // Get all items and ensure they are plain objects
+      const allItems = getAllItems(items).map(item => 
+        cleanObject(item instanceof Item ? item.toPlainObject() : item)
+      );
       
       // Save to Firestore
       await setDoc(doc(db, 'default', 'items'), {
@@ -267,7 +298,7 @@ export function useConfigData(bundleId: string | null = null, configId: string |
       const itemsSnap = await getDoc(itemsRef);
       const currentItems = itemsSnap.data()?.items || [];
 
-      const newItemData = {
+      const newItemData = cleanObject({
         id: formData.id || Date.now(),
         name: formData.name,
         categoryId: Number(formData.categoryId) || 0,
@@ -280,11 +311,10 @@ export function useConfigData(bundleId: string | null = null, configId: string |
         amount: Number(formData.amount) || 0,
         checkbox: formData.checkbox || false,
         individual: formData.individual || false,
-        note: formData.note || ""
-      };
+        note: formData.note || "",
+        type: 'item'
+      });
 
-      console.log(formData.id);
-      console.log(currentItems);
       if (formData.id) {
         // Editing existing item
         const updatedItems = currentItems.map((item: ItemData) => 
@@ -322,6 +352,113 @@ export function useConfigData(bundleId: string | null = null, configId: string |
     }
   }, [fetchData]);
 
+  const updateItemInTree = useCallback((items: any[], itemId: number, updateFn: (item: any) => Item): (Item | Category)[] => {
+    return items.map(item => {
+      if ('children' in item && Array.isArray(item.children)) {
+        return {
+          ...item,
+          children: updateItemInTree(item.children, itemId, updateFn)
+        } as Category;
+      }
+      
+      if ('id' in item && item.id === itemId) {
+        return updateFn(item);
+      }
+      
+      return item;
+    });
+  }, []);
+
+  const updateItemPrice = useCallback((bundleId: string | number, itemId: number, updates: { price?: number; discountedAmount?: number }) => {
+    setProcessedItems(prevItems => {
+      return updateItemInTree(prevItems, itemId, (item) => {
+        const currentPackages = (item.packages || []) as ItemPackage[];
+        const packageIndex = currentPackages.findIndex((p: ItemPackage) => 
+          String(p.packageId) === String(bundleId)
+        );
+        
+        let newPackages;
+        if (packageIndex >= 0) {
+          newPackages = [...currentPackages];
+          newPackages[packageIndex] = {
+            ...newPackages[packageIndex],
+            ...updates
+          };
+        } else {
+          newPackages = [
+            ...currentPackages,
+            {
+              packageId: Number(bundleId),
+              selected: false,
+              price: updates.price || 0,
+              discountedAmount: updates.discountedAmount || 0
+            }
+          ];
+        }
+        
+        // Create a new ItemData object with all required fields
+        const itemData: ItemData = {
+          id: item.id,
+          name: item.name,
+          categoryId: 'categoryId' in item ? item.categoryId : 0,
+          packages: newPackages,
+          amount: 'amount' in item ? item.amount : 0,
+          checkbox: 'checkbox' in item ? item.checkbox : false,
+          individual: 'individual' in item ? item.individual : false,
+          note: 'note' in item ? item.note : '',
+          type: 'item'
+        };
+        
+        // Convert ItemData to Item using the create method
+        return Item.create(itemData);
+      });
+    });
+  }, [updateItemInTree]);
+
+  const handleItemToggle = useCallback((bundleId: string | number, itemId: number) => {
+    setProcessedItems(prevItems => {
+      return updateItemInTree(prevItems, itemId, (item) => {
+        const currentPackages = (item.packages || []) as ItemPackage[];
+        const packageIndex = currentPackages.findIndex((p: ItemPackage) => 
+          String(p.packageId) === String(bundleId)
+        );
+        
+        let newPackages;
+        if (packageIndex >= 0) {
+          newPackages = [...currentPackages];
+          newPackages[packageIndex] = {
+            ...newPackages[packageIndex],
+            selected: !newPackages[packageIndex].selected
+          };
+        } else {
+          newPackages = [
+            ...currentPackages,
+            {
+              packageId: Number(bundleId),
+              selected: true,
+              price: 0,
+              discountedAmount: 0
+            }
+          ];
+        }
+        
+        const itemData: ItemData = {
+          id: item.id,
+          name: item.name,
+          categoryId: 'categoryId' in item ? item.categoryId : 0,
+          packages: newPackages,
+          amount: 'amount' in item ? item.amount : 0,
+          checkbox: 'checkbox' in item ? item.checkbox : false,
+          individual: 'individual' in item ? item.individual : false,
+          note: 'note' in item ? item.note : '',
+          type: 'item'
+        };
+        
+        return Item.create(itemData);
+      });
+    });
+  }, [updateItemInTree]);
+
   return {
     loading,
     setLoading,
@@ -341,6 +478,8 @@ export function useConfigData(bundleId: string | null = null, configId: string |
     getConfigurationById,
     saveItems,
     handleNewItem,
-    handleDeleteItem
+    handleDeleteItem,
+    updateItemPrice,
+    handleItemToggle
   };
 } 

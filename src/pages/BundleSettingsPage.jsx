@@ -378,7 +378,7 @@ function BundleTable({
           onClick={onAddNewItem}
           className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
         >
-          Add New Item
+          Přidat novou položku
         </button>
       </div>
       <div className="border border-gray-200 rounded-lg shadow-sm">
@@ -388,16 +388,16 @@ function BundleTable({
             <thead className="bg-gray-50 sticky top-0 z-10 border-b border-gray-200">
               <tr>
                 <th className={`${tableStyles.columnWidths.details} text-left ${tableStyles.headerCell}`}>
-                  Item Details
+                  Detail položky
                 </th>
                 <th className={tableStyles.headerCell}>
                   <div className={tableStyles.centerWrapper}>
-                    Checkbox
+                    Ano/Ne
                   </div>
                 </th>
                 <th className={tableStyles.headerCell}>
                   <div className={tableStyles.centerWrapper}>
-                    Individual
+                    Individuální
                   </div>
                 </th>
                 {bundles.map((bundle, index) => (
@@ -407,8 +407,8 @@ function BundleTable({
                       <div className="flex flex-col items-center">
                         <div>{bundle.name}</div>
                         <div className="flex gap-4 text-[10px] mt-1">
-                          <span>Price</span>
-                          <span>Discount</span>
+                          <span>Cena</span>
+                          <span>Sleva</span>
                         </div>
                       </div>
                     </th>
@@ -479,8 +479,8 @@ function BundleTable({
                         <input
                           type="checkbox"
                           checked={item.checkbox ?? false}
-                          onChange={() => onCheckboxChange(item.id)}
                           className={tableStyles.checkbox}
+                          disabled
                         />
                       )}
                     </div>
@@ -493,6 +493,7 @@ function BundleTable({
                           checked={item.individual ?? false}
                           onChange={() => onIndividualChange(item.id)}
                           className={tableStyles.checkbox}
+                          disabled
                         />
                       )}
                     </div>
@@ -508,22 +509,15 @@ function BundleTable({
                               checked={getItemSelected(item, bundle.id)}
                               onChange={() => onItemToggle(bundle.id, item.id)}
                               className={tableStyles.checkbox}
+                              disabled
                             />
                             <div className="flex gap-2">
-                              <input
-                                type="number"
-                                min={0}
-                                onChange={(e) => onItemPriceChange(bundle.id, item.id, e.target.value)}
-                                value={getItemPrice(item, bundle.id)}
-                                className={tableStyles.numberInput}
-                              />
-                              <input
-                                type="number"
-                                min={0}
-                                onChange={(e) => onItemDiscountChange(bundle.id, item.id, e.target.value)}
-                                value={getItemDiscountedAmount(item, bundle.id)}
-                                className={tableStyles.numberInput}
-                              />
+                              <span className={tableStyles.numberInput}>
+                                {getItemPrice(item, bundle.id)}
+                              </span>
+                              <span className={tableStyles.numberInput}>
+                                {getItemDiscountedAmount(item, bundle.id)}
+                              </span>
                             </div>
                           </div>
                         )}
