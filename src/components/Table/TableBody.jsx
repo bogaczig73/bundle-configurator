@@ -4,6 +4,7 @@ import { TableRow } from './TableRow';
 
 
 export function TableBody({ bundles, items, amounts, onAmountChange, tableStyles, readonly = false, showIndividualDiscount = false, showFixace = false }) {
+  console.log('showFixace', items);
   return (
     <div className={tableStyles.tableWrapper}>
       <table className="w-full table-fixed">
@@ -11,7 +12,7 @@ export function TableBody({ bundles, items, amounts, onAmountChange, tableStyles
         <tbody className="divide-y-0">
           {items.map((item) => (
             <TableRow 
-              key={item.uniqueId}
+              key={item.categoryId + "_" + item.id}
               item={item}
               bundles={bundles}
               amounts={amounts}

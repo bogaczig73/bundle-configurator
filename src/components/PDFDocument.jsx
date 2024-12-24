@@ -1,26 +1,32 @@
-import { Document, Page, Text, View, StyleSheet, Image } from '@react-pdf/renderer';
-import crossIcon from '../images/symbols/Zapor_znamenko.svg';
+import { Document, Page, Text, View, StyleSheet, Font } from '@react-pdf/renderer';
 import React from 'react';
-
-// Create styles matching your table design
+Font.register({
+  family: "Roboto",
+  src:
+    "https://cdnjs.cloudflare.com/ajax/libs/ink/3.1.10/fonts/Roboto/roboto-medium-webfont.ttf"
+});
+// Register Helvetica font (built-in)
 const styles = StyleSheet.create({
+
   page: {
     flexDirection: 'column',
     backgroundColor: '#ffffff',
-    padding: 30
+    padding: 20,
+    fontFamily: 'Roboto'
   },
   container: {
-    minWidth: 800,
+    width: '100%',
   },
   tableHeader: {
     flexDirection: 'row',
-    borderBottomWidth: 2,
+    borderBottomWidth: 1,
     borderBottomColor: '#E2E8F0',
+    backgroundColor: '#F7FAFC',
   },
   headerCell: {
-    padding: '8px 16px',
-    fontSize: 12,
-    fontWeight: 'bold',
+    padding: '4px 8px',
+    fontSize: 8,
+    fontFamily: 'Roboto',
     color: '#1A202C',
     textTransform: 'uppercase',
     letterSpacing: 0.5,
@@ -29,64 +35,90 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     borderBottomWidth: 1,
     borderBottomColor: '#E2E8F0',
-    minHeight: 40,
+    minHeight: 25,
     backgroundColor: '#ffffff',
   },
   categoryRow: {
-    borderBottomWidth: 2,
-    borderBottomColor: '#e1007b', // abraMagenta
+    backgroundColor: '#F7FAFC',
   },
   detailsColumn: {
-    width: 200,
-    padding: '8px 16px',
+    width: 140,
+    padding: '4px 8px',
   },
   amountColumn: {
-    width: 120,
-    padding: '8px 16px',
+    width: 40,
+    padding: '4px 8px',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  fixaceColumn: {
+    width: 40,
+    padding: '4px 8px',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  discountColumn: {
+    width: 40,
+    padding: '4px 8px',
     justifyContent: 'center',
     alignItems: 'center',
   },
   bundleColumn: {
-    width: 120,
-    padding: '8px 16px',
-    borderLeftWidth: 2,
-    borderRightWidth: 2,
+    width: 80,
+    padding: '4px 8px',
+    borderLeftWidth: 1,
+    borderRightWidth: 1,
     justifyContent: 'center',
     alignItems: 'center',
   },
   spacerColumn: {
-    width: 20,
+    width: 10,
   },
   itemName: {
-    fontSize: 12,
+    fontSize: 8,
+    fontFamily: 'Roboto',
     color: '#4A5568',
   },
   categoryName: {
-    fontSize: 12,
-    fontWeight: 'bold',
-    color: '#e1007b', // abraMagenta
+    fontSize: 8,
+    fontFamily: 'Roboto',
+    color: '#1A202C',
   },
   itemNote: {
-    fontSize: 10,
+    fontSize: 6,
+    fontFamily: 'Roboto',
     color: '#718096',
-    marginTop: 4,
+    marginTop: 2,
   },
   priceText: {
-    fontSize: 10,
-    fontWeight: 'medium',
+    fontSize: 8,
+    fontFamily: 'Roboto',
+    color: '#4A5568',
   },
   priceNote: {
-    fontSize: 10,
+    fontSize: 6,
+    fontFamily: 'Roboto',
     color: '#718096',
     textAlign: 'center',
   },
-  checkmark: {
-    color: '#48BB78',
-    fontSize: 16,
+  bundlePrice: {
+    fontSize: 8,
+    fontFamily: 'Roboto',
+    color: '#1A202C',
+    marginTop: 2,
   },
-  cross: {
-    color: '#E53E3E',
-    fontSize: 16,
+  bundleTotal: {
+    fontSize: 6,
+    fontFamily: 'Roboto',
+    color: '#718096',
+    marginTop: 1,
+  },
+  indentedContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  indent: {
+    width: 10,
   },
 });
 
@@ -96,12 +128,71 @@ const getBundleBorderColor = (index) => {
   return colors[index % colors.length];
 };
 
-export const PDFDocument = ({ packages, items, amounts, currentConfig }) => {
-    console.log(currentConfig);
-    console.log(packages);
-    console.log(amounts);
-    if (!items) return null; 
-    console.log(currentConfig);
+// Helper function to format price
+const formatPrice = (price) => {
+  return new Intl.NumberFormat('cs-CZ', {
+    style: 'currency',
+    currency: 'CZK',
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
+  }).format(price);
+};
+
+// Helper function to create indentation based on depth
+const Indent = ({ depth }) => {
+  const indents = [];
+  for (let i = 0; i < depth; i++) {
+    indents.push(<View key={i} style={styles.indent} />);
+  }
+  return <>{indents}</>;
+};
+
+// Helper function to convert text with Czech characters to Unicode escape sequences
+const czechToUnicode = (text) => {
+  return text
+    .replace(/á/g, '\u00E1')
+  
+};
+
+export const PDFDocument = ({ packages, items, amounts, currentConfig, showFixace = false, showIndividualDiscount = false }) => {
+  if (!items || !packages) return null;
+
+  // Flatten items while preserving hierarchy
+  const flattenItems = (items, depth = 0) => {
+    return items.reduce((acc, item) => {
+      acc.push({ ...item, depth });
+      if (item.children && Array.isArray(item.children)) {
+        acc.push(...flattenItems(item.children, depth + 1));
+      }
+      return acc;
+    }, []);
+  };
+
+  const flattenedItems = flattenItems(items);
+
+  // Helper function to get item amount
+  const getItemAmount = (itemId) => {
+    return amounts?.amounts?.[itemId] || '-';
+  };
+
+  // Helper function to get fixace amount
+  const getFixaceAmount = (itemId) => {
+    return amounts?.fixace?.[itemId] || '-';
+  };
+
+  // Helper function to get discount
+  const getDiscount = (itemId) => {
+    const discount = amounts?.discount?.[itemId];
+    return discount ? `${discount}%` : '-';
+  };
+
+  // Helper function to get item price for a bundle
+  const getItemPrice = (item, bundleId) => {
+    if (!item.packages) return '-';
+    const pkg = item.packages.find(p => p.packageId === bundleId);
+    return pkg?.price ?? '-';
+  };
+
   return (
     <Document>
       <Page size="A4" style={styles.page}>
@@ -109,11 +200,21 @@ export const PDFDocument = ({ packages, items, amounts, currentConfig }) => {
           {/* Header Row */}
           <View style={styles.tableHeader}>
             <View style={styles.detailsColumn}>
-              <Text style={styles.headerCell}>Details</Text>
+              <Text style={styles.headerCell}>{czechToUnicode('Název položky')}</Text>
             </View>
             <View style={styles.amountColumn}>
-              <Text style={styles.headerCell}>Amount</Text>
+              <Text style={styles.headerCell}>{czechToUnicode('Množství')}</Text>
             </View>
+            {showFixace && (
+              <View style={styles.fixaceColumn}>
+                <Text style={styles.headerCell}>{czechToUnicode('Fixace')}</Text>
+              </View>
+            )}
+            {showIndividualDiscount && (
+              <View style={styles.discountColumn}>
+                <Text style={styles.headerCell}>{czechToUnicode('Slevy')}</Text>
+              </View>
+            )}
             {packages.map((bundle, index) => (
               <React.Fragment key={bundle.id}>
                 <View style={styles.spacerColumn} />
@@ -121,32 +222,60 @@ export const PDFDocument = ({ packages, items, amounts, currentConfig }) => {
                   styles.bundleColumn,
                   { borderColor: getBundleBorderColor(index) }
                 ]}>
-                  <Text style={styles.headerCell}>{bundle.name}</Text>
+                  <Text style={styles.headerCell}>{czechToUnicode(bundle.name)}</Text>
+                  <Text style={styles.bundlePrice}>
+                    {formatPrice(bundle.totalPrice || 0)}
+                  </Text>
                 </View>
               </React.Fragment>
             ))}
           </View>
 
           {/* Table Rows */}
-          {items.map((item) => (
-            <View key={item.id} style={[
+          {flattenedItems.map((item) => (
+            <View key={item.id || item.uniqueId} style={[
               styles.tableRow,
               item.type === 'category' && styles.categoryRow
             ]}>
               {/* Details Column */}
               <View style={styles.detailsColumn}>
-                <Text style={item.type === 'category' ? styles.categoryName : styles.itemName}>
-                  {item.name}
-                </Text>
-                {item.note && (
-                  <Text style={styles.itemNote}>{item.note}</Text>
-                )}
+                <View style={styles.indentedContent}>
+                  <Indent depth={item.depth} />
+                  <View style={{ flex: 1 }}>
+                    <Text style={item.type === 'category' ? styles.categoryName : styles.itemName}>
+                      {czechToUnicode(item.name)}
+                    </Text>
+                    {item.note && (
+                      <Text style={styles.itemNote}>{czechToUnicode(item.note)}</Text>
+                    )}
+                  </View>
+                </View>
               </View>
 
               {/* Amount Column */}
               <View style={styles.amountColumn}>
-                <Text>{item.amount || '-'}</Text>
+                <Text style={styles.priceText}>
+                  {getItemAmount(item.id)}
+                </Text>
               </View>
+
+              {/* Fixace Column */}
+              {showFixace && (
+                <View style={styles.fixaceColumn}>
+                  <Text style={styles.priceText}>
+                    {getFixaceAmount(item.id)}
+                  </Text>
+                </View>
+              )}
+
+              {/* Individual Discount Column */}
+              {showIndividualDiscount && (
+                <View style={styles.discountColumn}>
+                  <Text style={styles.priceText}>
+                    {getDiscount(item.id)}
+                  </Text>
+                </View>
+              )}
 
               {/* Bundle Columns */}
               {packages.map((bundle, index) => (
@@ -159,11 +288,11 @@ export const PDFDocument = ({ packages, items, amounts, currentConfig }) => {
                     {item.type === 'item' && (
                       <View>
                         <Text style={styles.priceText}>
-                          {item.prices?.[bundle.id] || '-'}
+                          {getItemPrice(item, bundle.id) !== '-' ? formatPrice(getItemPrice(item, bundle.id)) : '-'}
                         </Text>
-                        {item.prices?.[bundle.id] && (
+                        {getItemPrice(item, bundle.id) !== '-' && (
                           <Text style={styles.priceNote}>
-                            per unit
+                            {czechToUnicode('za kus')}
                           </Text>
                         )}
                       </View>

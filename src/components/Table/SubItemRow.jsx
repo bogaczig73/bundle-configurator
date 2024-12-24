@@ -234,7 +234,7 @@ export function SubItemRow({
                     {parentItem.individual ? 'individuální paušál' : `${formatPrice(getItemPrice(parentItem, bundle.id))} za kus`}
                   </span> */}
                   <span className="text-[10px] text-gray-500 italic">
-                    {(getItemDiscount(parentItem, bundle.id) > 0 ? ` First ${getItemDiscount(parentItem, bundle.id)} in price` : '')}
+                    {(getItemDiscount(parentItem, bundle.id) > 0 ? ` První ${getItemDiscount(parentItem, bundle.id)} v ceně` : '')}
                   </span>
                   {((amounts.discount?.[`${parentItem.id}_${type === 'fixace' ? 'fixed_items' : 'over_fixation_items'}`] ?? parentItem.discount ?? 0) > 0) && (
                     <span className="text-[10px] text-gray-500 italic">

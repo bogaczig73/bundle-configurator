@@ -30,11 +30,11 @@ export function TableHeader({
         <thead>
           <tr>
             <th className={`${tableStyles.columnWidths.details} text-left ${tableStyles.headerCell}`}>
-              Item Details
+              Název položky
             </th>
             <th className={tableStyles.headerCell}>
               <div className={tableStyles.centerWrapper}>
-                Amount
+                Množství
               </div>
             </th>
             {showFixace && (
@@ -47,7 +47,7 @@ export function TableHeader({
             {showIndividualDiscount && (
               <th className={tableStyles.headerCell}>
                 <div className={tableStyles.centerWrapper}>
-                  Individual Discount
+                  Individuální slevy
                 </div>
               </th>
             )}

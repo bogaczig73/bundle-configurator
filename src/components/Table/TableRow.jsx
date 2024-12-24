@@ -88,6 +88,9 @@ export function TableRow({ item, bundles, amounts, onAmountChange, readonly = fa
           ${showFixace ? 'cursor-pointer' : ''}
         `}
         onClick={() => showFixace && setIsExpanded(!isExpanded)}
+        data-accordion-row="true"
+        data-item-id={itemInstance.id}
+        data-expanded={isExpanded}
       >
         <td className={`${tableStyles.columnWidths.details} ${tableStyles.bodyCell}`}>
           <div className={tableStyles.accordionWrapper}>
@@ -391,6 +394,7 @@ export function TableRow({ item, bundles, amounts, onAmountChange, readonly = fa
       {showFixace && isExpanded && (
         <>
           <SubItemRow 
+            key={`${itemInstance.id}-fixed-items`}
             content="Fixované položky"
             bundles={bundles}
             amounts={amounts}
@@ -405,6 +409,7 @@ export function TableRow({ item, bundles, amounts, onAmountChange, readonly = fa
             readonly={readonly}
           />
           <SubItemRow 
+            key={`${itemInstance.id}-over-fixation-items`}
             content="Položky nad rámec fixace"
             bundles={bundles}
             amounts={amounts}

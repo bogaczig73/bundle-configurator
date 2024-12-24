@@ -5,13 +5,15 @@ import { BundleTable } from '../components/Table/BundleTable';
 import { useNavigate } from 'react-router-dom';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
-
+import SettingsModal from '../components/SettingsModal';
+import { usePersistedSettings } from '../hooks/usePersistedSettings';
 
 import { useCurrentUser } from '../api/users';
 
 // Bundle Picker Component - made more compact
 const ConfigurationsPicker = ({ configurations, users, selectedConfiguration, onConfigurationSelect }) => {
   const [selectedCustomer, setSelectedCustomer] = useState('all');
+  const navigate = useNavigate();
   
   const filteredConfigurations = useMemo(() => {
     if (selectedCustomer === 'all') return configurations;
@@ -26,7 +28,7 @@ const ConfigurationsPicker = ({ configurations, users, selectedConfiguration, on
           onChange={(e) => setSelectedCustomer(e.target.value)}
           className="block w-48 px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
         >
-          <option value="all">All Customers</option>
+          <option value="all">Všichni zákazníci</option>
           {users.map((user) => (
             <option key={user.id} value={user.id}>
               {user.username || user.email || 'Unknown'}
@@ -35,35 +37,47 @@ const ConfigurationsPicker = ({ configurations, users, selectedConfiguration, on
         </select>
       </div>
       
-      <div className="flex space-x-2 overflow-x-auto">
-        {filteredConfigurations.map((configuration) => (
-          <div
-            key={configuration.id}
-            onClick={() => onConfigurationSelect(configuration)}
-            className={`p-3 rounded-lg cursor-pointer border min-w-[180px] ${
-              selectedConfiguration?.id === configuration.id
-                ? 'border-blue-500 bg-blue-50'
-                : 'border-gray-200 hover:bg-gray-50'
-            }`}
+      {filteredConfigurations.length > 0 ? (
+        <div className="flex space-x-2 overflow-x-auto">
+          {filteredConfigurations.map((configuration) => (
+            <div
+              key={configuration.id}
+              onClick={() => onConfigurationSelect(configuration)}
+              className={`p-3 rounded-lg cursor-pointer border min-w-[180px] ${
+                selectedConfiguration?.id === configuration.id
+                  ? 'border-blue-500 bg-blue-50'
+                  : 'border-gray-200 hover:bg-gray-50'
+              }`}
+            >
+              <div className="font-medium text-sm">
+                {configuration.name}
+              </div>
+              <div className="text-xs text-gray-500 mt-1">
+               {users.find(user => user.id === configuration.customer)?.username || 'Unknown customer'}
+              </div>
+              <div className="mt-1">
+                <span className={`px-2 py-0.5 rounded-full text-xs ${
+                  configuration.status === 'completed' 
+                    ? 'bg-green-100 text-green-800' 
+                    : 'bg-yellow-100 text-yellow-800'
+                }`}>
+                  {configuration.status || 'draft'}
+                </span>
+              </div>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <div className="text-left py-4">
+          <p className="text-gray-500 text-sm mb-2">Žádná konfigurace nenalezena</p>
+          <button
+            onClick={() => navigate('/configurator')}
+            className="text-sm bg-blue-500 hover:bg-blue-600 text-white px-3 py-1.5 rounded"
           >
-            <div className="font-medium text-sm">
-              {configuration.name}
-            </div>
-            <div className="text-xs text-gray-500 mt-1">
-             {users.find(user => user.id === configuration.customer)?.username || 'Unknown customer'}
-            </div>
-            <div className="mt-1">
-              <span className={`px-2 py-0.5 rounded-full text-xs ${
-                configuration.status === 'completed' 
-                  ? 'bg-green-100 text-green-800' 
-                  : 'bg-yellow-100 text-yellow-800'
-              }`}>
-                {configuration.status || 'draft'}
-              </span>
-            </div>
-          </div>
-        ))}
-      </div>
+            Vytvořit novou konfiguraci
+          </button>
+        </div>
+      )}
     </div>
   );
 };
@@ -78,6 +92,9 @@ function ViewOffersPage() {
   const navigate = useNavigate();
   const printRef = useRef(null);
   const [exporting, setExporting] = useState(false);
+  const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
+  const [showIndividualDiscount, setShowIndividualDiscount] = usePersistedSettings('showIndividualDiscount', false);
+  const [showFixace, setShowFixace] = usePersistedSettings('showFixace', false);
 
   // Filter configurations based on current user
   const filteredConfigurations = useMemo(() => {
@@ -130,12 +147,14 @@ function ViewOffersPage() {
       selectedConfiguration
     });
     
-    navigate('/test2', {
+    navigate('/print', {
       state: {
         packages,
         processedItems,
         amounts,
-        selectedConfiguration
+        selectedConfiguration,
+        showFixace,
+        showIndividualDiscount
       }
     });
   };
@@ -155,7 +174,10 @@ function ViewOffersPage() {
           height: printRef.current.scrollHeight,
           width: 1920,
           logging: false,
-          useCORS: true
+          useCORS: true,
+          foreignObjectRendering: true,
+          x: -250,
+          y: -250
         });
 
         // Create PNG file
@@ -180,23 +202,35 @@ function ViewOffersPage() {
       }
     }
   };
-
   // Add this new function to handle PDF export
   const handlePrintToPDF = async () => {
     if (printRef.current) {
       try {
+        if (showFixace) {
+          const tableRows = document.querySelectorAll('[data-accordion-row="true"]');
+          tableRows.forEach(row => {
+            const itemId = row.getAttribute('data-item-id');
+
+            if (amounts.amounts[itemId] > 0) {
+              row.click(); // Trigger click to expand
+            }
+          });
+        }
         setExporting(true);
-        
         // Add a small delay to ensure the state update is reflected
         await new Promise(resolve => setTimeout(resolve, 100));
         
         const element = printRef.current;
         const canvas = await html2canvas(element, {
-          scale: 2, // Higher scale for better quality
+          scale: 2.2, // Higher scale for better quality
           height: printRef.current.scrollHeight,
           width: 1920,
           logging: false,
-          useCORS: true
+          useCORS: true,
+          allowTaint: true,
+          foreignObjectRendering: true,
+          x: -250,
+          y: -270
         });
 
         const imgData = canvas.toDataURL('image/jpeg', 1.0);
@@ -224,8 +258,26 @@ function ViewOffersPage() {
       } catch (error) {
         console.error('Error generating PDF:', error);
       } finally {
+        if (showFixace) {
+          const tableRows = document.querySelectorAll('[data-accordion-row="true"]');
+          console.log('tableRows', tableRows);
+          tableRows.forEach(row => {
+            const itemId = row.getAttribute('data-item-id');
+            if (amounts.amounts[itemId] > 0) {
+              row.click(); // Trigger click to expand
+            }
+          });
+        }
         setExporting(false);
       }
+    }
+  };
+
+  const handleSettingChange = (setting, value) => {
+    if (setting === 'showIndividualDiscount') {
+      setShowIndividualDiscount(value);
+    } else if (setting === 'showFixace') {
+      setShowFixace(value);
     }
   };
 
@@ -251,7 +303,15 @@ function ViewOffersPage() {
               <h1 className="text-2xl font-bold text-gray-900">
                 My Offers
               </h1>
-              <div className="space-x-4">
+              <div className="flex justify-between items-center space-x-4">
+                <button
+                  onClick={() => setIsSettingsModalOpen(true)}
+                  className="bg-gray-100 text-gray-700 px-4 py-2 rounded hover:bg-gray-200"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                    <path fillRule="evenodd" d="M11.49 3.17c-.38-1.56-2.6-1.56-2.98 0a1.532 1.532 0 01-2.286.948c-1.372-.836-2.942.734-2.106 2.106.54.886.061 2.042-.947 2.287-1.561.379-1.561 2.6 0 2.978a1.532 1.532 0 01.947 2.287c-.836 1.372.734 2.942 2.106 2.106a1.532 1.532 0 012.287.947c.379 1.561 2.6 1.561 2.978 0a1.533 1.533 0 012.287-.947c1.372.836 2.942-.734 2.106-2.106a1.533 1.533 0 01.947-2.287c1.561-.379 1.561-2.6 0-2.978a1.532 1.532 0 01-.947-2.287c.836-1.372-.734-2.942-2.106-2.106a1.532 1.532 0 01-2.287-.947zM10 13a3 3 0 100-6 3 3 0 000 6z" clipRule="evenodd" />
+                  </svg>
+                </button>
                 <button
                   onClick={handlePrintToPDF}
                   className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded"
@@ -304,12 +364,23 @@ function ViewOffersPage() {
               readonly={true}
               ref={printRef}
               exporting={exporting}
-              showFixace={true}
-              showIndividualDiscount={true}
+              showFixace={showFixace}
+              showIndividualDiscount={showIndividualDiscount}
               selectedConfiguration={selectedConfiguration}
             />
           </div>
         </div>
+
+        {/* Add Settings Modal */}
+        <SettingsModal
+          show={isSettingsModalOpen}
+          onClose={() => setIsSettingsModalOpen(false)}
+          settings={{ 
+            showIndividualDiscount,
+            showFixace
+          }}
+          onSettingChange={handleSettingChange}
+        />
       </div>
     </div>
   );

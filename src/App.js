@@ -15,6 +15,7 @@ import { TestPage } from "./pages/TestPage";
 import { TestPage2 } from "./pages/TestPage2";
 import ProtectedRoute from "./components/ProtectedRoute";
 import UnauthorizedPage from "./pages/UnauthorizedPage";
+import PrintPage from "./pages/PrintPage";
 
 function App() {
   const [user, setUser] = useState(null);
@@ -69,6 +70,12 @@ function App() {
               <Route path="/viewoffers" element={
                 <ProtectedRoute allowedRoles={['admin', 'account']}>
                   <ViewOffersPage />
+                </ProtectedRoute>
+              } />
+              
+              <Route path="/print" element={
+                <ProtectedRoute allowedRoles={['admin', 'account']}>
+                  <PrintPage />
                 </ProtectedRoute>
               } />
               
