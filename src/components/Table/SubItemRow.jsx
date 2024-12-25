@@ -21,7 +21,8 @@ export function SubItemRow({
   showIndividualDiscount = false, 
   showFixace = false,
   onDiscountChange,
-  readonly = false
+  readonly = false,
+  enableRowSelection = false
 }) {
 
   // Calculate displayed amount based on type
@@ -96,6 +97,11 @@ export function SubItemRow({
 
   return (
     <tr className={`${tableStyles.itemRow} bg-gray-50`}>
+      {enableRowSelection && (
+        <td className={`${tableStyles.bodyCell} w-10`}>
+          <div className={tableStyles.centerWrapper}></div>
+        </td>
+      )}
       <td className={`${tableStyles.columnWidths.details} ${tableStyles.bodyCell}`}>
         <div className="flex flex-col pl-8">
           <span className={tableStyles.itemName.item}>

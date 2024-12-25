@@ -4,10 +4,14 @@ export function TableColgroup({
   bundles, 
   tableStyles, 
   showIndividualDiscount = false,
-  showFixace = false 
+  showFixace = false,
+  enableRowSelection = false
 }) {
   return (
     <colgroup>
+      {enableRowSelection && (
+        <col className="w-10" />
+      )}
       <col className={tableStyles.columnWidths.details} />
       <col className={tableStyles.columnWidths.amount} />
       {showFixace && (

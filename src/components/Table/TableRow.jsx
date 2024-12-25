@@ -6,7 +6,7 @@ import { Item } from '../../types/Item';
 import { formatPrice } from '../../utils/tableUtils';
 import { isBundleActive, isBundleDisabled } from '../../utils/tableUtils';
 
-export function TableRow({ item, bundles, amounts, onAmountChange, readonly = false, showIndividualDiscount = false, showFixace = false }) {
+export function TableRow({ item, bundles, amounts, onAmountChange, readonly = false, showIndividualDiscount = false, showFixace = false, enableRowSelection = false, selectedRows = {}, onRowSelect }) {
   const tableStyles = useTableStyles();
   const [isExpanded, setIsExpanded] = React.useState(false);
   // Convert plain item object to Item instance if it isn't already
@@ -17,7 +17,15 @@ export function TableRow({ item, bundles, amounts, onAmountChange, readonly = fa
     return (
       <tr className={`
         ${itemInstance.depth > 0 ? `pl-${itemInstance.depth * 4}` : ''}
-      `}>
+      `}
+      data-category-row="true"
+      data-category-id={itemInstance.id}
+      >
+        {enableRowSelection && (
+          <td className={`${tableStyles.bodyCell} w-10`}>
+            <div className={tableStyles.centerWrapper}></div>
+          </td>
+        )}
         <td className={`
           ${tableStyles.columnWidths.details} 
           ${tableStyles.bodyCell}
@@ -92,6 +100,18 @@ export function TableRow({ item, bundles, amounts, onAmountChange, readonly = fa
         data-item-id={itemInstance.id}
         data-expanded={isExpanded}
       >
+        {enableRowSelection && (
+          <td className={`${tableStyles.bodyCell} w-10`} onClick={(e) => e.stopPropagation()}>
+            <div className={tableStyles.centerWrapper}>
+              <input
+                type="checkbox"
+                checked={selectedRows[itemInstance.id] || false}
+                onChange={(e) => onRowSelect?.(itemInstance.id, e.target.checked)}
+                className={tableStyles.checkbox}
+              />
+            </div>
+          </td>
+        )}
         <td className={`${tableStyles.columnWidths.details} ${tableStyles.bodyCell}`}>
           <div className={tableStyles.accordionWrapper}>
             {showFixace && (
@@ -407,6 +427,7 @@ export function TableRow({ item, bundles, amounts, onAmountChange, readonly = fa
               onAmountChange(itemInstance.id, value, 'discount', subItemId);
             }}
             readonly={readonly}
+            enableRowSelection={enableRowSelection}
           />
           <SubItemRow 
             key={`${itemInstance.id}-over-fixation-items`}
@@ -422,6 +443,7 @@ export function TableRow({ item, bundles, amounts, onAmountChange, readonly = fa
               onAmountChange(itemInstance.id, value, 'discount', subItemId);
             }}
             readonly={readonly}
+            enableRowSelection={enableRowSelection}
           />
         </>
       )}

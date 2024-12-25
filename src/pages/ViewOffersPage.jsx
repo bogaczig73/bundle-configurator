@@ -95,6 +95,8 @@ function ViewOffersPage() {
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
   const [showIndividualDiscount, setShowIndividualDiscount] = usePersistedSettings('showIndividualDiscount', false);
   const [showFixace, setShowFixace] = usePersistedSettings('showFixace', false);
+  const [enableRowSelection, setEnableRowSelection] = usePersistedSettings('enableRowSelection', false);
+  const [selectedRows, setSelectedRows] = useState({});
 
   // Filter configurations based on current user
   const filteredConfigurations = useMemo(() => {
@@ -159,18 +161,187 @@ function ViewOffersPage() {
     });
   };
 
-  // Add this new function to handle PNG export
-  const handlePrintToPNG = async () => {
+  // Handle row selection
+  const handleRowSelect = (itemId, selected) => {
+    setSelectedRows(prev => ({
+      ...prev,
+      [itemId]: selected
+    }));
+  };
+
+  // Handle setting change
+  const handleSettingChange = (setting, value) => {
+    if (setting === 'showIndividualDiscount') {
+      setShowIndividualDiscount(value);
+    } else if (setting === 'showFixace') {
+      setShowFixace(value);
+    } else if (setting === 'enableRowSelection') {
+      setEnableRowSelection(value);
+      if (!value) {
+        setSelectedRows({});
+      }
+    }
+  };
+
+  // Modify print functions to respect row selection
+  const handlePrintToPDF = async () => {
     if (printRef.current) {
       try {
+        if (showFixace) {
+          const tableRows = document.querySelectorAll('[data-accordion-row="true"]');
+          tableRows.forEach(row => {
+            const itemId = row.getAttribute('data-item-id');
+            if (amounts.amounts[itemId] > 0) {
+              row.click(); // Trigger click to expand
+            }
+          });
+        }
         setExporting(true);
-        
-        // Add a small delay to ensure the state update is reflected
+
+        // Hide unselected rows if row selection is enabled
+        if (enableRowSelection && Object.keys(selectedRows).length > 0) {
+          const tableRows = document.querySelectorAll('[data-accordion-row="true"], [data-category-row="true"]');
+          
+          // First pass: Hide unselected items
+          tableRows.forEach(row => {
+            const itemId = row.getAttribute('data-item-id');
+            const isCategory = row.getAttribute('data-category-row') === 'true';
+            
+            if (!isCategory && !selectedRows[itemId]) {
+              row.style.display = 'none';
+            }
+          });
+
+          // Second pass: Hide categories with no visible items
+          tableRows.forEach(row => {
+            const isCategory = row.getAttribute('data-category-row') === 'true';
+            if (isCategory) {
+              const categoryId = row.getAttribute('data-category-id');
+              const nextRows = [];
+              let nextRow = row.nextElementSibling;
+              
+              // Collect all rows until next category
+              while (nextRow && nextRow.getAttribute('data-category-row') !== 'true') {
+                nextRows.push(nextRow);
+                nextRow = nextRow.nextElementSibling;
+              }
+
+              // Check if all items in this category are hidden
+              const allHidden = nextRows.every(row => row.style.display === 'none');
+              if (allHidden) {
+                row.style.display = 'none';
+              }
+            }
+          });
+        }
+
         await new Promise(resolve => setTimeout(resolve, 100));
         
         const element = printRef.current;
         const canvas = await html2canvas(element, {
-          scale: 2, // Higher scale for better quality
+          scale: 2.2,
+          height: printRef.current.scrollHeight,
+          width: 1920,
+          logging: false,
+          useCORS: true,
+          allowTaint: true,
+          foreignObjectRendering: true,
+          x: -250,
+          y: -270
+        });
+
+        const imgData = canvas.toDataURL('image/jpeg', 1.0);
+        
+        const pdf = new jsPDF({
+          orientation: 'portrait',
+          unit: 'pt',
+          format: [canvas.width, canvas.height]
+        });
+
+        const imgProps = pdf.getImageProperties(imgData);
+        const pdfWidth = pdf.internal.pageSize.getWidth();
+        const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
+
+        pdf.addImage(imgData, 'JPEG', 0, 0, pdfWidth, pdfHeight);
+
+        const filename = selectedConfiguration 
+          ? `offer-${selectedConfiguration.name}.pdf`
+          : `offer-${new Date().toISOString()}.pdf`;
+
+        pdf.save(filename);
+      } catch (error) {
+        console.error('Error generating PDF:', error);
+      } finally {
+        // Restore visibility of hidden rows
+        if (enableRowSelection && Object.keys(selectedRows).length > 0) {
+          const tableRows = document.querySelectorAll('[data-accordion-row="true"], [data-category-row="true"]');
+          tableRows.forEach(row => {
+            row.style.display = '';
+          });
+        }
+
+        if (showFixace) {
+          const tableRows = document.querySelectorAll('[data-accordion-row="true"]');
+          tableRows.forEach(row => {
+            const itemId = row.getAttribute('data-item-id');
+            if (amounts.amounts[itemId] > 0) {
+              row.click();
+            }
+          });
+        }
+        setExporting(false);
+      }
+    }
+  };
+
+  // Similar modification for PNG export
+  const handlePrintToPNG = async () => {
+    if (printRef.current) {
+      try {
+        setExporting(true);
+
+        // Hide unselected rows if row selection is enabled
+        if (enableRowSelection && Object.keys(selectedRows).length > 0) {
+          const tableRows = document.querySelectorAll('[data-accordion-row="true"], [data-category-row="true"]');
+          
+          // First pass: Hide unselected items
+          tableRows.forEach(row => {
+            const itemId = row.getAttribute('data-item-id');
+            const isCategory = row.getAttribute('data-category-row') === 'true';
+            
+            if (!isCategory && !selectedRows[itemId]) {
+              row.style.display = 'none';
+            }
+          });
+
+          // Second pass: Hide categories with no visible items
+          tableRows.forEach(row => {
+            const isCategory = row.getAttribute('data-category-row') === 'true';
+            if (isCategory) {
+              const categoryId = row.getAttribute('data-category-id');
+              const nextRows = [];
+              let nextRow = row.nextElementSibling;
+              
+              // Collect all rows until next category
+              while (nextRow && nextRow.getAttribute('data-category-row') !== 'true') {
+                nextRows.push(nextRow);
+                nextRow = nextRow.nextElementSibling;
+              }
+
+              // Check if all items in this category are hidden
+              const allHidden = nextRows.every(row => row.style.display === 'none');
+              if (allHidden) {
+                row.style.display = 'none';
+              }
+            }
+          });
+        }
+        
+        await new Promise(resolve => setTimeout(resolve, 100));
+        
+        const element = printRef.current;
+        const canvas = await html2canvas(element, {
+          scale: 2,
           height: printRef.current.scrollHeight,
           width: 1920,
           logging: false,
@@ -180,11 +351,9 @@ function ViewOffersPage() {
           y: -250
         });
 
-        // Create PNG file
         const data = canvas.toDataURL('image/jpeg');
         const link = document.createElement('a');
         
-        // Create filename using configuration name or timestamp
         const filename = selectedConfiguration 
           ? `offer-${selectedConfiguration.name}.jpeg`
           : `offer-${new Date().toISOString()}.jpeg`;
@@ -198,86 +367,15 @@ function ViewOffersPage() {
       } catch (error) {
         console.error('Error generating PNG:', error);
       } finally {
-        setExporting(false);
-      }
-    }
-  };
-  // Add this new function to handle PDF export
-  const handlePrintToPDF = async () => {
-    if (printRef.current) {
-      try {
-        if (showFixace) {
-          const tableRows = document.querySelectorAll('[data-accordion-row="true"]');
+        // Restore visibility of hidden rows
+        if (enableRowSelection && Object.keys(selectedRows).length > 0) {
+          const tableRows = document.querySelectorAll('[data-accordion-row="true"], [data-category-row="true"]');
           tableRows.forEach(row => {
-            const itemId = row.getAttribute('data-item-id');
-
-            if (amounts.amounts[itemId] > 0) {
-              row.click(); // Trigger click to expand
-            }
-          });
-        }
-        setExporting(true);
-        // Add a small delay to ensure the state update is reflected
-        await new Promise(resolve => setTimeout(resolve, 100));
-        
-        const element = printRef.current;
-        const canvas = await html2canvas(element, {
-          scale: 2.2, // Higher scale for better quality
-          height: printRef.current.scrollHeight,
-          width: 1920,
-          logging: false,
-          useCORS: true,
-          allowTaint: true,
-          foreignObjectRendering: true,
-          x: -250,
-          y: -270
-        });
-
-        const imgData = canvas.toDataURL('image/jpeg', 1.0);
-        
-        // Create PDF
-        const pdf = new jsPDF({
-          orientation: 'portrait',
-          unit: 'pt',
-          format: [canvas.width, canvas.height]
-        });
-
-        // Calculate dimensions to fit the image properly
-        const imgProps = pdf.getImageProperties(imgData);
-        const pdfWidth = pdf.internal.pageSize.getWidth();
-        const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
-
-        pdf.addImage(imgData, 'JPEG', 0, 0, pdfWidth, pdfHeight);
-
-        // Create filename using configuration name or timestamp
-        const filename = selectedConfiguration 
-          ? `offer-${selectedConfiguration.name}.pdf`
-          : `offer-${new Date().toISOString()}.pdf`;
-
-        pdf.save(filename);
-      } catch (error) {
-        console.error('Error generating PDF:', error);
-      } finally {
-        if (showFixace) {
-          const tableRows = document.querySelectorAll('[data-accordion-row="true"]');
-          console.log('tableRows', tableRows);
-          tableRows.forEach(row => {
-            const itemId = row.getAttribute('data-item-id');
-            if (amounts.amounts[itemId] > 0) {
-              row.click(); // Trigger click to expand
-            }
+            row.style.display = '';
           });
         }
         setExporting(false);
       }
-    }
-  };
-
-  const handleSettingChange = (setting, value) => {
-    if (setting === 'showIndividualDiscount') {
-      setShowIndividualDiscount(value);
-    } else if (setting === 'showFixace') {
-      setShowFixace(value);
     }
   };
 
@@ -367,18 +465,21 @@ function ViewOffersPage() {
                 showFixace={showFixace}
                 showIndividualDiscount={showIndividualDiscount}
                 selectedConfiguration={selectedConfiguration}
+                enableRowSelection={enableRowSelection}
+                selectedRows={selectedRows}
+                onRowSelect={handleRowSelect}
               />
             </div>
           </div>
         </div>
 
-        {/* Add Settings Modal */}
         <SettingsModal
           show={isSettingsModalOpen}
           onClose={() => setIsSettingsModalOpen(false)}
           settings={{ 
             showIndividualDiscount,
-            showFixace
+            showFixace,
+            enableRowSelection
           }}
           onSettingChange={handleSettingChange}
         />

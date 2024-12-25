@@ -8,7 +8,8 @@ export function TableHeader({
   tableStyles, 
   flattenedItems, 
   showIndividualDiscount = false, 
-  showFixace = false 
+  showFixace = false,
+  enableRowSelection = false
 }) {
   
   const bundleTotals = React.useMemo(() => {
@@ -25,10 +26,18 @@ export function TableHeader({
           bundles={bundles} 
           tableStyles={tableStyles} 
           showIndividualDiscount={showIndividualDiscount} 
-          showFixace={showFixace} 
+          showFixace={showFixace}
+          enableRowSelection={enableRowSelection}
         />
         <thead>
           <tr>
+            {enableRowSelection && (
+              <th className={`${tableStyles.headerCell} w-10`}>
+                <div className={tableStyles.centerWrapper}>
+                  Výběr
+                </div>
+              </th>
+            )}
             <th className={`${tableStyles.columnWidths.details} text-left ${tableStyles.headerCell}`}>
               Název položky
             </th>
