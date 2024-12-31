@@ -20,6 +20,19 @@ const ConfigurationsPicker = ({ configurations, users, selectedConfiguration, on
     return configurations.filter(config => config.customer === selectedCustomer);
   }, [configurations, selectedCustomer]);
 
+  const formatDate = (timestamp) => {
+    if (!timestamp) return 'No date';
+    // Handle Firebase Timestamp object
+    const date = timestamp.seconds ? new Date(timestamp.seconds * 1000) : new Date(timestamp);
+    return date.toLocaleString('cs-CZ', { 
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  };
+
   return (
     <div className="px-8 py-4 bg-white border-b">
       <div className="mb-4">
@@ -56,12 +69,8 @@ const ConfigurationsPicker = ({ configurations, users, selectedConfiguration, on
                {users.find(user => user.id === configuration.customer)?.username || 'Unknown customer'}
               </div>
               <div className="mt-1">
-                <span className={`px-2 py-0.5 rounded-full text-xs ${
-                  configuration.status === 'completed' 
-                    ? 'bg-green-100 text-green-800' 
-                    : 'bg-yellow-100 text-yellow-800'
-                }`}>
-                  {configuration.status || 'draft'}
+                <span className="text-xs text-gray-500">
+                  {formatDate(configuration.createdAt)}
                 </span>
               </div>
             </div>
@@ -101,8 +110,6 @@ function ViewOffersPage() {
   // Filter configurations based on current user
   const filteredConfigurations = useMemo(() => {
     if (!user || !configurations) return [];
-    console.log('configurations', configurations);
-    console.log('Filtered configurations:', configurations.filter(config => config.createdBy === user.id));
     return configurations.filter(config => config.createdBy === user.id);
   }, [configurations, user]);
 
@@ -116,9 +123,22 @@ function ViewOffersPage() {
       };
       Object.entries(selectedConfiguration.items).forEach(([itemId, itemData]) => {
         configAmounts.amounts[itemId] = itemData.amount || 0;
+        configAmounts.fixace[itemId] = itemData.fixace || 0;
+        
+        // Handle main item discount
         if (itemData.discount) configAmounts.discount[itemId] = itemData.discount;
-        if (itemData.fixace) configAmounts.fixace[itemId] = itemData.fixace;
+        
+        // Handle subitem discounts
+        if (itemData.subItemDiscounts) {
+          if (itemData.subItemDiscounts.fixace) {
+            configAmounts.discount[`${itemId}_fixed_items`] = itemData.subItemDiscounts.fixace;
+          }
+          if (itemData.subItemDiscounts.over) {
+            configAmounts.discount[`${itemId}_over_fixation_items`] = itemData.subItemDiscounts.over;
+          }
+        }
       });
+      console.log('configAmounts', configAmounts);
       setAmounts(configAmounts);
     } else {
       setAmounts({

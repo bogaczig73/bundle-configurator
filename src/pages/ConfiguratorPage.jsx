@@ -79,6 +79,7 @@ function ConfiguratorPage() {
       }
       
       console.log('Updated amounts:', newAmounts);
+      console.log('newAmounts', newAmounts);
       return newAmounts;
     });
   };
@@ -94,14 +95,18 @@ function ConfiguratorPage() {
       
       // Ensure we have valid amounts data
       const validItems = {};
-      
+      console.log('amounts', amounts);
       // Only include items that have actual values
       Object.entries(amounts.amounts || {}).forEach(([itemId, amount]) => {
         if (amount !== undefined && amount !== null) {
           validItems[itemId.toString()] = {
             amount: Number(amount) || 0,
             discount: Number(amounts.discount?.[itemId]) || 0,
-            fixace: Number(amounts.fixace?.[itemId]) || 0
+            fixace: Number(amounts.fixace?.[itemId]) || 0,
+            subItemDiscounts: {
+              'fixace': Number(amounts.discount?.[`${itemId}_fixed_items`]) || 0,
+              'over': Number(amounts.discount?.[`${itemId}_over_fixation_items`]) || 0
+            }
           };
         }
       });

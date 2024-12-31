@@ -11,7 +11,7 @@ const styles = StyleSheet.create({
   page: {
     flexDirection: 'column',
     backgroundColor: '#ffffff',
-    padding: 20,
+    padding: 10,
     fontFamily: 'Roboto'
   },
   container: {
@@ -21,15 +21,18 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     borderBottomWidth: 1,
     borderBottomColor: '#E2E8F0',
-    backgroundColor: '#F7FAFC',
+    backgroundColor: '#FFFFFF',
+    fontWeight: 'bold',
   },
   headerCell: {
-    padding: '4px 8px',
+    padding: '4px 4px',
     fontSize: 8,
     fontFamily: 'Roboto',
     color: '#1A202C',
     textTransform: 'uppercase',
     letterSpacing: 0.5,
+    display: 'flex',
+    alignItems: 'center',
   },
   tableRow: {
     flexDirection: 'row',
@@ -39,29 +42,41 @@ const styles = StyleSheet.create({
     backgroundColor: '#ffffff',
   },
   categoryRow: {
-    backgroundColor: '#F7FAFC',
+    flexDirection: 'row',
+    borderBottomWidth: 1,
+    backgroundColor: '#ffffff',
+    borderBottomColor: '#ffffff',
+    minHeight: 25,
   },
-  detailsColumn: {
+  categoryDetailsColumn: {
     width: 140,
     padding: '4px 8px',
+    borderBottomWidth: 1,
+    borderBottomColor: '#e1007b',
   },
-  amountColumn: {
-    width: 40,
+  categoryAmountColumn: {
+    width: 50,
     padding: '4px 8px',
     justifyContent: 'center',
     alignItems: 'center',
+    borderBottomWidth: 1,
+    borderBottomColor: '#e1007b',
   },
-  fixaceColumn: {
-    width: 40,
+  categoryFixaceColumn: {
+    width: 60,
     padding: '4px 8px',
     justifyContent: 'center',
     alignItems: 'center',
+    borderBottomWidth: 1,
+    borderBottomColor: '#e1007b',
   },
-  discountColumn: {
-    width: 40,
+  categoryDiscountColumn: {
+    width: 60,
     padding: '4px 8px',
     justifyContent: 'center',
     alignItems: 'center',
+    borderBottomWidth: 1,
+    borderBottomColor: '#e1007b',
   },
   bundleColumn: {
     width: 80,
@@ -73,6 +88,7 @@ const styles = StyleSheet.create({
   },
   spacerColumn: {
     width: 10,
+    backgroundColor: '#FFFFFF',
   },
   itemName: {
     fontSize: 8,
@@ -82,7 +98,8 @@ const styles = StyleSheet.create({
   categoryName: {
     fontSize: 8,
     fontFamily: 'Roboto',
-    color: '#1A202C',
+    color: '#e1007b',
+    justifyContent: 'center',
   },
   itemNote: {
     fontSize: 6,
@@ -94,6 +111,7 @@ const styles = StyleSheet.create({
     fontSize: 8,
     fontFamily: 'Roboto',
     color: '#4A5568',
+    textAlign: 'center',
   },
   priceNote: {
     fontSize: 6,
@@ -116,9 +134,45 @@ const styles = StyleSheet.create({
   indentedContent: {
     flexDirection: 'row',
     alignItems: 'center',
+    height: '100%',
   },
   indent: {
-    width: 10,
+    width: 5,
+  },
+  subItemRow: {
+    flexDirection: 'row',
+    borderBottomWidth: 1,
+    borderBottomColor: '#E2E8F0',
+    minHeight: 25,
+    backgroundColor: '#F7FAFC',
+  },
+  indentedContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingLeft: 4,
+  },
+  detailsColumn: {
+    width: 140,
+    padding: '4px 8px',
+    justifyContent: 'center',
+  },
+  amountColumn: {
+    width: 50,
+    padding: '4px 8px',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  fixaceColumn: {
+    width: 60,
+    padding: '4px 8px',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  discountColumn: {
+    width: 60,
+    padding: '4px 8px',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
 });
 
@@ -147,15 +201,84 @@ const Indent = ({ depth }) => {
   return <>{indents}</>;
 };
 
-// Helper function to convert text with Czech characters to Unicode escape sequences
-const czechToUnicode = (text) => {
-  return text
-    .replace(/á/g, '\u00E1')
+// Helper function to calculate final price
+const calculateFinalPrice = (basePrice, type, amounts, parentItem, bundle) => {
+  const discountKey = `${parentItem.id}_${type === 'fixace' ? 'fixed_items' : 'over_fixation_items'}`;
+  const packageInfo = parentItem.packages?.find(p => p.packageId === bundle.id);
+  const baseItemPrice = packageInfo?.price || 0;
+  const discountedAmount = packageInfo?.discountedAmount || 0;
+  const discountPercentage = amounts?.discount?.[discountKey] ?? parentItem.discount ?? 0;
   
+  let applicableUnits = 0;
+  if (type === 'fixace') {
+    applicableUnits = amounts?.fixace?.[parentItem.id] || 0;
+  } else if (type === 'over') {
+    const totalAmount = amounts?.amounts?.[parentItem.id] || 0;
+    const fixaceAmount = amounts?.fixace?.[parentItem.id] || 0;
+    applicableUnits = Math.max(0, totalAmount - fixaceAmount - discountedAmount);
+  }
+
+  const priceAfterDiscount = baseItemPrice * (1 - discountPercentage / 100);
+  const finalPrice = priceAfterDiscount * applicableUnits;
+
+  return {
+    finalPrice,
+    applicableUnits,
+    pricePerUnit: baseItemPrice,
+    discountedAmount,
+    discountPercentage
+  };
+};
+
+// Helper function to calculate total price for an item including subitems
+const calculateTotalPrice = (item, bundle, amounts) => {
+  let total = 0;
+  
+  if (amounts?.amounts?.[item.id] > 0) {
+    const packageInfo = item.packages?.find(p => p.packageId === bundle.id);
+    if (!packageInfo) return 0;
+
+    // Get the main item discount
+    const mainDiscount = amounts?.discount?.[item.id] ?? item.discount ?? 0;
+
+    // Add fixace price
+    const fixacePrice = calculateFinalPrice(
+      packageInfo.price || 0,
+      'fixace',
+      amounts,
+      item,
+      bundle
+    ).finalPrice;
+
+    // Add over-fixace price
+    const overPrice = calculateFinalPrice(
+      packageInfo.price || 0,
+      'over',
+      amounts,
+      item,
+      bundle
+    ).finalPrice;
+
+    // Apply main item discount to the total
+    total = (fixacePrice + overPrice) * (1 - mainDiscount / 100);
+  }
+
+  return total;
 };
 
 export const PDFDocument = ({ packages, items, amounts, currentConfig, showFixace = false, showIndividualDiscount = false }) => {
   if (!items || !packages) return null;
+
+  // Calculate total price for each bundle
+  const calculateBundleTotal = (bundle) => {
+    let total = 0;
+    flattenedItems.forEach(item => {
+      if (item.type === 'item') {
+        total += calculateTotalPrice(item, bundle, amounts);
+      }
+    });
+    return total;
+  };
 
   // Flatten items while preserving hierarchy
   const flattenItems = (items, depth = 0) => {
@@ -200,19 +323,19 @@ export const PDFDocument = ({ packages, items, amounts, currentConfig, showFixac
           {/* Header Row */}
           <View style={styles.tableHeader}>
             <View style={styles.detailsColumn}>
-              <Text style={styles.headerCell}>{czechToUnicode('Název položky')}</Text>
+              <Text style={styles.headerCell}>Název položky</Text>
             </View>
             <View style={styles.amountColumn}>
-              <Text style={styles.headerCell}>{czechToUnicode('Množství')}</Text>
+              <Text style={styles.headerCell}>Počet</Text>
             </View>
             {showFixace && (
               <View style={styles.fixaceColumn}>
-                <Text style={styles.headerCell}>{czechToUnicode('Fixace')}</Text>
+                <Text style={styles.headerCell}>Fixace</Text>
               </View>
             )}
             {showIndividualDiscount && (
               <View style={styles.discountColumn}>
-                <Text style={styles.headerCell}>{czechToUnicode('Slevy')}</Text>
+                <Text style={styles.headerCell}>Slevy</Text>
               </View>
             )}
             {packages.map((bundle, index) => (
@@ -222,9 +345,9 @@ export const PDFDocument = ({ packages, items, amounts, currentConfig, showFixac
                   styles.bundleColumn,
                   { borderColor: getBundleBorderColor(index) }
                 ]}>
-                  <Text style={styles.headerCell}>{czechToUnicode(bundle.name)}</Text>
+                  <Text style={styles.headerCell}>{bundle.name}</Text>
                   <Text style={styles.bundlePrice}>
-                    {formatPrice(bundle.totalPrice || 0)}
+                    {formatPrice(calculateBundleTotal(bundle))}
                   </Text>
                 </View>
               </React.Fragment>
@@ -233,74 +356,184 @@ export const PDFDocument = ({ packages, items, amounts, currentConfig, showFixac
 
           {/* Table Rows */}
           {flattenedItems.map((item) => (
-            <View key={item.id || item.uniqueId} style={[
-              styles.tableRow,
-              item.type === 'category' && styles.categoryRow
-            ]}>
-              {/* Details Column */}
-              <View style={styles.detailsColumn}>
-                <View style={styles.indentedContent}>
-                  <Indent depth={item.depth} />
-                  <View style={{ flex: 1 }}>
-                    <Text style={item.type === 'category' ? styles.categoryName : styles.itemName}>
-                      {czechToUnicode(item.name)}
-                    </Text>
-                    {item.note && (
-                      <Text style={styles.itemNote}>{czechToUnicode(item.note)}</Text>
-                    )}
+            <React.Fragment key={item.id || item.uniqueId}>
+              {/* Main Item Row */}
+              <View key={item.id || item.uniqueId} style={[
+                item.type === 'category' ? styles.categoryRow : styles.tableRow
+              ]}>
+                {/* Details Column */}
+                <View style={item.type === 'category' ? styles.categoryDetailsColumn : styles.detailsColumn}>
+                  <View style={styles.indentedContent}>
+                    <Indent depth={item.depth} />
+                    <View style={{ flex: 1 }}>
+                      <Text style={item.type === 'category' ? styles.categoryName : styles.itemName}>
+                        {item.name}
+                      </Text>
+                      {item.note && (
+                        <Text style={styles.itemNote}>{item.note}</Text>
+                      )}
+                    </View>
                   </View>
                 </View>
-              </View>
 
-              {/* Amount Column */}
-              <View style={styles.amountColumn}>
-                <Text style={styles.priceText}>
-                  {getItemAmount(item.id)}
-                </Text>
-              </View>
-
-              {/* Fixace Column */}
-              {showFixace && (
-                <View style={styles.fixaceColumn}>
+                {/* Amount Column */}
+                <View style={item.type === 'category' ? styles.categoryAmountColumn : styles.amountColumn}>
                   <Text style={styles.priceText}>
-                    {getFixaceAmount(item.id)}
+                    {getItemAmount(item.id)}
                   </Text>
                 </View>
-              )}
 
-              {/* Individual Discount Column */}
-              {showIndividualDiscount && (
-                <View style={styles.discountColumn}>
-                  <Text style={styles.priceText}>
-                    {getDiscount(item.id)}
-                  </Text>
-                </View>
-              )}
+                {/* Fixace Column */}
+                {showFixace && (
+                  <View style={item.type === 'category' ? styles.categoryFixaceColumn : styles.fixaceColumn}>
+                    <Text style={styles.priceText}>
+                      {getFixaceAmount(item.id)}
+                    </Text>
+                  </View>
+                )}
 
-              {/* Bundle Columns */}
-              {packages.map((bundle, index) => (
-                <React.Fragment key={`${item.id}-${bundle.id}`}>
-                  <View style={styles.spacerColumn} />
-                  <View style={[
-                    styles.bundleColumn,
-                    { borderColor: getBundleBorderColor(index) }
-                  ]}>
-                    {item.type === 'item' && (
-                      <View>
-                        <Text style={styles.priceText}>
-                          {getItemPrice(item, bundle.id) !== '-' ? formatPrice(getItemPrice(item, bundle.id)) : '-'}
-                        </Text>
-                        {getItemPrice(item, bundle.id) !== '-' && (
-                          <Text style={styles.priceNote}>
-                            {czechToUnicode('za kus')}
+                {/* Individual Discount Column */}
+                {showIndividualDiscount && (
+                  <View style={item.type === 'category' ? styles.categoryDiscountColumn : styles.discountColumn}>
+                    <Text style={styles.priceText}>
+                      {getDiscount(item.id)}
+                    </Text>
+                  </View>
+                )}
+
+                {/* Bundle Columns */}
+                {packages.map((bundle, index) => (
+                  <React.Fragment key={`${item.id}-${bundle.id}`}>
+                    <View style={styles.spacerColumn} />
+                    <View style={[
+                      styles.bundleColumn,
+                      { borderColor: getBundleBorderColor(index) }
+                    ]}>
+                      {item.type === 'item' && (
+                        <View>
+                          <Text style={styles.priceText}>
+                            {formatPrice(calculateTotalPrice(item, bundle, amounts))}
                           </Text>
-                        )}
+                        </View>
+                      )}
+                    </View>
+                  </React.Fragment>
+                ))}
+              </View>
+
+              {/* Subitem Rows */}
+              {showFixace && item.type === 'item' && amounts?.amounts?.[item.id] > 0 && (
+                <>
+                  {/* Fixace Row */}
+                  <View style={styles.subItemRow}>
+                    <View style={styles.detailsColumn}>
+                      <View style={styles.indentedContent}>
+                        <Indent depth={item.depth + 1} />
+                        <Text style={styles.itemName}>Fixované položky</Text>
+                      </View>
+                    </View>
+
+                    <View style={styles.amountColumn}>
+                    <Text style={styles.priceText}>-</Text>
+                    </View>
+
+                    {showFixace && (
+                      <View style={styles.fixaceColumn}>
+                        <Text style={styles.priceText}>{amounts?.fixace?.[item.id] || '-'}</Text>
                       </View>
                     )}
+
+                    {showIndividualDiscount && (
+                      <View style={styles.discountColumn}>
+                        <Text style={styles.priceText}>
+                          {amounts?.discount?.[`${item.id}_fixed_items`] || item.discount || '0'}%
+                        </Text>
+                      </View>
+                    )}
+
+                    {packages.map((bundle, index) => (
+                      <React.Fragment key={`fixace-${item.id}-${bundle.id}`}>
+                        <View style={styles.spacerColumn} />
+                        <View style={[
+                          styles.bundleColumn,
+                          { borderColor: getBundleBorderColor(index) }
+                        ]}>
+                          <Text style={styles.priceText}>
+                            {formatPrice(calculateFinalPrice(
+                              0, // basePrice is not used anymore
+                              'fixace',
+                              amounts,
+                              item,
+                              bundle
+                            ).finalPrice)}
+                          </Text>
+                          {item.packages?.find(p => p.packageId === bundle.id)?.discountedAmount > 0 && (
+                            <Text style={styles.priceNote}>
+                              {`První ${item.packages.find(p => p.packageId === bundle.id).discountedAmount} v ceně`}
+                            </Text>
+                          )}
+                        </View>
+                      </React.Fragment>
+                    ))}
                   </View>
-                </React.Fragment>
-              ))}
-            </View>
+
+                  {/* Over Fixace Row */}
+                  <View style={styles.subItemRow}>
+                    <View style={styles.detailsColumn}>
+                      <View style={styles.indentedContent}>
+                        <Indent depth={item.depth + 1} />
+                        <Text style={styles.itemName}>Položky nad fixací</Text>
+                      </View>
+                    </View>
+
+                    <View style={styles.amountColumn}>
+                      <Text style={styles.priceText}>
+                        {Math.max(0, (amounts?.amounts?.[item.id] || 0) - (amounts?.fixace?.[item.id] || 0))}
+                      </Text>
+                    </View>
+
+                    {showFixace && (
+                      <View style={styles.fixaceColumn}>
+                        <Text style={styles.priceText}>-</Text>
+                      </View>
+                    )}
+
+                    {showIndividualDiscount && (
+                      <View style={styles.discountColumn}>
+                        <Text style={styles.priceText}>
+                          {amounts?.discount?.[`${item.id}_over_fixation_items`] || item.discount || '0'}%
+                        </Text>
+                      </View>
+                    )}
+
+                    {packages.map((bundle, index) => (
+                      <React.Fragment key={`over-${item.id}-${bundle.id}`}>
+                        <View style={styles.spacerColumn} />
+                        <View style={[
+                          styles.bundleColumn,
+                          { borderColor: getBundleBorderColor(index) }
+                        ]}>
+                          <Text style={styles.priceText}>
+                            {formatPrice(calculateFinalPrice(
+                              0, // basePrice is not used anymore
+                              'over',
+                              amounts,
+                              item,
+                              bundle
+                            ).finalPrice)}
+                          </Text>
+                          {item.packages?.find(p => p.packageId === bundle.id)?.discountedAmount > 0 && (
+                            <Text style={styles.priceNote}>
+                              {`First ${item.packages.find(p => p.packageId === bundle.id).discountedAmount} in price`}
+                            </Text>
+                          )}
+                        </View>
+                      </React.Fragment>
+                    ))}
+                  </View>
+                </>
+              )}
+            </React.Fragment>
           ))}
         </View>
       </Page>
