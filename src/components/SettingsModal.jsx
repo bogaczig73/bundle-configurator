@@ -10,7 +10,7 @@ function SettingsModal({ show, onClose, settings, onSettingChange }) {
           <div className="space-y-4">
             <div className="flex items-center justify-between">
               <label className="text-sm font-medium text-gray-700">
-                Enable Row Selection
+                  Povolit výběr řádků pro zobrazení
               </label>
               <div className="relative inline-flex items-center">
                 <button
@@ -34,7 +34,7 @@ function SettingsModal({ show, onClose, settings, onSettingChange }) {
 
             <div className="flex items-center justify-between">
               <label className="text-sm font-medium text-gray-700">
-                Show Fixace Column
+              Zobrazit sloupec: Fixace
               </label>
               <div className="relative inline-flex items-center">
                 <button
@@ -58,7 +58,7 @@ function SettingsModal({ show, onClose, settings, onSettingChange }) {
 
             <div className="flex items-center justify-between">
               <label className="text-sm font-medium text-gray-700">
-                Show Individual Discount Column
+                Zobrazit sloupec: Individuální slevy
               </label>
               <div className="relative inline-flex items-center">
                 <button

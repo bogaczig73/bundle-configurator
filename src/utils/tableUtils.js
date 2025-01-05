@@ -162,12 +162,7 @@ export const getCheckmarkIcon = (index) => {
 };
 
 export const calculateBundleTotal = (bundle, items, amounts) => {
-  console.log('\nCalculating total for bundle:', {
-    bundleId: bundle?.id,
-    bundleUserLimit: bundle?.userLimit,
-    itemsCount: items?.length,
-    amounts: amounts
-  });
+
 
   if (!items || !Array.isArray(items)) {
     console.warn('No items provided or items is not an array');

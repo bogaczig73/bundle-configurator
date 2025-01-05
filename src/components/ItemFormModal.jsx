@@ -19,10 +19,6 @@ function ItemFormModal({ show, onClose, onSubmit, onDelete, items, packages, edi
   });
 
   useEffect(() => {
-    console.log('Items prop:', items);
-  }, [items]);
-
-  useEffect(() => {
     if (editingItem) {
       setFormData({
         ...editingItem,

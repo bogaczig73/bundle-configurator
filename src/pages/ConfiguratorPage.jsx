@@ -193,11 +193,6 @@ function ConfiguratorPage() {
               <BundleTable
                 bundles={packages.map((pkg, index) => {
                   const userCount = amounts?.amounts?.[1] || 0;
-                  console.log('Bundle activation check:', {
-                    bundleId: pkg.id,
-                    packageUserLimit: pkg.userLimit,
-                    userCount
-                  });
                   
                   // Bundle is active if the user count (item ID 1) is less than or equal to its userLimit
                   const isActive = userCount <= pkg.userLimit;
