@@ -84,18 +84,18 @@ function UserManagementPage() {
     <div className="flex">
       <Sidebar />
       <div className="flex-1 p-8">
-        <h1 className="text-2xl font-bold mb-6">User Management</h1>
+        <h1 className="text-2xl font-bold mb-6">Správa uživatelů</h1>
         
         {/* Create User Form */}
         <div className="bg-white p-6 rounded-lg shadow-md mb-6">
-          <h2 className="text-xl font-semibold mb-4">Create New User</h2>
+          <h2 className="text-xl font-semibold mb-4">Vytvořit nového uživatele</h2>
           
           {error && <div className="text-red-500 mb-4">{error}</div>}
           {success && <div className="text-green-500 mb-4">{success}</div>}
           
           <form onSubmit={handleSubmit}>
             <div className="mb-4">
-              <label className="block text-sm font-medium text-gray-700">First Name</label>
+              <label className="block text-sm font-medium text-gray-700">Křestní jméno</label>
               <input
                 type="text"
                 name="firstName"
@@ -106,7 +106,7 @@ function UserManagementPage() {
               />
             </div>
             <div className="mb-4">
-              <label className="block text-sm font-medium text-gray-700">Last Name</label>
+              <label className="block text-sm font-medium text-gray-700">Příjmení</label>
               <input
                 type="text"
                 name="lastName"
@@ -117,7 +117,7 @@ function UserManagementPage() {
               />
             </div>
             <div className="mb-4">
-              <label className="block text-sm font-medium text-gray-700">Company Name</label>
+              <label className="block text-sm font-medium text-gray-700">Název společnosti</label>
               <input
                 type="text"
                 name="companyName"
@@ -139,7 +139,7 @@ function UserManagementPage() {
               />
             </div>
             <div className="mb-4">
-              <label className="block text-sm font-medium text-gray-700">Username</label>
+              <label className="block text-sm font-medium text-gray-700">Uživatelské jméno</label>
               <input
                 type="text"
                 name="username"
@@ -150,7 +150,7 @@ function UserManagementPage() {
               />
             </div>
             <div className="mb-4">
-              <label className="block text-sm font-medium text-gray-700">Password</label>
+              <label className="block text-sm font-medium text-gray-700">Heslo</label>
               <input
                 type="password"
                 name="password"
@@ -169,9 +169,9 @@ function UserManagementPage() {
                 className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
                 required
               >
-                <option value="customer">Customer</option>
+                <option value="customer">Zákazník</option>
                 <option value="admin">Admin</option>
-                <option value="account">Account</option>
+                <option value="account">Account Manager</option>
               </select>
             </div>
             <div className="mt-4">
@@ -187,12 +187,12 @@ function UserManagementPage() {
         
         {/* Updated User List */}
         <div className="bg-white p-6 rounded-lg shadow-md">
-          <h2 className="text-xl font-semibold mb-4">User List</h2>
+          <h2 className="text-xl font-semibold mb-4">Seznam uživatelů</h2>
           
           {/* Admin Users */}
           <div className="mb-6">
             <h3 className="text-lg font-medium text-gray-900 mb-2">
-              Administrators ({getUsersByRole().admin.length})
+              Administrátoři ({getUsersByRole().admin.length})
             </h3>
             <ul className="divide-y divide-gray-200 bg-gray-50 rounded-lg">
               {getUsersByRole().admin.map(user => (
@@ -228,7 +228,7 @@ function UserManagementPage() {
           {/* Customer Users - Updated with View Offer button */}
           <div className="mb-6">
             <h3 className="text-lg font-medium text-gray-900 mb-2">
-              Customers ({getUsersByRole().customer.length})
+              Zákazníci ({getUsersByRole().customer.length})
             </h3>
             <ul className="divide-y divide-gray-200 bg-gray-50 rounded-lg">
               {getUsersByRole().customer.map(user => (
@@ -240,7 +240,7 @@ function UserManagementPage() {
                       {user.role}
                     </span>
                   </div>
-                  <div className="flex gap-2">
+                  {/* <div className="flex gap-2">
                     {userBundles[user.id] ? (
                       <>
                         <Link 
@@ -253,7 +253,7 @@ function UserManagementPage() {
                           to={`/bundle/create/${user.id}`}
                           className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded text-sm"
                         >
-                          Create New Bundle
+                          Vytvořit nový bundle
                         </Link>
                       </>
                     ) : (
@@ -264,7 +264,7 @@ function UserManagementPage() {
                         Create Bundle
                       </Link>
                     )}
-                  </div>
+                  </div> */}
                 </li>
               ))}
             </ul>

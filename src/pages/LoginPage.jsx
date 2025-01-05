@@ -36,7 +36,7 @@ function LoginPage() {
           alt="ABRA Software"
         />
         <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
-          Sign in to your account
+          Přihlásit se
         </h2>
       </div>
 
@@ -51,7 +51,7 @@ function LoginPage() {
             
             <div>
               <label htmlFor="email" className="block text-sm font-medium text-gray-700">
-                Email address
+                Email
               </label>
               <div className="mt-1">
                 <input
@@ -69,7 +69,7 @@ function LoginPage() {
 
             <div>
               <label htmlFor="password" className="block text-sm font-medium text-gray-700">
-                Password
+                Heslo
               </label>
               <div className="mt-1">
                 <input

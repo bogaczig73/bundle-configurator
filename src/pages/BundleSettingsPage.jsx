@@ -227,14 +227,14 @@ function BundleSettingsPage() {
           <div className="p-4 md:p-6">
             <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-4">
               <h1 className="text-xl md:text-2xl font-bold text-gray-900">
-                {userId ? 'Create New Bundle for User' : 'Bundle Settings'}
+                {userId ? 'Create New Bundle for User' : 'Nastavení balíčků'}
               </h1>
               <div className="flex gap-2">
                 <button
                   onClick={handleLoadDefaults}
                   className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600"
                 >
-                  Load Defaults
+                  Načíst základní nastavení
                 </button>
                 <ActionButtons
                   userId={userId}

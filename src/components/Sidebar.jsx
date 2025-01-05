@@ -13,11 +13,11 @@ function Sidebar({ children }) {
 
   const getNavigationItems = (userRole) => {
     const allNavigation = [
-      { name: 'Home', path: '/', roles: ['admin', 'account', 'customer'] },
-      { name: 'Configurator', path: '/configurator', roles: ['admin', 'account'] },
-      { name: 'View Offers', path: '/viewoffers', roles: ['admin', 'account'] },
-      { name: 'Bundle Settings', path: '/bundle', roles: ['admin'] },
-      { name: 'Users', path: '/users', roles: ['admin'] },
+      { name: 'Domů', path: '/', roles: ['admin', 'account', 'customer'] },
+      { name: 'Konfigurátor', path: '/configurator', roles: ['admin', 'account'] },
+      { name: 'Konfigurace', path: '/viewoffers', roles: ['admin', 'account'] },
+      { name: 'Nastavení balíčků', path: '/bundle', roles: ['admin'] },
+      { name: 'Uživatelé', path: '/users', roles: ['admin'] },
     ];
 
     if (!userRole) return [];
@@ -39,9 +39,9 @@ function Sidebar({ children }) {
   return (
     <div className="flex">
       <div 
-        className={`fixed top-0 left-0 h-screen bg-gray-800 text-white p-4 transition-all duration-300 flex flex-col ${
+        className={`fixed top-0 left-0 h-screen p-4 transition-all duration-300 flex flex-col border-r ${
           isOpen ? 'w-64' : 'w-16'
-        }`}
+        } bg-gradient-to-br from-[#e1007b] via-[#e96b46] to-[#f6b200]`}
       >
         <div className={`flex items-center ${!isOpen && 'justify-center'}`}>
           <img 
@@ -53,13 +53,13 @@ function Sidebar({ children }) {
 
         <button
           onClick={() => setIsOpen(!isOpen)}
-          className="absolute top-4 right-4 p-2 rounded-lg bg-gray-700 text-white hover:bg-gray-600"
+          className="absolute top-4 right-4 p-2 rounded-lg bg-white/20 text-white hover:bg-white/30"
         >
           {isOpen ? '←' : '→'}
         </button>
 
         <div className={`mb-8 pt-12 ${!isOpen && 'hidden'}`}>
-          <h1 className="text-xl font-bold">Admin Panel</h1>
+          <h1 className="text-xl font-bold text-white">Admin Panel</h1>
         </div>
         
         <nav className="space-y-2 flex-1">
@@ -69,8 +69,8 @@ function Sidebar({ children }) {
               to={item.path}
               className={`block px-4 py-2 rounded-lg transition-colors duration-200
                 ${location.pathname === item.path 
-                  ? 'bg-gray-700 text-white' 
-                  : 'text-gray-300 hover:bg-gray-700 hover:text-white'}
+                  ? 'bg-white/20 text-white' 
+                  : 'text-white/80 hover:bg-white/10 hover:text-white'}
                 ${!isOpen && 'px-2 text-center'}`}
             >
               {isOpen ? item.name : item.name.charAt(0)}
@@ -81,16 +81,16 @@ function Sidebar({ children }) {
         <div className="mt-auto">
           {user && (
             <div className={`mb-4 ${!isOpen && 'text-center'}`}>
-              <p className="text-sm text-gray-400">Logged in as:</p>
-              <p className="text-sm">{user.email}</p>
-              <p className="text-xs text-gray-400">({user.role})</p>
+              <p className="text-sm text-white/60">Přihlášen jako:</p>
+              <p className="text-sm text-white">{user.email}</p>
+              <p className="text-xs text-white/60">({user.role})</p>
             </div>
           )}
           <button
             onClick={handleLogout}
-            className="w-full px-4 py-2 text-sm text-white bg-red-600 rounded-lg hover:bg-red-700"
+            className="w-full px-4 py-2 text-sm text-white bg-black/20 rounded-lg hover:bg-black/30"
           >
-            {isOpen ? 'Logout' : '×'}
+            {isOpen ? 'Odhlásit' : '×'}
           </button>
         </div>
       </div>

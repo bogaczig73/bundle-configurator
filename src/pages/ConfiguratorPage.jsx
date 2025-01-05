@@ -151,7 +151,7 @@ function ConfiguratorPage() {
           <div className="p-6">
             <div className="flex justify-between items-center">
               <h1 className="text-2xl font-bold text-gray-900">
-                {bundleId ? `Bundle ${bundleId}` : 'New Bundle Configuration'}
+                {bundleId ? `Bundle ${bundleId}` : 'Nová konfigurace'}
               </h1>
               <div className="flex gap-2">
                 <button
@@ -166,7 +166,7 @@ function ConfiguratorPage() {
                   onClick={() => setIsModalOpen(true)}
                   className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
                 >
-                  Save Configuration
+                  Uložit konfiguraci
                 </button>
               </div>
             </div>
@@ -222,10 +222,10 @@ function ConfiguratorPage() {
         {isModalOpen && (
           <Modal onClose={() => setIsModalOpen(false)}>
             <div className="p-6">
-              <h2 className="text-xl font-bold mb-4">Save Configuration</h2>
+              <h2 className="text-xl font-bold mb-4">Uložit konfiguraci</h2>
               <div className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700">Configuration Name</label>
+                  <label className="block text-sm font-medium text-gray-700">Název konfigurace</label>
                   <input
                     type="text"
                     value={configName}
@@ -234,13 +234,13 @@ function ConfiguratorPage() {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700">Customer</label>
+                  <label className="block text-sm font-medium text-gray-700">Zákazník</label>
                   <select
                     value={selectedCustomer}
                     onChange={(e) => setSelectedCustomer(e.target.value)}
                     className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
                   >
-                    <option value="">Select a customer</option>
+                    <option value="">Vyber zákazníka</option>
                     {customers.map(customer => (
                       <option key={customer.id} value={customer.id}>
                         {customer.username}
