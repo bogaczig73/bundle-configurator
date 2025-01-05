@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { createUser, getUsers } from '../api/users';
+import { createUser, getUsers, deleteUser } from '../api/users';
 import { Link } from 'react-router-dom';
 import Sidebar from '../components/Sidebar';
 
@@ -78,6 +78,22 @@ function UserManagementPage() {
       customer: users.filter(user => user.role === 'customer')
     };
     return grouped;
+  };
+
+  const handleDeleteUser = async (userId) => {
+    if (!window.confirm('Opravdu chcete smazat tohoto uživatele?')) {
+      return;
+    }
+    
+    setError('');
+    try {
+      await deleteUser(userId);
+      setSuccess('Uživatel byl úspěšně smazán');
+      fetchUsers(); // Refresh the list
+    } catch (err) {
+      console.error('Error deleting user:', err);
+      setError(err.message || 'Failed to delete user');
+    }
   };
 
   return (
@@ -196,12 +212,20 @@ function UserManagementPage() {
             </h3>
             <ul className="divide-y divide-gray-200 bg-gray-50 rounded-lg">
               {getUsersByRole().admin.map(user => (
-                <li key={user.id} className="p-3 hover:bg-gray-100">
-                  <span className="font-medium">{user.username}</span>
-                  <span className="ml-2 text-sm text-gray-500">{user.email}</span>
-                  <span className="ml-2 px-2 py-1 text-sm rounded-full bg-red-100 text-red-800">
-                    {user.role}
-                  </span>
+                <li key={user.id} className="p-3 hover:bg-gray-100 flex items-center justify-between">
+                  <div className="flex items-center">
+                    <span className="font-medium">{user.username}</span>
+                    <span className="ml-2 text-sm text-gray-500">{user.email}</span>
+                    <span className="ml-2 px-2 py-1 text-sm rounded-full bg-red-100 text-red-800">
+                      {user.role}
+                    </span>
+                  </div>
+                  <button
+                    onClick={() => handleDeleteUser(user.id)}
+                    className="text-red-600 hover:text-red-800 font-medium"
+                  >
+                    Smazat
+                  </button>
                 </li>
               ))}
             </ul>
@@ -214,18 +238,26 @@ function UserManagementPage() {
             </h3>
             <ul className="divide-y divide-gray-200 bg-gray-50 rounded-lg">
               {getUsersByRole().account.map(user => (
-                <li key={user.id} className="p-3 hover:bg-gray-100">
-                  <span className="font-medium">{user.username}</span>
-                  <span className="ml-2 text-sm text-gray-500">{user.email}</span>
-                  <span className="ml-2 px-2 py-1 text-sm rounded-full bg-blue-100 text-blue-800">
-                    {user.role}
-                  </span>
+                <li key={user.id} className="p-3 hover:bg-gray-100 flex items-center justify-between">
+                  <div className="flex items-center">
+                    <span className="font-medium">{user.username}</span>
+                    <span className="ml-2 text-sm text-gray-500">{user.email}</span>
+                    <span className="ml-2 px-2 py-1 text-sm rounded-full bg-blue-100 text-blue-800">
+                      {user.role}
+                    </span>
+                  </div>
+                  <button
+                    onClick={() => handleDeleteUser(user.id)}
+                    className="text-red-600 hover:text-red-800 font-medium"
+                  >
+                    Smazat
+                  </button>
                 </li>
               ))}
             </ul>
           </div>
 
-          {/* Customer Users - Updated with View Offer button */}
+          {/* Customer Users */}
           <div className="mb-6">
             <h3 className="text-lg font-medium text-gray-900 mb-2">
               Zákazníci ({getUsersByRole().customer.length})
@@ -240,31 +272,14 @@ function UserManagementPage() {
                       {user.role}
                     </span>
                   </div>
-                  {/* <div className="flex gap-2">
-                    {userBundles[user.id] ? (
-                      <>
-                        <Link 
-                          to={`/configurator/${userBundles[user.id][0]}`} 
-                          className="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded text-sm"
-                        >
-                          View Offer
-                        </Link>
-                        <Link 
-                          to={`/bundle/create/${user.id}`}
-                          className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded text-sm"
-                        >
-                          Vytvořit nový bundle
-                        </Link>
-                      </>
-                    ) : (
-                      <Link 
-                        to={`/configurator/create/${user.id}`}
-                        className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded text-sm"
-                      >
-                        Create Bundle
-                      </Link>
-                    )}
-                  </div> */}
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => handleDeleteUser(user.id)}
+                      className="text-red-600 hover:text-red-800 font-medium"
+                    >
+                      Smazat
+                    </button>
+                  </div>
                 </li>
               ))}
             </ul>

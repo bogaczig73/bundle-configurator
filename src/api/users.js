@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
-import { collection, getDocs, setDoc, doc, getDoc } from 'firebase/firestore';
+import { collection, getDocs, setDoc, doc, getDoc, deleteDoc } from 'firebase/firestore';
 import { createUserWithEmailAndPassword } from 'firebase/auth';
 import { db, auth } from '../firebase';
 import { signOut } from 'firebase/auth';
+import { deleteUser as deleteFirebaseUser } from 'firebase/auth';
 
 // API Functions
 export const createUser = async ({ email, password, username, role }) => {
@@ -50,6 +51,23 @@ export const getUser = async (userId) => {
     return null;
   } catch (error) {
     console.error('Error getting user:', error);
+    throw error;
+  }
+};
+
+export const deleteUser = async (userId) => {
+  try {
+    // Delete user document from Firestore
+    await deleteDoc(doc(db, 'users', userId));
+    
+    // Get the user auth object
+    const user = auth.currentUser;
+    if (user && user.uid === userId) {
+      // Delete the user from Firebase Auth
+      await deleteFirebaseUser(user);
+    }
+  } catch (error) {
+    console.error('Error deleting user:', error);
     throw error;
   }
 };
