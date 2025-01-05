@@ -602,14 +602,42 @@ function ViewOffersPage() {
           cell.style.fontFamily = '"DejaVu Sans", sans-serif';
         });
 
-        pdfExportComponent.current.save();
+        // Expand all carousels if fixace is enabled
+        if (showFixace) {
+          const tableRows = container.querySelectorAll('[data-accordion-row="true"]');
+          tableRows.forEach(row => {
+            const itemId = row.getAttribute('data-item-id');
+            if (amounts.amounts[itemId] > 0) {
+              row.click(); // Trigger click to expand
+            }
+          });
+        }
 
-        // Restore original fonts
-        container.style.fontFamily = originalFontFamily;
-        cells.forEach(cell => {
-          cell.style.fontFamily = originalCellFonts.get(cell);
-        });
-      } finally {
+        // Add delay before export to allow carousels to expand
+        setTimeout(() => {
+          pdfExportComponent.current.save();
+
+          // Restore original fonts
+          container.style.fontFamily = originalFontFamily;
+          cells.forEach(cell => {
+            cell.style.fontFamily = originalCellFonts.get(cell);
+          });
+
+          // Collapse carousels back if they were expanded
+          if (showFixace) {
+            const tableRows = container.querySelectorAll('[data-accordion-row="true"]');
+            tableRows.forEach(row => {
+              const itemId = row.getAttribute('data-item-id');
+              if (amounts.amounts[itemId] > 0) {
+                row.click(); // Trigger click to collapse
+              }
+            });
+          }
+
+          setExporting(false);
+          setExportStatus('');
+        }, 300); // 300ms delay
+      } catch (error) {
         setExporting(false);
         setExportStatus('');
       }
@@ -650,17 +678,6 @@ function ViewOffersPage() {
                 <button
                   onClick={handleExportToPDFV2}
                   disabled={exporting}
-                  className={`px-4 py-2 rounded text-white ${
-                    exporting 
-                      ? 'opacity-75 cursor-not-allowed bg-purple-500' 
-                      : 'bg-purple-500 hover:bg-purple-600'
-                  }`}
-                >
-                  Export to PDF V2
-                </button>
-                <button
-                  onClick={handlePrintToA4PDF}
-                  disabled={exporting}
                   className={`relative px-4 py-2 rounded text-white ${
                     exporting 
                       ? 'opacity-75 cursor-not-allowed bg-[#e1007b]' 
@@ -669,7 +686,7 @@ function ViewOffersPage() {
                 >
                   {exporting ? (
                     <>
-                      <span className="opacity-0">Export as A4 PDF</span>
+                      <span className="opacity-0">Export to PDF</span>
                       <div className="absolute inset-0 flex items-center justify-center">
                         <div className="flex items-center space-x-2">
                           <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
@@ -681,41 +698,8 @@ function ViewOffersPage() {
                       </div>
                     </>
                   ) : (
-                    'Export as A4 PDF'
+                    'Export to PDF'
                   )}
-                </button>
-                <button
-                  onClick={handlePrintToPDF}
-                  disabled={exporting}
-                  className={`px-4 py-2 rounded text-white ${
-                    exporting 
-                      ? 'opacity-75 cursor-not-allowed bg-[#e96b46]' 
-                      : 'bg-[#e96b46] hover:bg-[#d15535]'
-                  }`}
-                >
-                  Export as PDF
-                </button>
-                <button
-                  onClick={handlePrintToPNG}
-                  disabled={exporting}
-                  className={`px-4 py-2 rounded text-white ${
-                    exporting 
-                      ? 'opacity-75 cursor-not-allowed bg-[#f6b200]' 
-                      : 'bg-[#f6b200] hover:bg-[#e0a100]'
-                  }`}
-                >
-                  Export as PNG
-                </button>
-                <button
-                  onClick={handlePrintClick}
-                  disabled={exporting}
-                  className={`px-4 py-2 rounded text-white ${
-                    exporting 
-                      ? 'opacity-75 cursor-not-allowed bg-gray-400' 
-                      : 'bg-gray-500 hover:bg-gray-600'
-                  }`}
-                >
-                  Print
                 </button>
               </div>
             </div>
