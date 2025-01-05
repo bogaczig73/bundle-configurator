@@ -149,7 +149,10 @@ export function SubItemRow({
           <div className={tableStyles.centerWrapper}>
             {readonly ? (
               <span className="text-gray-700 text-xs">
-                {amounts.discount?.[`${parentItem.id}_${type === 'fixace' ? 'fixed_items' : 'over_fixation_items'}`] ?? parentItem.discount ?? 0}%
+                {(amounts.discount?.[`${parentItem.id}_${type === 'fixace' ? 'fixed_items' : 'over_fixation_items'}`] ?? parentItem.discount) ? 
+                  `${amounts.discount?.[`${parentItem.id}_${type === 'fixace' ? 'fixed_items' : 'over_fixation_items'}`] ?? parentItem.discount}%` : 
+                  '-'
+                }
               </span>
             ) : (
               <div className="flex items-center" onClick={(e) => e.stopPropagation()}>

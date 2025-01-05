@@ -47,6 +47,7 @@ export const useTableStyles = (exporting = false) => ({
       detail: "text-[10px] text-gray-500 break-words opacity-75"
     },
     itemNote: "text-xs text-gray-500 break-words",
+    itemAmount: "text-sm text-gray-700 break-words",
     freeItemText: "text-xs font-medium text-gray-400",
     bundlePrice: "text-blue-600 font-semibold",
     priceText: "text-xs font-medium",

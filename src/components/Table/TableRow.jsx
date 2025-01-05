@@ -162,7 +162,7 @@ export function TableRow({ item, bundles, amounts, onAmountChange, readonly = fa
                 className={tableStyles.checkbox}
               />
             ) : readonly ? (
-              <span className={`text-gray-700`}>
+              <span className={tableStyles.itemAmount}>
                 {amounts.amounts[itemInstance.id] || 0}
               </span>
             ) : (
@@ -223,7 +223,7 @@ export function TableRow({ item, bundles, amounts, onAmountChange, readonly = fa
                   className={tableStyles.checkbox}
                 />
               ) : readonly ? (
-                <span className={`text-gray-700`}>
+                <span className={tableStyles.itemAmount}>
                   {amounts.fixace[itemInstance.id] || 0}
                 </span>
               ) : (
@@ -278,48 +278,57 @@ export function TableRow({ item, bundles, amounts, onAmountChange, readonly = fa
                 </span>
               ) : itemInstance.checkbox ? (
                 <div className="flex items-center" onClick={(e) => e.stopPropagation()}>
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      const currentDiscount = amounts.discount[itemInstance.id] || 0;
-                      onAmountChange(itemInstance.id, Math.max(0, currentDiscount - 5), 'discount');
-                    }}
-                    className={tableStyles.inputCounterButton + " rounded-s-md"}
-                  >
-                    <svg className={tableStyles.counterButtonSymbols} aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 18 2">
-                      <path stroke="currentColor" strokeLinejoin="round" strokeWidth="2" d="M1 1h16"/>
-                    </svg>
-                  </button>
-                  
-                  <input
-                    type="text"
-                    min={0}
-                    max={100}
-                    value={amounts.discount[itemInstance.id] || 0}
-                    onChange={(e) => {
-                      e.stopPropagation();
-                      const value = Math.min(100, Math.max(0, Number(e.target.value)));
-                      onAmountChange(itemInstance.id, value, 'discount');
-                    }}
-                    onClick={(e) => e.stopPropagation()}
-                    className={tableStyles.numberInput}
-                  />
-                  
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onAmountChange(itemInstance.id, Math.min(100, (amounts.discount[itemInstance.id] || 0) + 5), 'discount');
-                    }}
-                    className={tableStyles.inputCounterButton + " rounded-e-md"}
-                  >
-                    <svg className={tableStyles.counterButtonSymbols} aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 18 18">
-                      <path stroke="currentColor" strokeLinejoin="round" strokeWidth="2" d="M9 1v16M1 9h16"/>
-                    </svg>
-                  </button>
+                  {!readonly && (
+                    <>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          const currentDiscount = amounts.discount[itemInstance.id] || 0;
+                          onAmountChange(itemInstance.id, Math.max(0, currentDiscount - 5), 'discount');
+                        }}
+                        className={tableStyles.inputCounterButton + " rounded-s-md"}
+                      >
+                        <svg className={tableStyles.counterButtonSymbols} aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 18 2">
+                          <path stroke="currentColor" strokeLinejoin="round" strokeWidth="2" d="M1 1h16"/>
+                        </svg>
+                      </button>
+                      
+                      <input
+                        type="text"
+                        min={0}
+                        max={100}
+                        value={amounts.discount[itemInstance.id] || 0}
+                        onChange={(e) => {
+                          e.stopPropagation();
+                          const value = Math.min(100, Math.max(0, Number(e.target.value)));
+                          onAmountChange(itemInstance.id, value, 'discount');
+                        }}
+                        onClick={(e) => e.stopPropagation()}
+                        className={tableStyles.numberInput}
+                      />
+                      
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onAmountChange(itemInstance.id, Math.min(100, (amounts.discount[itemInstance.id] || 0) + 5), 'discount');
+                        }}
+                        className={tableStyles.inputCounterButton + " rounded-e-md"}
+                      >
+                        <svg className={tableStyles.counterButtonSymbols} aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 18 18">
+                          <path stroke="currentColor" strokeLinejoin="round" strokeWidth="2" d="M9 1v16M1 9h16"/>
+                        </svg>
+                      </button>
+                    </>
+                  )}
+                  {readonly && (
+                    <span className={tableStyles.itemAmount}>
+                      {amounts.discount[itemInstance.id] ? `${amounts.discount[itemInstance.id]}%` : '-'}
+                    </span>
+                  )}
                 </div>
               ) : readonly ? (
-                <span className={`text-gray-700`}>
-                  {amounts.discount[itemInstance.id] || 0}
+                <span className={tableStyles.itemAmount}>
+                  {amounts.discount[itemInstance.id] ? `${amounts.discount[itemInstance.id]}%` : '-'}
                 </span>
               ) : (
                 <div className="flex items-center" onClick={(e) => e.stopPropagation()}>
