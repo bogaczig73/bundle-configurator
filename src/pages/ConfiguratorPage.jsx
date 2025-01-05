@@ -189,7 +189,7 @@ function ConfiguratorPage() {
               {error}
             </div>
           ) : (
-            <div className="p-6">
+            <div className="px-6">
               <BundleTable
                 bundles={packages.map((pkg, index) => {
                   const userCount = amounts?.amounts?.[1] || 0;

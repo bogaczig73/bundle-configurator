@@ -10,6 +10,7 @@ import { usePersistedSettings } from '../hooks/usePersistedSettings';
 import { PDFExport } from '@progress/kendo-react-pdf';
 import { saveAs } from '@progress/kendo-file-saver';
 import '@progress/kendo-theme-default/dist/all.css';
+import '@progress/kendo-font-icons/dist/index.css';
 
 import { useCurrentUser } from '../api/users';
 
@@ -585,8 +586,29 @@ function ViewOffersPage() {
       setExporting(true);
       setExportStatus('Preparing PDF...');
       
+      // Store original font family
+      const container = printRef.current;
+      const originalFontFamily = container.style.fontFamily;
+      
       try {
+        // Set DejaVu Sans font for export
+        container.style.fontFamily = '"DejaVu Sans", sans-serif';
+        
+        // Apply font to all table cells
+        const cells = container.querySelectorAll('td, th');
+        const originalCellFonts = new Map();
+        cells.forEach(cell => {
+          originalCellFonts.set(cell, cell.style.fontFamily);
+          cell.style.fontFamily = '"DejaVu Sans", sans-serif';
+        });
+
         pdfExportComponent.current.save();
+
+        // Restore original fonts
+        container.style.fontFamily = originalFontFamily;
+        cells.forEach(cell => {
+          cell.style.fontFamily = originalCellFonts.get(cell);
+        });
       } finally {
         setExporting(false);
         setExportStatus('');
@@ -717,7 +739,7 @@ function ViewOffersPage() {
             <PDFExport 
               ref={pdfExportComponent}
               paperSize="A4"
-              margin={{ top: "1cm", left: "1cm", right: "1cm", bottom: "1cm" }}
+              margin={{ top: "0.5cm", left: "0cm", right: "0cm", bottom: "0cm" }}
               fileName={getExportFilename('pdf')}
               author="ABRA Bundle Configurator"
               creator="ABRA Bundle Configurator"
@@ -732,12 +754,13 @@ function ViewOffersPage() {
               subject="Bundle Configuration Export"
             >
               <div 
-                className="p-6 bg-white flex flex-col" 
+                className="px-6 bg-white flex flex-col" 
                 ref={printRef} 
                 data-table-container
                 style={{ 
                   width: '100%',
-                  maxWidth: '100%'
+                  maxWidth: '100%',
+                  fontFamily: '"DejaVu Sans", sans-serif'
                 }}
               >
                 {error && (
