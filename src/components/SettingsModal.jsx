@@ -17,7 +17,7 @@ function SettingsModal({ show, onClose, settings, onSettingChange }) {
                   onClick={() => onSettingChange('enableRowSelection', !settings.enableRowSelection)}
                   className={`
                     relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent 
-                    transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2
+                    transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-blue-600 focus:ring-offset-2
                     ${settings.enableRowSelection ? 'bg-blue-600' : 'bg-gray-200'}
                   `}
                   role="switch"
@@ -41,7 +41,7 @@ function SettingsModal({ show, onClose, settings, onSettingChange }) {
                   onClick={() => onSettingChange('showFixace', !settings.showFixace)}
                   className={`
                     relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent 
-                    transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2
+                    transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-blue-600 focus:ring-offset-2
                     ${settings.showFixace ? 'bg-blue-600' : 'bg-gray-200'}
                   `}
                   role="switch"
@@ -65,7 +65,7 @@ function SettingsModal({ show, onClose, settings, onSettingChange }) {
                   onClick={() => onSettingChange('showIndividualDiscount', !settings.showIndividualDiscount)}
                   className={`
                     relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent 
-                    transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2
+                    transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-blue-600 focus:ring-offset-2
                     ${settings.showIndividualDiscount ? 'bg-blue-600' : 'bg-gray-200'}
                   `}
                   role="switch"

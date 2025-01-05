@@ -50,7 +50,7 @@ export function SubItemRow({
         const packageInfo = parentItem.packages?.find(p => p.packageId === bundle.id);
         return sum + (packageInfo?.discountedAmount || 0);
       }, 0);
-      return totalDiscountedAmount > 0 ? `First ${totalDiscountedAmount} in price` : '';
+      return totalDiscountedAmount > 0 ? `První ${totalDiscountedAmount} v ceně` : '';
     }
     return '';
   };
@@ -244,7 +244,7 @@ export function SubItemRow({
                   </span>
                   {((amounts.discount?.[`${parentItem.id}_${type === 'fixace' ? 'fixed_items' : 'over_fixation_items'}`] ?? parentItem.discount ?? 0) > 0) && (
                     <span className="text-[10px] text-gray-500 italic">
-                      {`Discount: ${amounts.discount?.[`${parentItem.id}_${type === 'fixace' ? 'fixed_items' : 'over_fixation_items'}`] ?? parentItem.discount ?? 0}%`}
+                      {`Sleva: ${amounts.discount?.[`${parentItem.id}_${type === 'fixace' ? 'fixed_items' : 'over_fixation_items'}`] ?? parentItem.discount ?? 0}%`}
                     </span>
                   )}
                 </>
