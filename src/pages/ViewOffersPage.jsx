@@ -203,199 +203,165 @@ function ViewOffersPage() {
     }
   };
 
-  // Modify print functions to respect row selection
-  const handlePrintToPDF = async () => {
-    if (printRef.current) {
-      try {
-        if (showFixace) {
-          const tableRows = document.querySelectorAll('[data-accordion-row="true"]');
-          tableRows.forEach(row => {
-            const itemId = row.getAttribute('data-item-id');
-            if (amounts.amounts[itemId] > 0) {
-              row.click(); // Trigger click to expand
-            }
-          });
+  // Helper function for export setup and cleanup
+  const handleExportSetup = async () => {
+    if (enableRowSelection && Object.keys(selectedRows).length > 0) {
+      const tableRows = document.querySelectorAll('[data-accordion-row="true"], [data-category-row="true"]');
+      
+      // First pass: Hide unselected items
+      tableRows.forEach(row => {
+        const itemId = row.getAttribute('data-item-id');
+        const isCategory = row.getAttribute('data-category-row') === 'true';
+        
+        if (!isCategory && !selectedRows[itemId]) {
+          row.style.display = 'none';
         }
-        setExporting(true);
+      });
 
-        // Hide unselected rows if row selection is enabled
-        if (enableRowSelection && Object.keys(selectedRows).length > 0) {
-          const tableRows = document.querySelectorAll('[data-accordion-row="true"], [data-category-row="true"]');
+      // Second pass: Hide categories with no visible items
+      tableRows.forEach(row => {
+        const isCategory = row.getAttribute('data-category-row') === 'true';
+        if (isCategory) {
+          let nextRow = row.nextElementSibling;
+          const nextRows = [];
           
-          // First pass: Hide unselected items
-          tableRows.forEach(row => {
-            const itemId = row.getAttribute('data-item-id');
-            const isCategory = row.getAttribute('data-category-row') === 'true';
-            
-            if (!isCategory && !selectedRows[itemId]) {
-              row.style.display = 'none';
-            }
-          });
+          while (nextRow && nextRow.getAttribute('data-category-row') !== 'true') {
+            nextRows.push(nextRow);
+            nextRow = nextRow.nextElementSibling;
+          }
 
-          // Second pass: Hide categories with no visible items
-          tableRows.forEach(row => {
-            const isCategory = row.getAttribute('data-category-row') === 'true';
-            if (isCategory) {
-              const categoryId = row.getAttribute('data-category-id');
-              const nextRows = [];
-              let nextRow = row.nextElementSibling;
-              
-              // Collect all rows until next category
-              while (nextRow && nextRow.getAttribute('data-category-row') !== 'true') {
-                nextRows.push(nextRow);
-                nextRow = nextRow.nextElementSibling;
-              }
-
-              // Check if all items in this category are hidden
-              const allHidden = nextRows.every(row => row.style.display === 'none');
-              if (allHidden) {
-                row.style.display = 'none';
-              }
-            }
-          });
+          const allHidden = nextRows.every(row => row.style.display === 'none');
+          if (allHidden) {
+            row.style.display = 'none';
+          }
         }
+      });
+    }
 
-        await new Promise(resolve => setTimeout(resolve, 100));
-        
-        const element = printRef.current;
-        const canvas = await html2canvas(element, {
-          scale: 2.2,
-          height: printRef.current.scrollHeight,
-          width: 1920,
-          logging: false,
-          useCORS: true,
-          allowTaint: true,
-          foreignObjectRendering: true,
-          x: -250,
-          y: -270
-        });
-
-        const imgData = canvas.toDataURL('image/jpeg', 1.0);
-        
-        const pdf = new jsPDF({
-          orientation: 'portrait',
-          unit: 'pt',
-          format: [canvas.width, canvas.height]
-        });
-
-        const imgProps = pdf.getImageProperties(imgData);
-        const pdfWidth = pdf.internal.pageSize.getWidth();
-        const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
-
-        pdf.addImage(imgData, 'JPEG', 0, 0, pdfWidth, pdfHeight);
-
-        const filename = selectedConfiguration 
-          ? `offer-${selectedConfiguration.name}.pdf`
-          : `offer-${new Date().toISOString()}.pdf`;
-
-        pdf.save(filename);
-      } catch (error) {
-        console.error('Error generating PDF:', error);
-      } finally {
-        // Restore visibility of hidden rows
-        if (enableRowSelection && Object.keys(selectedRows).length > 0) {
-          const tableRows = document.querySelectorAll('[data-accordion-row="true"], [data-category-row="true"]');
-          tableRows.forEach(row => {
-            row.style.display = '';
-          });
+    if (showFixace) {
+      const tableRows = document.querySelectorAll('[data-accordion-row="true"]');
+      tableRows.forEach(row => {
+        const itemId = row.getAttribute('data-item-id');
+        if (amounts.amounts[itemId] > 0) {
+          row.click(); // Trigger click to expand
         }
+      });
+    }
 
-        if (showFixace) {
-          const tableRows = document.querySelectorAll('[data-accordion-row="true"]');
-          tableRows.forEach(row => {
-            const itemId = row.getAttribute('data-item-id');
-            if (amounts.amounts[itemId] > 0) {
-              row.click();
-            }
-          });
+    await new Promise(resolve => setTimeout(resolve, 100));
+  };
+
+  const handleExportCleanup = () => {
+    if (enableRowSelection && Object.keys(selectedRows).length > 0) {
+      const tableRows = document.querySelectorAll('[data-accordion-row="true"], [data-category-row="true"]');
+      tableRows.forEach(row => {
+        row.style.display = '';
+      });
+    }
+
+    if (showFixace) {
+      const tableRows = document.querySelectorAll('[data-accordion-row="true"]');
+      tableRows.forEach(row => {
+        const itemId = row.getAttribute('data-item-id');
+        if (amounts.amounts[itemId] > 0) {
+          row.click();
         }
-        setExporting(false);
-      }
+      });
     }
   };
 
-  // Similar modification for PNG export
+  const generateCanvas = async () => {
+    if (!printRef.current) return null;
+
+    // Ensure the element is fully rendered
+    await new Promise(resolve => setTimeout(resolve, 500));
+
+    // Get the full scrollable content
+    const contentHeight = Math.max(
+      printRef.current.scrollHeight,
+      printRef.current.offsetHeight,
+      printRef.current.clientHeight
+    );
+
+    return html2canvas(printRef.current, {
+      scale: 2,
+      height: contentHeight,
+      width: printRef.current.offsetWidth || 1920,
+      logging: false,
+      useCORS: true,
+      allowTaint: true,
+      foreignObjectRendering: true,
+      scrollY: -window.scrollY,
+      x: -250,
+      y: -270,
+      windowHeight: contentHeight
+    });
+  };
+
+  const getExportFilename = (extension) => {
+    return selectedConfiguration 
+      ? `offer-${selectedConfiguration.name}.${extension}`
+      : `offer-${new Date().toISOString()}.${extension}`;
+  };
+
+  // Handle print to PDF
+  const handlePrintToPDF = async () => {
+    if (!printRef.current) return;
+
+    try {
+      setExporting(true);
+      await handleExportSetup();
+      
+      const canvas = await generateCanvas();
+      if (!canvas) return;
+
+      const imgData = canvas.toDataURL('image/jpeg', 1.0);
+      const pdf = new jsPDF({
+        orientation: 'portrait',
+        unit: 'pt',
+        format: [canvas.width, canvas.height]
+      });
+
+      const imgProps = pdf.getImageProperties(imgData);
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
+
+      pdf.addImage(imgData, 'JPEG', 0, 0, pdfWidth, pdfHeight);
+      pdf.save(getExportFilename('pdf'));
+
+    } catch (error) {
+      console.error('Error generating PDF:', error);
+    } finally {
+      handleExportCleanup();
+      setExporting(false);
+    }
+  };
+
+  // Handle print to PNG
   const handlePrintToPNG = async () => {
-    if (printRef.current) {
-      try {
-        setExporting(true);
+    if (!printRef.current) return;
 
-        // Hide unselected rows if row selection is enabled
-        if (enableRowSelection && Object.keys(selectedRows).length > 0) {
-          const tableRows = document.querySelectorAll('[data-accordion-row="true"], [data-category-row="true"]');
-          
-          // First pass: Hide unselected items
-          tableRows.forEach(row => {
-            const itemId = row.getAttribute('data-item-id');
-            const isCategory = row.getAttribute('data-category-row') === 'true';
-            
-            if (!isCategory && !selectedRows[itemId]) {
-              row.style.display = 'none';
-            }
-          });
+    try {
+      setExporting(true);
+      await handleExportSetup();
+      
+      const canvas = await generateCanvas();
+      if (!canvas) return;
 
-          // Second pass: Hide categories with no visible items
-          tableRows.forEach(row => {
-            const isCategory = row.getAttribute('data-category-row') === 'true';
-            if (isCategory) {
-              const categoryId = row.getAttribute('data-category-id');
-              const nextRows = [];
-              let nextRow = row.nextElementSibling;
-              
-              // Collect all rows until next category
-              while (nextRow && nextRow.getAttribute('data-category-row') !== 'true') {
-                nextRows.push(nextRow);
-                nextRow = nextRow.nextElementSibling;
-              }
+      const data = canvas.toDataURL('image/jpeg');
+      const link = document.createElement('a');
+      link.href = data;
+      link.download = getExportFilename('jpeg');
+      
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
 
-              // Check if all items in this category are hidden
-              const allHidden = nextRows.every(row => row.style.display === 'none');
-              if (allHidden) {
-                row.style.display = 'none';
-              }
-            }
-          });
-        }
-        
-        await new Promise(resolve => setTimeout(resolve, 100));
-        
-        const element = printRef.current;
-        const canvas = await html2canvas(element, {
-          scale: 2,
-          height: printRef.current.scrollHeight,
-          width: 1920,
-          logging: false,
-          useCORS: true,
-          foreignObjectRendering: true,
-          x: -250,
-          y: -250
-        });
-
-        const data = canvas.toDataURL('image/jpeg');
-        const link = document.createElement('a');
-        
-        const filename = selectedConfiguration 
-          ? `offer-${selectedConfiguration.name}.jpeg`
-          : `offer-${new Date().toISOString()}.jpeg`;
-
-        link.href = data;
-        link.download = filename;
-        
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-      } catch (error) {
-        console.error('Error generating PNG:', error);
-      } finally {
-        // Restore visibility of hidden rows
-        if (enableRowSelection && Object.keys(selectedRows).length > 0) {
-          const tableRows = document.querySelectorAll('[data-accordion-row="true"], [data-category-row="true"]');
-          tableRows.forEach(row => {
-            row.style.display = '';
-          });
-        }
-        setExporting(false);
-      }
+    } catch (error) {
+      console.error('Error generating PNG:', error);
+    } finally {
+      handleExportCleanup();
+      setExporting(false);
     }
   };
 
