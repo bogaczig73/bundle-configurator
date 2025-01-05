@@ -104,7 +104,7 @@ export function SubItemRow({
       )}
       <td className={`${tableStyles.columnWidths.details} ${tableStyles.bodyCell}`}>
         <div className="flex flex-col pl-8">
-          <span className={tableStyles.itemName.item}>
+          <span className={tableStyles.itemName.itemDetail}>
             {content}
           </span>
         </div>

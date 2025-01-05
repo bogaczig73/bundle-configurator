@@ -11,8 +11,6 @@ import LoginPage from "./pages/LoginPage";
 import { useEffect, useState } from "react";
 import { auth } from "./firebase";
 import { onAuthStateChanged } from "firebase/auth";
-import { TestPage } from "./pages/TestPage";
-import { TestPage2 } from "./pages/TestPage2";
 import ProtectedRoute from "./components/ProtectedRoute";
 import UnauthorizedPage from "./pages/UnauthorizedPage";
 import PrintPage from "./pages/PrintPage";
@@ -48,7 +46,8 @@ function App() {
                   <HomePage />
                 </ProtectedRoute>
               } />
-              
+
+
               <Route path="/configurator" element={
                 <ProtectedRoute allowedRoles={['admin', 'account']}>
                   <ConfiguratorPage />

@@ -7,6 +7,9 @@ import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
 import SettingsModal from '../components/SettingsModal';
 import { usePersistedSettings } from '../hooks/usePersistedSettings';
+import { PDFExport } from '@progress/kendo-react-pdf';
+import { saveAs } from '@progress/kendo-file-saver';
+import '@progress/kendo-theme-default/dist/all.css';
 
 import { useCurrentUser } from '../api/users';
 
@@ -91,7 +94,6 @@ const ConfigurationsPicker = ({ configurations, users, selectedConfiguration, on
   );
 };
 
-
 // Main Component
 function ViewOffersPage() {
   const { configurations, loading: configLoading, error, processedItems, packages, users } = useConfigData();
@@ -100,12 +102,15 @@ function ViewOffersPage() {
   const [amounts, setAmounts] = useState({});
   const navigate = useNavigate();
   const printRef = useRef(null);
+  const tableRef = useRef(null);
   const [exporting, setExporting] = useState(false);
+  const [exportStatus, setExportStatus] = useState('');
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
   const [showIndividualDiscount, setShowIndividualDiscount] = usePersistedSettings('showIndividualDiscount', false);
   const [showFixace, setShowFixace] = usePersistedSettings('showFixace', false);
   const [enableRowSelection, setEnableRowSelection] = usePersistedSettings('enableRowSelection', false);
   const [selectedRows, setSelectedRows] = useState({});
+  const pdfExportComponent = useRef(null);
 
   // Filter configurations based on current user
   const filteredConfigurations = useMemo(() => {
@@ -248,6 +253,30 @@ function ViewOffersPage() {
       });
     }
 
+    // Scale up the content for better quality
+    if (printRef.current) {
+      const table = printRef.current.querySelector('table');
+      if (table) {
+        // Store original styles
+        const originalFontSize = window.getComputedStyle(table).fontSize;
+        table.style.fontSize = '1.5em';
+        
+        // Scale up specific elements
+        table.querySelectorAll('th, td').forEach(cell => {
+          const originalPadding = window.getComputedStyle(cell).padding;
+          cell.style.padding = '1em';
+        });
+
+        // Store cleanup function
+        printRef.current.scaleCleanup = () => {
+          table.style.fontSize = originalFontSize;
+          table.querySelectorAll('th, td').forEach(cell => {
+            cell.style.padding = '';
+          });
+        };
+      }
+    }
+
     await new Promise(resolve => setTimeout(resolve, 100));
   };
 
@@ -268,34 +297,122 @@ function ViewOffersPage() {
         }
       });
     }
+
+    // Clean up scaling
+    if (printRef.current && printRef.current.scaleCleanup) {
+      printRef.current.scaleCleanup();
+      delete printRef.current.scaleCleanup;
+    }
   };
 
   const generateCanvas = async () => {
     if (!printRef.current) return null;
 
-    // Ensure the element is fully rendered
-    await new Promise(resolve => setTimeout(resolve, 500));
+    try {
+      // Ensure the element is fully rendered
+      await new Promise(resolve => setTimeout(resolve, 500));
 
-    // Get the full scrollable content
-    const contentHeight = Math.max(
-      printRef.current.scrollHeight,
-      printRef.current.offsetHeight,
-      printRef.current.clientHeight
-    );
+      const element = printRef.current;
+      const table = element.querySelector('table');
+      if (!table) return null;
 
-    return html2canvas(printRef.current, {
-      scale: 2,
-      height: contentHeight,
-      width: printRef.current.offsetWidth || 1920,
-      logging: false,
-      useCORS: true,
-      allowTaint: true,
-      foreignObjectRendering: true,
-      scrollY: -window.scrollY,
-      x: -250,
-      y: -270,
-      windowHeight: contentHeight
-    });
+      // Get the actual table dimensions
+      const rect = table.getBoundingClientRect();
+      const contentWidth = rect.width;
+
+      // Store original display states and show all rows
+      const rowStates = new Map();
+      
+      // Handle all row types
+      const normalRows = table.querySelectorAll('tr:not([data-accordion-row]):not([data-category-row])');
+      const accordionRows = table.querySelectorAll('[data-accordion-row="true"]');
+      const categoryRows = table.querySelectorAll('[data-category-row="true"]');
+
+      // Store and show normal rows
+      normalRows.forEach(row => {
+        rowStates.set(row, row.style.display);
+        row.style.display = 'table-row';
+      });
+
+      // Store and show accordion rows
+      accordionRows.forEach(row => {
+        rowStates.set(row, row.style.display);
+        row.style.display = 'table-row';
+        // Find and show related content
+        const itemId = row.getAttribute('data-item-id');
+        if (itemId) {
+          const relatedContent = element.querySelectorAll(`[data-parent-id="${itemId}"]`);
+          relatedContent.forEach(content => {
+            rowStates.set(content, content.style.display);
+            content.style.display = 'table-row';
+          });
+        }
+      });
+
+      // Store and show category rows
+      categoryRows.forEach(row => {
+        rowStates.set(row, row.style.display);
+        row.style.display = 'table-row';
+      });
+
+      // Force layout recalculation
+      table.style.display = 'table';
+      const contentHeight = table.scrollHeight;
+
+      // Calculate offsets to center the content
+      const offsetX = (element.offsetWidth - contentWidth) / 2;
+
+      const canvas = await html2canvas(element, {
+        scale: 6,
+        width: contentWidth,
+        height: contentHeight,
+        logging: false,
+        useCORS: true,
+        allowTaint: true,
+        backgroundColor: '#ffffff',
+        x: offsetX,
+        y: 0,
+        scrollY: -window.scrollY,
+        windowWidth: contentWidth,
+        windowHeight: contentHeight,
+        imageTimeout: 0,
+        onclone: (clonedDoc) => {
+          const clonedElement = clonedDoc.body.querySelector('[data-table-container]');
+          if (clonedElement) {
+            clonedElement.style.width = `${contentWidth}px`;
+            clonedElement.style.height = `${contentHeight}px`;
+            clonedElement.style.position = 'relative';
+            clonedElement.style.transform = 'none';
+            
+            // Make sure all rows are visible in the clone
+            const clonedTable = clonedElement.querySelector('table');
+            if (clonedTable) {
+              clonedTable.style.display = 'table';
+              clonedTable.style.width = '100%';
+              
+              // Show all types of rows in the clone
+              clonedTable.querySelectorAll('tr, [data-accordion-row="true"], [data-category-row="true"], [data-parent-id]').forEach(row => {
+                row.style.display = 'table-row';
+                row.style.visibility = 'visible';
+                row.style.height = 'auto';
+                row.style.opacity = '1';
+              });
+            }
+          }
+          return Promise.resolve();
+        }
+      });
+
+      // Restore original display states
+      rowStates.forEach((display, element) => {
+        element.style.display = display;
+      });
+
+      return canvas;
+    } catch (error) {
+      console.error('Error generating canvas:', error);
+      throw new Error('Failed to generate canvas');
+    }
   };
 
   const getExportFilename = (extension) => {
@@ -365,6 +482,118 @@ function ViewOffersPage() {
     }
   };
 
+  // Generate paginated A4 PDF
+  const handlePrintToA4PDF = async () => {
+    if (!printRef.current) return;
+
+    try {
+      setExporting(true);
+      setExportStatus('Preparing document...');
+      await handleExportSetup();
+
+      setExportStatus('Generating canvas...');
+      const canvas = await generateCanvas();
+      if (!canvas) {
+        throw new Error('Failed to generate canvas');
+      }
+
+      setExportStatus('Creating PDF...');
+      // A4 dimensions in points (pt)
+      const a4Width = 595.28;
+      const a4Height = 841.89;
+      const margins = 20;
+      
+      // Initialize PDF with A4 format
+      const pdf = new jsPDF({
+        orientation: 'portrait',
+        unit: 'pt',
+        format: 'a4',
+        compress: false
+      });
+
+      // Calculate available space
+      const availableWidth = a4Width - (margins * 2);
+      const availableHeight = a4Height - (margins * 2);
+
+      // Calculate scale while maintaining aspect ratio
+      const originalAspectRatio = canvas.width / canvas.height;
+
+      // Always fit to width for maximum size
+      const finalWidth = availableWidth;
+      const finalHeight = finalWidth / originalAspectRatio;
+      const xOffset = margins;
+
+      // Calculate scaling factors
+      const scale = finalWidth / canvas.width;
+      const totalHeight = canvas.height * scale;
+      const pageCount = Math.ceil(totalHeight / availableHeight);
+      const contentPerPage = canvas.height / pageCount;
+
+      // For each page
+      for (let i = 0; i < pageCount; i++) {
+        setExportStatus(`Processing page ${i + 1} of ${pageCount}...`);
+        if (i > 0) pdf.addPage();
+
+        // Add page number
+        pdf.setFontSize(8);
+        pdf.setTextColor(128);
+        pdf.text(`Page ${i + 1} of ${pageCount}`, a4Width - margins, a4Height - 10, { align: 'right' });
+
+        try {
+          // Calculate the portion of the canvas to show on this page
+          const sourceY = i * contentPerPage;
+          const remainingHeight = canvas.height - sourceY;
+          const sourceHeight = Math.min(contentPerPage, remainingHeight);
+          
+          // Calculate the height this portion should take on the page
+          const destHeight = (sourceHeight / canvas.height) * totalHeight;
+
+          pdf.addImage(
+            canvas,
+            'PNG',
+            xOffset,
+            margins,
+            finalWidth,
+            destHeight,
+            `page_${i}`,
+            'FAST',
+            0,
+            -sourceY * scale
+          );
+
+        } catch (pageError) {
+          console.error(`Error processing page ${i + 1}:`, pageError);
+          throw new Error(`Failed to process page ${i + 1}`);
+        }
+      }
+
+      setExportStatus('Saving PDF...');
+      pdf.save(getExportFilename('pdf'));
+
+    } catch (error) {
+      console.error('Error generating PDF:', error);
+      setExportStatus(`Error: ${error.message}`);
+    } finally {
+      handleExportCleanup();
+      setExporting(false);
+      setExportStatus('');
+    }
+  };
+
+  const handleExportToPDFV2 = () => {
+    if (pdfExportComponent.current) {
+      setExporting(true);
+      setExportStatus('Preparing PDF...');
+      
+      try {
+        pdfExportComponent.current.save();
+      } finally {
+        setExporting(false);
+        setExportStatus('');
+      }
+    }
+  };
+
   // Show loading state if either data is loading
   if (configLoading || userLoading) {
     return (
@@ -397,20 +626,72 @@ function ViewOffersPage() {
                   </svg>
                 </button>
                 <button
+                  onClick={handleExportToPDFV2}
+                  disabled={exporting}
+                  className={`px-4 py-2 rounded text-white ${
+                    exporting 
+                      ? 'opacity-75 cursor-not-allowed bg-purple-500' 
+                      : 'bg-purple-500 hover:bg-purple-600'
+                  }`}
+                >
+                  Export to PDF V2
+                </button>
+                <button
+                  onClick={handlePrintToA4PDF}
+                  disabled={exporting}
+                  className={`relative px-4 py-2 rounded text-white ${
+                    exporting 
+                      ? 'opacity-75 cursor-not-allowed bg-[#e1007b]' 
+                      : 'bg-[#e1007b] hover:bg-[#c4006c]'
+                  }`}
+                >
+                  {exporting ? (
+                    <>
+                      <span className="opacity-0">Export as A4 PDF</span>
+                      <div className="absolute inset-0 flex items-center justify-center">
+                        <div className="flex items-center space-x-2">
+                          <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                          </svg>
+                          <span className="text-sm">{exportStatus || 'Exporting...'}</span>
+                        </div>
+                      </div>
+                    </>
+                  ) : (
+                    'Export as A4 PDF'
+                  )}
+                </button>
+                <button
                   onClick={handlePrintToPDF}
-                  className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded"
+                  disabled={exporting}
+                  className={`px-4 py-2 rounded text-white ${
+                    exporting 
+                      ? 'opacity-75 cursor-not-allowed bg-[#e96b46]' 
+                      : 'bg-[#e96b46] hover:bg-[#d15535]'
+                  }`}
                 >
                   Export as PDF
                 </button>
                 <button
                   onClick={handlePrintToPNG}
-                  className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded"
+                  disabled={exporting}
+                  className={`px-4 py-2 rounded text-white ${
+                    exporting 
+                      ? 'opacity-75 cursor-not-allowed bg-[#f6b200]' 
+                      : 'bg-[#f6b200] hover:bg-[#e0a100]'
+                  }`}
                 >
                   Export as PNG
                 </button>
                 <button
                   onClick={handlePrintClick}
-                  className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded"
+                  disabled={exporting}
+                  className={`px-4 py-2 rounded text-white ${
+                    exporting 
+                      ? 'opacity-75 cursor-not-allowed bg-gray-400' 
+                      : 'bg-gray-500 hover:bg-gray-600'
+                  }`}
                 >
                   Print
                 </button>
@@ -432,30 +713,59 @@ function ViewOffersPage() {
             onConfigurationSelect={setSelectedConfiguration}
           />
           
-          <div className={`flex-1 ${!exporting ? 'overflow-auto' : ''} px-8 pb-8 bg-white flex flex-col`} ref={printRef}>
-            {error && (
-              <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
-                {error}
+          <div className="flex-1 overflow-auto">
+            <PDFExport 
+              ref={pdfExportComponent}
+              paperSize="A4"
+              margin={{ top: "1cm", left: "1cm", right: "1cm", bottom: "1cm" }}
+              fileName={getExportFilename('pdf')}
+              author="ABRA Bundle Configurator"
+              creator="ABRA Bundle Configurator"
+              scale={0.53}
+              forcePageBreak=".page-break"
+              repeatHeaders={true}
+              keepTogether=".keep-together"
+              encoding="utf-8"
+              producer="ABRA Bundle Configurator"
+              title={selectedConfiguration?.name || 'Bundle Configuration'}
+              keywords="ABRA,bundle,configuration"
+              subject="Bundle Configuration Export"
+            >
+              <div 
+                className="p-6 bg-white flex flex-col" 
+                ref={printRef} 
+                data-table-container
+                style={{ 
+                  width: '100%',
+                  maxWidth: '100%'
+                }}
+              >
+                {error && (
+                  <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
+                    {error}
+                  </div>
+                )}
+                
+                <div>
+                  <BundleTable
+                    bundles={packages}
+                    items={processedItems}
+                    onAmountChange={handleAmountChange}
+                    amounts={amounts}
+                    readonly={true}
+                    ref={tableRef}
+                    exporting={exporting}
+                    showFixace={showFixace}
+                    showIndividualDiscount={showIndividualDiscount}
+                    selectedConfiguration={selectedConfiguration}
+                    enableRowSelection={enableRowSelection}
+                    selectedRows={selectedRows}
+                    onRowSelect={handleRowSelect}
+                    className={exporting ? 'print-scale' : ''}
+                  />
+                </div>
               </div>
-            )}
-            
-            <div className="flex-1">
-              <BundleTable
-                bundles={packages}
-                items={processedItems}
-                onAmountChange={handleAmountChange}
-                amounts={amounts}
-                readonly={true}
-                ref={printRef}
-                exporting={exporting}
-                showFixace={showFixace}
-                showIndividualDiscount={showIndividualDiscount}
-                selectedConfiguration={selectedConfiguration}
-                enableRowSelection={enableRowSelection}
-                selectedRows={selectedRows}
-                onRowSelect={handleRowSelect}
-              />
-            </div>
+            </PDFExport>
           </div>
         </div>
 

@@ -42,7 +42,8 @@ export const useTableStyles = (exporting = false) => ({
     categoryRow: "border-b-2 border-b-abraMagenta",
     itemName: {
       category: "font-medium text-abraMagenta text-sm break-words",
-      item: "text-xs text-gray-700 break-words opacity-90",
+      item: "text-xs text-gray-700 break-words font-bold opacity-90",
+      itemDetail: "text-xs text-gray-700 break-words opacity-90",
       detail: "text-[10px] text-gray-500 break-words opacity-75"
     },
     itemNote: "text-xs text-gray-500 break-words",

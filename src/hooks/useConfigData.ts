@@ -201,7 +201,6 @@ export function useConfigData(bundleId: string | null = null, configId: string |
         getDocs(collection(db, 'configurations'))
       ]);
 
-      console.log('Categories from DB:', categoriesSnap.data());
       
       // If bundleId exists, fetch bundle data
       if (bundleId) {
@@ -216,8 +215,7 @@ export function useConfigData(bundleId: string | null = null, configId: string |
       const packagesData = packagesSnap.exists() ? packagesSnap.data().packages || [] : [];
       const categoriesData = categoriesSnap.exists() ? categoriesSnap.data().categories || [] : [];
       const itemsData: ItemData[] = itemsSnap.exists() ? itemsSnap.data().items || [] : [];
-      
-      console.log('Processed categories data:', categoriesData);
+    
 
       const usersData = usersSnap.docs.map(doc => ({
         id: doc.id,
@@ -235,7 +233,6 @@ export function useConfigData(bundleId: string | null = null, configId: string |
       const itemInstances = itemsData.map((item: ItemData) => Item.create(item));
 
       const processedTree = processCategories(categoriesData, itemInstances);
-      console.log('Final processed tree:', processedTree);
 
       setCategories(categoriesData);
       setItems(itemInstances);
