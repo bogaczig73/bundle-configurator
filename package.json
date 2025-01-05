@@ -23,7 +23,9 @@
     "start": "react-scripts start",
     "build": "react-scripts build",
     "test": "react-scripts test",
-    "eject": "react-scripts eject"
+    "eject": "react-scripts eject",
+    "docs": "styleguidist server",
+    "docs:build": "styleguidist build"
   },
   "eslintConfig": {
     "extends": [
@@ -44,11 +46,20 @@
     ]
   },
   "devDependencies": {
+    "@babel/preset-react": "^7.26.3",
+    "@babel/preset-typescript": "^7.26.0",
     "@tailwindcss/forms": "^0.5.9",
     "@types/react": "^19.0.2",
     "autoprefixer": "^10.4.20",
+    "babel-loader": "^9.2.1",
+    "css-loader": "^7.1.2",
+    "dotenv": "^16.4.7",
+    "file-loader": "^6.2.0",
     "postcss": "^8.4.49",
+    "react-styleguidist": "^13.1.3",
+    "style-loader": "^4.0.0",
     "tailwindcss": "^3.4.15",
-    "typescript": "^5.7.2"
+    "typescript": "^5.7.2",
+    "webpack": "^5.97.1"
   }
 }
