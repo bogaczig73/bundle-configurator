@@ -20,19 +20,28 @@ function ItemFormModal({ show, onClose, onSubmit, onDelete, items, packages, edi
 
   useEffect(() => {
     if (editingItem) {
-      setFormData({
-        ...editingItem,
-        id: editingItem.id,
-        packages: packages.map(pkg => {
-          const existingPackage = editingItem.packages?.find(p => p.packageId === pkg.id);
-          return existingPackage || {
-            packageId: pkg.id,
-            price: 0,
-            selected: false,
-            discountedAmount: 0
-          };
-        })
-      });
+      if (editingItem.type === 'category') {
+        setFormData({
+          id: editingItem.id,
+          name: editingItem.name,
+          type: 'category',
+          categoryId: editingItem.parentId || '',
+        });
+      } else {
+        setFormData({
+          ...editingItem,
+          id: editingItem.id,
+          packages: packages.map(pkg => {
+            const existingPackage = editingItem.packages?.find(p => p.packageId === pkg.id);
+            return existingPackage || {
+              packageId: pkg.id,
+              price: 0,
+              selected: false,
+              discountedAmount: 0
+            };
+          })
+        });
+      }
     } else {
       setFormData({
         name: '',
@@ -112,7 +121,10 @@ function ItemFormModal({ show, onClose, onSubmit, onDelete, items, packages, edi
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
       <div className="bg-white p-6 rounded-lg w-[800px] max-h-[90vh] overflow-y-auto shadow-xl">
         <h2 className="text-xl font-bold mb-4">
-          {editingItem ? 'Edit Item' : 'Add New Item'}
+          {editingItem 
+            ? `Edit ${editingItem.type === 'category' ? 'Category' : 'Item'}`
+            : `Add New ${formData.type === 'category' ? 'Category' : 'Item'}`
+          }
         </h2>
         
         <div className="space-y-4">
@@ -146,7 +158,7 @@ function ItemFormModal({ show, onClose, onSubmit, onDelete, items, packages, edi
                 value={formData.type}
                 onChange={(e) => setFormData(prev => ({ ...prev, type: e.target.value }))}
                 className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-                disabled={editingItem}
+                disabled={editingItem && editingItem.type === 'item'}
               >
                 <option value="item">Item</option>
                 <option value="category">Category</option>

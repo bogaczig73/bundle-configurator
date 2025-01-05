@@ -69,6 +69,7 @@ interface SaveConfigurationData {
 interface NewItemFormData {
   id?: number;
   name: string;
+  type: 'item' | 'category';
   categoryId: number | null;
   packages: Array<{
     packageId: number;
@@ -130,26 +131,31 @@ export function useConfigData(bundleId: string | null = null, configId: string |
   // Memoized function to process categories and items into a tree structure
   const processCategories = useCallback((categories: Category[], items: Item[]): (Category | Item)[] => {
     const buildCategoryTree = (parentId: number | null = null): (Category | Item)[] => {
-      return categories
-        .filter(cat => cat.parentId === parentId)
-        .map(category => {
-          const categoryItems = items
-            .filter(item => item.categoryId === category.id)
-            .map(item => Item.create(item));
-            
-          const childCategories = buildCategoryTree(category.id);
-          
-          return {
-            id: category.id,
-            name: category.name,
-            type: 'category' as const,
-            children: [
-              ...childCategories,
-              ...categoryItems
-            ]
-          };
-        });
+      const categoriesAtLevel = categories.filter(cat => {
+        const catParentId = cat.parentId ? Number(cat.parentId) : null;
+        return catParentId === parentId;
+      });
+      const itemsAtLevel = items.filter(item => {
+        // If we're at root level (parentId is null), include items with no category or invalid category
+        if (parentId === null) {
+          return !item.categoryId || !categories.find(cat => Number(cat.id) === Number(item.categoryId));
+        }
+        // Otherwise, include items that belong to this category
+        return Number(item.categoryId) === Number(parentId);
+      }).map(item => Item.create(item));
+
+      return [
+        ...categoriesAtLevel.map(category => ({
+          id: Number(category.id),
+          name: category.name,
+          type: 'category' as const,
+          parentId: category.parentId ? Number(category.parentId) : null,
+          children: buildCategoryTree(Number(category.id))
+        })),
+        ...itemsAtLevel
+      ];
     };
+    
     return buildCategoryTree(null);
   }, []);
 
@@ -195,6 +201,8 @@ export function useConfigData(bundleId: string | null = null, configId: string |
         getDocs(collection(db, 'configurations'))
       ]);
 
+      console.log('Categories from DB:', categoriesSnap.data());
+      
       // If bundleId exists, fetch bundle data
       if (bundleId) {
         const bundleSnap = await getDoc(doc(db, 'bundles', bundleId));
@@ -208,6 +216,9 @@ export function useConfigData(bundleId: string | null = null, configId: string |
       const packagesData = packagesSnap.exists() ? packagesSnap.data().packages || [] : [];
       const categoriesData = categoriesSnap.exists() ? categoriesSnap.data().categories || [] : [];
       const itemsData: ItemData[] = itemsSnap.exists() ? itemsSnap.data().items || [] : [];
+      
+      console.log('Processed categories data:', categoriesData);
+
       const usersData = usersSnap.docs.map(doc => ({
         id: doc.id,
         email: doc.data().email || '',
@@ -223,11 +234,14 @@ export function useConfigData(bundleId: string | null = null, configId: string |
       // Convert raw items data to Item instances
       const itemInstances = itemsData.map((item: ItemData) => Item.create(item));
 
+      const processedTree = processCategories(categoriesData, itemInstances);
+      console.log('Final processed tree:', processedTree);
+
       setCategories(categoriesData);
       setItems(itemInstances);
       setPackages(packagesData);
       setUsers(usersData);
-      setProcessedItems(processCategories(categoriesData, itemInstances));
+      setProcessedItems(processedTree);
       setConfigurations(configurationsData as Configuration[]);
 
     } catch (err) {
@@ -294,42 +308,75 @@ export function useConfigData(bundleId: string | null = null, configId: string |
     console.log('Submitting form data:', formData);
     
     try {
-      const itemsRef = doc(db, 'default', 'items');
-      const itemsSnap = await getDoc(itemsRef);
-      const currentItems = itemsSnap.data()?.items || [];
-
-      const newItemData = cleanObject({
-        id: formData.id || Date.now(),
-        name: formData.name,
-        categoryId: Number(formData.categoryId) || 0,
-        packages: formData.packages.map(pkg => ({
-          packageId: Number(pkg.packageId),
-          price: Number(pkg.price) || 0,
-          selected: pkg.selected || false,
-          discountedAmount: Number(pkg.discountedAmount) || 0
-        })),
-        amount: Number(formData.amount) || 0,
-        checkbox: formData.checkbox || false,
-        individual: formData.individual || false,
-        note: formData.note || "",
-        type: 'item'
-      });
-
-      if (formData.id) {
-        // Editing existing item
-        const updatedItems = currentItems.map((item: ItemData) => 
-          item.id === formData.id ? newItemData : item
-        );
-        await setDoc(itemsRef, { items: updatedItems });
-      } else {
-        // Creating new item
-        await updateDoc(itemsRef, {
-          items: arrayUnion(newItemData)
+      if (formData.type === 'category') {
+        // Handle category
+        const newCategoryData = cleanObject({
+          id: formData.id || Date.now(),
+          name: formData.name,
+          type: 'category',
+          parentId: formData.categoryId ? Number(formData.categoryId) : null,
+          children: []
         });
-      }
 
-      await fetchData();
-      return Item.create(newItemData);
+        // Get current categories
+        const categoriesRef = doc(db, 'default', 'categories');
+        const categoriesSnap = await getDoc(categoriesRef);
+        const currentCategories = categoriesSnap.data()?.categories || [];
+
+        if (formData.id) {
+          // Editing existing category
+          const updatedCategories = currentCategories.map((cat: Category) => 
+            cat.id === formData.id ? newCategoryData : cat
+          );
+          await setDoc(categoriesRef, { categories: updatedCategories });
+        } else {
+          // Creating new category
+          await updateDoc(categoriesRef, {
+            categories: arrayUnion(newCategoryData)
+          });
+        }
+
+        await fetchData();
+        return newCategoryData;
+      } else {
+        // Handle item
+        const itemsRef = doc(db, 'default', 'items');
+        const itemsSnap = await getDoc(itemsRef);
+        const currentItems = itemsSnap.data()?.items || [];
+
+        const newItemData = cleanObject({
+          id: formData.id || Date.now(),
+          name: formData.name,
+          categoryId: Number(formData.categoryId) || 0,
+          packages: formData.packages.map(pkg => ({
+            packageId: Number(pkg.packageId),
+            price: Number(pkg.price) || 0,
+            selected: pkg.selected || false,
+            discountedAmount: Number(pkg.discountedAmount) || 0
+          })),
+          amount: Number(formData.amount) || 0,
+          checkbox: formData.checkbox || false,
+          individual: formData.individual || false,
+          note: formData.note || "",
+          type: 'item'
+        });
+
+        if (formData.id) {
+          // Editing existing item
+          const updatedItems = currentItems.map((item: ItemData) => 
+            item.id === formData.id ? newItemData : item
+          );
+          await setDoc(itemsRef, { items: updatedItems });
+        } else {
+          // Creating new item
+          await updateDoc(itemsRef, {
+            items: arrayUnion(newItemData)
+          });
+        }
+
+        await fetchData();
+        return Item.create(newItemData);
+      }
     } catch (error) {
       console.error('Error saving item:', error);
       throw error;
