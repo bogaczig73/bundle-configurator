@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo, useRef } from "react";
 import Sidebar from '../components/Sidebar';
 import { useConfigData } from '../hooks/useConfigData';
 import { BundleTable } from '../components/Table/BundleTable';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import SettingsModal from '../components/SettingsModal';
 import { usePersistedSettings } from '../hooks/usePersistedSettings';
 import { PDFExport } from '@progress/kendo-react-pdf';
@@ -98,8 +98,72 @@ const ConfigurationsPicker = ({ configurations, users, selectedConfiguration, on
   );
 };
 
+// Visitor View Component
+const VisitorView = ({ configuration, processedItems, packages }) => {
+  const [amounts, setAmounts] = useState({});
+
+  useEffect(() => {
+    if (configuration?.items) {
+      const configAmounts = {
+        amounts: {},
+        discount: {},
+        fixace: {}
+      };
+      Object.entries(configuration.items).forEach(([itemId, itemData]) => {
+        configAmounts.amounts[itemId] = itemData.amount || 0;
+        configAmounts.fixace[itemId] = itemData.fixace || 0;
+        if (itemData.discount) configAmounts.discount[itemId] = itemData.discount;
+        if (itemData.subItemDiscounts) {
+          if (itemData.subItemDiscounts.fixace) {
+            configAmounts.discount[`${itemId}_fixed_items`] = itemData.subItemDiscounts.fixace;
+          }
+          if (itemData.subItemDiscounts.over) {
+            configAmounts.discount[`${itemId}_over_fixation_items`] = itemData.subItemDiscounts.over;
+          }
+        }
+      });
+      setAmounts(configAmounts);
+    }
+  }, [configuration]);
+
+  if (!configuration) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="text-center">
+          <h1 className="text-2xl font-bold text-gray-900 mb-4">Konfigurace nenalezena</h1>
+          <p className="text-gray-600">Požadovaná konfigurace neexistuje nebo k ní nemáte přístup.</p>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-gray-50">
+      <div className="max-w-7xl mx-auto px-4 py-8">
+        <div className="bg-white rounded-lg shadow p-6">
+          <h1 className="text-2xl font-bold text-gray-900 mb-6">{configuration.name}</h1>
+          <div className="overflow-x-auto">
+            <BundleTable
+              bundles={packages}
+              items={processedItems}
+              amounts={amounts}
+              readonly={true}
+              showFixace={false}
+              showIndividualDiscount={false}
+              selectedConfiguration={configuration}
+              enableRowSelection={false}
+              selectedRows={{}}
+            />
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 // Main Component
 function ViewOffersPage() {
+  const { id } = useParams();
   const { configurations, loading: configLoading, error, processedItems, packages, users } = useConfigData();
   const { user, loading: userLoading, error: userError } = useCurrentUser();
   const [selectedConfiguration, setSelectedConfiguration] = useState(null);
@@ -122,7 +186,17 @@ function ViewOffersPage() {
     return configurations.filter(config => config.createdBy === user.id);
   }, [configurations, user]);
 
-  // Add useEffect to update amounts when a configuration is selected
+  // Effect to handle URL parameter
+  useEffect(() => {
+    if (id && configurations && !selectedConfiguration) {
+      const config = configurations.find(c => c.id === id);
+      if (config) {
+        setSelectedConfiguration(config);
+      }
+    }
+  }, [id, configurations, selectedConfiguration]);
+
+  // Effect to update amounts when a configuration is selected
   useEffect(() => {
     if (selectedConfiguration && selectedConfiguration.items) {
       const configAmounts = {
@@ -157,6 +231,28 @@ function ViewOffersPage() {
       });
     }
   }, [selectedConfiguration]);
+
+  // Show loading state
+  if (configLoading || userLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="text-center">
+          <div className="text-gray-600">Loading...</div>
+        </div>
+      </div>
+    );
+  }
+
+  // Show visitor view if there's an ID and no user
+  if (id && !user) {
+    return (
+      <VisitorView 
+        configuration={selectedConfiguration}
+        processedItems={processedItems}
+        packages={packages}
+      />
+    );
+  }
 
   // Handle amount changes in the table
   const handleAmountChange = (itemId, amount, field = 'amounts') => {
@@ -232,18 +328,6 @@ function ViewOffersPage() {
       setExportStatus('');
     }
   };
-
-  // Show loading state if either data is loading
-  if (configLoading || userLoading) {
-    return (
-      <div className="flex">
-        <Sidebar />
-        <div className="flex-1 p-8">
-          <div className="text-center">Loading...</div>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="flex h-screen overflow-hidden">

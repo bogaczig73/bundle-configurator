@@ -66,6 +66,8 @@ function App() {
                 </ProtectedRoute>
               } />
               
+              <Route path="/viewoffers/:id" element={<ViewOffersPage />} />
+              
               <Route path="/viewoffers" element={
                 <ProtectedRoute allowedRoles={['admin', 'account']}>
                   <ViewOffersPage />
