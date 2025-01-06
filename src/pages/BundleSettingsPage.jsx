@@ -3,15 +3,19 @@ import ActionButtons from '../components/ActionButtons';
 import { useParams, useNavigate } from 'react-router-dom';
 import Sidebar from '../components/Sidebar';
 import { db } from '../firebase';
-import { doc, updateDoc, setDoc, arrayUnion } from 'firebase/firestore';  
+import { doc, updateDoc, setDoc, arrayUnion, getDoc } from 'firebase/firestore';  
 import { useConfigData } from '../hooks/useConfigData';
-import { defaultItems } from '../data/items';
+import { getDefaultItemsForCurrency } from '../data/items';
 import { defaultCategories } from '../data/categories';
 import { defaultPackages } from '../data/packages';
 import ItemFormModal from '../components/ItemFormModal';
 
-
-
+// Available currencies
+const CURRENCIES = [
+  { code: 'CZK', symbol: 'Kč', name: 'Czech Koruna' },
+  { code: 'EUR', symbol: '€', name: 'Euro' },
+  { code: 'USD', symbol: '$', name: 'US Dollar' }
+];
 
 function BundleSettingsPage() {
   const { userId } = useParams();
@@ -34,12 +38,11 @@ function BundleSettingsPage() {
   } = useConfigData();
 
   const [bundlesState, setBundlesState] = useState([]);
-
   const [itemPrices, setItemPrices] = useState({});
-
   const [editingItem, setEditingItem] = useState(null);
   const [showItemModal, setShowItemModal] = useState(false);
   const [isItemSaving, setIsItemSaving] = useState(false);
+  const [selectedCurrency, setSelectedCurrency] = useState('CZK');
 
   // Initialize bundles state from packages
   useEffect(() => {
@@ -56,6 +59,32 @@ function BundleSettingsPage() {
       })));
     }
   }, [packages, items]);
+
+  // Load items based on selected currency
+  useEffect(() => {
+    const loadItemsForCurrency = async () => {
+      setLoading(true);
+      try {
+        const itemsRef = doc(db, 'default', `items_${selectedCurrency.toLowerCase()}`);
+        const itemsSnap = await getDoc(itemsRef);
+        
+        if (itemsSnap.exists()) {
+          const items = itemsSnap.data().items;
+          setProcessedItems(items);
+        } else {
+          // If no currency-specific items exist, load default items
+          setProcessedItems(getDefaultItemsForCurrency(selectedCurrency));
+        }
+      } catch (err) {
+        console.error('Error loading items for currency:', err);
+        setError('Failed to load items for selected currency');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadItemsForCurrency();
+  }, [selectedCurrency, setLoading, setError, setProcessedItems]);
 
   // 2. Simplify the handlers using the shared function
   const handleItemDiscountChange = useCallback((bundleId, itemId, discountedAmount) => {
@@ -111,14 +140,14 @@ function BundleSettingsPage() {
     );
   });
 
-  // Modify the save function to include userLimit
+  // Modify the save function to include userLimit and currency
   const handleSave = async () => {
     setLoading(true);
     setError('');
     
     try {
-      // Save items using the hook's method
-      await saveItems(processedItems);
+      // Save items using the hook's method with currency
+      await saveItems(processedItems, selectedCurrency);
 
       // Save packages with userLimit
       const updatedPackages = bundlesState.map(({ id, name, userLimit }) => ({
@@ -142,8 +171,13 @@ function BundleSettingsPage() {
     setError('');
     
     try {
-      // Upload default items
-      await setDoc(doc(db, 'default', 'items'), { items: defaultItems });
+      const defaultItemsForCurrency = getDefaultItemsForCurrency(selectedCurrency);
+      
+      // Upload default items for the selected currency
+      await setDoc(doc(db, 'default', `items_${selectedCurrency.toLowerCase()}`), { 
+        items: defaultItemsForCurrency,
+        currency: selectedCurrency
+      });
       
       // Upload default categories
       await setDoc(doc(db, 'default', 'categories'), { categories: defaultCategories });
@@ -151,20 +185,27 @@ function BundleSettingsPage() {
       // Upload default packages
       await setDoc(doc(db, 'default', 'packages'), { packages: defaultPackages });
       
-      console.log('Default data loaded successfully');
+      console.log('Default data loaded successfully for currency:', selectedCurrency);
+      
+      // Reload items for the selected currency
+      const itemsRef = doc(db, 'default', `items_${selectedCurrency.toLowerCase()}`);
+      const itemsSnap = await getDoc(itemsRef);
+      if (itemsSnap.exists()) {
+        setProcessedItems(itemsSnap.data().items);
+      }
     } catch (err) {
       console.error('Error loading defaults:', err);
       setError('Failed to load default data. Please try again.');
     } finally {
       setLoading(false);
     }
-  }
+  };
 
   // 2. Update the handleItemSubmit function
   const handleItemSubmit = useCallback(async (formData) => {
     setIsItemSaving(true);
     try {
-      await handleNewItem(formData);
+      await handleNewItem(formData, selectedCurrency);
       setShowItemModal(false);
       setEditingItem(null);
     } catch (err) {
@@ -172,7 +213,7 @@ function BundleSettingsPage() {
     } finally {
       setIsItemSaving(false);
     }
-  }, [handleNewItem, setError]);
+  }, [handleNewItem, setError, selectedCurrency]);
 
   // Add missing handlers
   const handleEditItem = useCallback((item) => {
@@ -229,7 +270,24 @@ function BundleSettingsPage() {
               <h1 className="text-xl md:text-2xl font-bold text-gray-900">
                 {userId ? 'Create New Bundle for User' : 'Nastavení balíčků'}
               </h1>
-              <div className="flex gap-2">
+              <div className="flex items-center gap-4">
+                <div className="flex items-center gap-2">
+                  <label htmlFor="currency" className="text-sm font-medium text-gray-700">
+                    Currency:
+                  </label>
+                  <select
+                    id="currency"
+                    value={selectedCurrency}
+                    onChange={(e) => setSelectedCurrency(e.target.value)}
+                    className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                  >
+                    {CURRENCIES.map(currency => (
+                      <option key={currency.code} value={currency.code}>
+                        {currency.name} ({currency.symbol})
+                      </option>
+                    ))}
+                  </select>
+                </div>
                 <button
                   onClick={handleLoadDefaults}
                   className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600"

@@ -35,7 +35,7 @@ function Sidebar({ children }) {
     const allNavigation = [
       { name: 'Domů', path: '/', roles: ['admin', 'account', 'customer'], icon: <FontAwesomeIcon icon={faHome} /> },
       { name: 'Konfigurátor', path: '/configurator', roles: ['admin', 'account'], icon: <FontAwesomeIcon icon={faGear} /> },
-      { name: 'Konfigurace', path: '/viewoffers', roles: ['admin', 'account'], icon: <FontAwesomeIcon icon={faFile} /> },
+      { name: 'Konfigurace', path: '/viewoffers', roles: ['admin', 'account', 'customer'], icon: <FontAwesomeIcon icon={faFile} /> },
       { name: 'Nastavení balíčků', path: '/bundle', roles: ['admin'], icon: <FontAwesomeIcon icon={faBox} /> },
       { name: 'Uživatelé', path: '/users', roles: ['admin'], icon: <FontAwesomeIcon icon={faUsers} /> },
     ];

@@ -6,6 +6,17 @@ import { BundleTable } from '../components/Table/BundleTable';
 import Modal from '../components/Modal';
 import SettingsModal from '../components/SettingsModal';
 import { usePersistedSettings } from '../hooks/usePersistedSettings';
+import { doc, getDoc } from 'firebase/firestore';
+import { db } from '../firebase';
+import { getDefaultItemsForCurrency } from '../data/items';
+
+// Available currencies
+const CURRENCIES = [
+  { code: 'CZK', symbol: 'Kč', name: 'Czech Koruna' },
+  { code: 'EUR', symbol: '€', name: 'Euro' },
+  { code: 'USD', symbol: '$', name: 'US Dollar' }
+];
+
 function ConfiguratorPage() {
   const { bundleId } = useParams();
   const { 
@@ -17,7 +28,9 @@ function ConfiguratorPage() {
     users,
     saveConfiguration,
     setError,
-    setProcessedItems
+    setProcessedItems,
+    setLoading,
+    loadItemsForCurrency
   } = useConfigData(bundleId);
   const [amounts, setAmounts] = useState({
     amounts: {},
@@ -30,10 +43,29 @@ function ConfiguratorPage() {
   const [showIndividualDiscount, setShowIndividualDiscount] = usePersistedSettings('showIndividualDiscount', false);
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
   const [showFixace, setShowFixace] = usePersistedSettings('showFixace', false);
+  const [globalDiscount, setGlobalDiscount] = useState(0);
+  const [selectedCurrency, setSelectedCurrency] = useState('CZK');
 
   const customers = useMemo(() => {
     return users.filter(user => user.role === 'customer');
   }, [users]);
+
+  // Load items based on selected currency
+  useEffect(() => {
+    const loadItems = async () => {
+      setLoading(true);
+      try {
+        const items = await loadItemsForCurrency(selectedCurrency);
+        setProcessedItems(items);
+      } catch (err) {
+        setError(err.message);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadItems();
+  }, [selectedCurrency, setLoading, setError, setProcessedItems, loadItemsForCurrency]);
 
   useEffect(() => {
     if (bundleData?.amounts) {
@@ -117,15 +149,15 @@ function ConfiguratorPage() {
         return;
       }
 
-      
-
       await saveConfiguration({
         id: bundleId,
         name: configName,
         customerId: selectedCustomer,
         items: validItems,
         status: 'draft',
-        createdBy: ''
+        createdBy: '',
+        globalDiscount: globalDiscount,
+        currency: selectedCurrency
       });
       
       setIsModalOpen(false);
@@ -153,7 +185,35 @@ function ConfiguratorPage() {
               <h1 className="text-2xl font-bold text-gray-900">
                 {bundleId ? `Bundle ${bundleId}` : 'Nová konfigurace'}
               </h1>
-              <div className="flex gap-2">
+              <div className="flex items-center gap-4">
+                <div className="flex items-center gap-2">
+                  <label htmlFor="currency" className="text-sm font-medium text-gray-700">
+                    Currency:
+                  </label>
+                  <select
+                    id="currency"
+                    value={selectedCurrency}
+                    onChange={(e) => setSelectedCurrency(e.target.value)}
+                    className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                  >
+                    {CURRENCIES.map(currency => (
+                      <option key={currency.code} value={currency.code}>
+                        {currency.name} ({currency.symbol})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <label className="text-sm text-gray-600">Globální sleva (%)</label>
+                  <input
+                    type="number"
+                    min="0"
+                    max="100"
+                    value={globalDiscount}
+                    onChange={(e) => setGlobalDiscount(Math.min(100, Math.max(0, Number(e.target.value))))}
+                    className="w-20 px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  />
+                </div>
                 <button
                   onClick={() => setIsSettingsModalOpen(true)}
                   className="bg-gray-100 text-gray-700 px-4 py-2 rounded hover:bg-gray-200"
@@ -204,9 +264,10 @@ function ConfiguratorPage() {
                 })}
                 items={processedItems || []}
                 onAmountChange={handleAmountChange}
-                amounts={amounts}
+                amounts={{...amounts, globalDiscount}}
                 showIndividualDiscount={showIndividualDiscount}
                 showFixace={showFixace}
+                currency={selectedCurrency}
               />
               
             </div>

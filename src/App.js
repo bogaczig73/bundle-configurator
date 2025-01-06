@@ -69,7 +69,7 @@ function App() {
               <Route path="/viewoffers/:id" element={<ViewOffersPage />} />
               
               <Route path="/viewoffers" element={
-                <ProtectedRoute allowedRoles={['admin', 'account']}>
+                <ProtectedRoute allowedRoles={['admin', 'account', 'customer']}>
                   <ViewOffersPage />
                 </ProtectedRoute>
               } />

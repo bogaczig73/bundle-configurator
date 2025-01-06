@@ -12,6 +12,7 @@ export function TableBody({
   readonly = false, 
   showIndividualDiscount = false, 
   showFixace = false,
+  currency = 'CZK',
   enableRowSelection = false,
   selectedRows = {},
   onRowSelect
@@ -25,6 +26,7 @@ export function TableBody({
           showIndividualDiscount={showIndividualDiscount} 
           showFixace={showFixace}
           enableRowSelection={enableRowSelection}
+          currency={currency}
         />
         <tbody className="divide-y-0">
           {items.map((item) => (
@@ -41,6 +43,7 @@ export function TableBody({
               enableRowSelection={enableRowSelection}
               selectedRows={selectedRows}
               onRowSelect={onRowSelect}
+              currency={currency}
             />
           ))}
         </tbody>

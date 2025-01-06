@@ -206,8 +206,11 @@ export interface Configuration {
   id: string;
   name: string;
   createdAt: any;
-  createdBy: string;
+  createdBy: string | null;
   customer: string;
-  bundleId: string;
-  items: Record<number, ItemPrice>;
+  bundleId: string | null;
+  status: string;
+  items: Record<string, any>;
+  currency: string;
+  globalDiscount?: number;
 } 

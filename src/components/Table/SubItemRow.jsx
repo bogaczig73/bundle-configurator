@@ -22,7 +22,8 @@ export function SubItemRow({
   showFixace = false,
   onDiscountChange,
   readonly = false,
-  enableRowSelection = false
+  enableRowSelection = false,
+  currency = 'CZK'
 }) {
 
   // Calculate displayed amount based on type
@@ -236,7 +237,7 @@ export function SubItemRow({
                         parentItem,
                         bundle
                       );
-                      return formatPrice(priceInfo.finalPrice);
+                      return formatPrice(priceInfo.finalPrice, currency);
                     })()}
                   </span>
                   {/* <span className="text-[10px] text-gray-500 italic">

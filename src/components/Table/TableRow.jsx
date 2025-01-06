@@ -6,7 +6,7 @@ import { Item } from '../../types/Item';
 import { formatPrice } from '../../utils/tableUtils';
 import { isBundleActive, isBundleDisabled } from '../../utils/tableUtils';
 
-export function TableRow({ item, bundles, amounts, onAmountChange, readonly = false, showIndividualDiscount = false, showFixace = false, enableRowSelection = false, selectedRows = {}, onRowSelect }) {
+export function TableRow({ item, bundles, amounts, onAmountChange, readonly = false, showIndividualDiscount = false, showFixace = false, enableRowSelection = false, selectedRows = {}, onRowSelect, currency = 'CZK' }) {
   const tableStyles = useTableStyles();
   const [isExpanded, setIsExpanded] = React.useState(false);
   // Convert plain item object to Item instance if it isn't already
@@ -415,7 +415,7 @@ export function TableRow({ item, bundles, amounts, onAmountChange, readonly = fa
                         const overFixacePrice = baseFixedPrice * overFixaceAmount * (1 - overFixaceDiscount / 100);
                         const discount = amounts.discount?.[itemInstance.id] ?? itemInstance.discount ?? 0;
 
-                        return formatPrice((fixedPrice + overFixacePrice) * (1 - discount / 100));
+                        return formatPrice((fixedPrice + overFixacePrice) * (1 - discount / 100), currency);
                       })()
                     ) : (
                       (() => {
@@ -423,7 +423,7 @@ export function TableRow({ item, bundles, amounts, onAmountChange, readonly = fa
                         const amount = amounts.amounts[itemInstance.id] || 0;
                         const basePrice = itemInstance.getPrice(bundle.id);
                         const discountedAmount = Math.max(0, amount - itemInstance.getDiscount(bundle.id));
-                        return formatPrice(basePrice * discountedAmount * (1 - discount / 100));
+                        return formatPrice(basePrice * discountedAmount * (1 - discount / 100), currency);
                       })()
                     )}
                   </span>
@@ -469,6 +469,7 @@ export function TableRow({ item, bundles, amounts, onAmountChange, readonly = fa
             }}
             readonly={readonly}
             enableRowSelection={enableRowSelection}
+            currency={currency}
           />
           <SubItemRow 
             key={`${itemInstance.id}-over-fixation-items`}
@@ -485,6 +486,7 @@ export function TableRow({ item, bundles, amounts, onAmountChange, readonly = fa
             }}
             readonly={readonly}
             enableRowSelection={enableRowSelection}
+            currency={currency}
           />
         </>
       )}

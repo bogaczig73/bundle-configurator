@@ -19,13 +19,19 @@ import {
 
 // Bundle Picker Component - made more compact
 const ConfigurationsPicker = ({ configurations, users, selectedConfiguration, onConfigurationSelect }) => {
+  const { user } = useCurrentUser();
   const [selectedCustomer, setSelectedCustomer] = useState('all');
   const navigate = useNavigate();
   
   const filteredConfigurations = useMemo(() => {
+    if (user?.role === 'customer') return configurations;
     if (selectedCustomer === 'all') return configurations;
     return configurations.filter(config => config.customer === selectedCustomer);
-  }, [configurations, selectedCustomer]);
+  }, [configurations, selectedCustomer, user]);
+
+  const customerUsers = useMemo(() => {
+    return users.filter(user => user.role === 'customer');
+  }, [users]);
 
   const formatDate = (timestamp) => {
     if (!timestamp) return 'No date';
@@ -42,20 +48,22 @@ const ConfigurationsPicker = ({ configurations, users, selectedConfiguration, on
 
   return (
     <div className="px-8 py-4 bg-white border-b">
-      <div className="mb-4">
-        <select 
-          value={selectedCustomer}
-          onChange={(e) => setSelectedCustomer(e.target.value)}
-          className="block w-48 px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
-        >
-          <option value="all">Všichni zákazníci</option>
-          {users.map((user) => (
-            <option key={user.id} value={user.id}>
-              {user.username || user.email || 'Unknown'}
-            </option>
-          ))}
-        </select>
-      </div>
+      {user?.role !== 'customer' && (
+        <div className="mb-4">
+          <select 
+            value={selectedCustomer}
+            onChange={(e) => setSelectedCustomer(e.target.value)}
+            className="block w-48 px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+          >
+            <option value="all">Všichni zákazníci</option>
+            {customerUsers.map((user) => (
+              <option key={user.id} value={user.id}>
+                {user.username || user.email || 'Unknown'}
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
       
       {filteredConfigurations.length > 0 ? (
         <div className="flex space-x-2 overflow-x-auto">
@@ -75,9 +83,12 @@ const ConfigurationsPicker = ({ configurations, users, selectedConfiguration, on
               <div className="text-xs text-gray-500 mt-1">
                {users.find(user => user.id === configuration.customer)?.username || 'Unknown customer'}
               </div>
-              <div className="mt-1">
+              <div className="mt-1 flex justify-between items-center">
                 <span className="text-xs text-gray-500">
                   {formatDate(configuration.createdAt)}
+                </span>
+                <span className="text-xs font-medium text-gray-700 bg-gray-100 px-2 py-0.5 rounded">
+                  {configuration.currency || 'CZK'}
                 </span>
               </div>
             </div>
@@ -164,10 +175,21 @@ const VisitorView = ({ configuration, processedItems, packages }) => {
 // Main Component
 function ViewOffersPage() {
   const { id } = useParams();
-  const { configurations, loading: configLoading, error, processedItems, packages, users } = useConfigData();
+  const { 
+    configurations, 
+    loading: configLoading, 
+    error, 
+    processedItems, 
+    packages, 
+    users,
+    loadItemsForCurrency,
+    setProcessedItems,
+    setError
+  } = useConfigData();
   const { user, loading: userLoading, error: userError } = useCurrentUser();
   const [selectedConfiguration, setSelectedConfiguration] = useState(null);
   const [amounts, setAmounts] = useState({});
+  const [currentCurrency, setCurrentCurrency] = useState('CZK');
   const navigate = useNavigate();
   const printRef = useRef(null);
   const tableRef = useRef(null);
@@ -183,18 +205,41 @@ function ViewOffersPage() {
   // Filter configurations based on current user
   const filteredConfigurations = useMemo(() => {
     if (!user || !configurations) return [];
+    
+    // For customers, show only configurations made for them
+    if (user.role === 'customer') {
+      return configurations.filter(config => config.customer === user.id);
+    }
+    
+    // For other roles (admin, etc), show configurations they created
     return configurations.filter(config => config.createdBy === user.id);
   }, [configurations, user]);
 
-  // Effect to handle URL parameter
+  // Effect to handle URL parameter and load correct items for currency
   useEffect(() => {
     if (id && configurations && !selectedConfiguration) {
       const config = configurations.find(c => c.id === id);
       if (config) {
-        setSelectedConfiguration(config);
+        handleConfigurationSelect(config);
       }
     }
   }, [id, configurations, selectedConfiguration]);
+
+  // Function to handle configuration selection and load correct items
+  const handleConfigurationSelect = async (config) => {
+    try {
+      // Load items for the configuration's currency
+      const currency = config.currency || 'CZK';
+      if (currency !== currentCurrency) {
+        const items = await loadItemsForCurrency(currency);
+        setProcessedItems(items);
+        setCurrentCurrency(currency);
+      }
+      setSelectedConfiguration(config);
+    } catch (err) {
+      setError(err.message);
+    }
+  };
 
   // Effect to update amounts when a configuration is selected
   useEffect(() => {
@@ -221,7 +266,6 @@ function ViewOffersPage() {
           }
         }
       });
-      console.log('configAmounts', configAmounts);
       setAmounts(configAmounts);
     } else {
       setAmounts({
@@ -389,7 +433,7 @@ function ViewOffersPage() {
             configurations={filteredConfigurations}
             users={users}
             selectedConfiguration={selectedConfiguration}
-            onConfigurationSelect={setSelectedConfiguration}
+            onConfigurationSelect={handleConfigurationSelect}
           />
           
           <div className="flex-1 overflow-auto">
@@ -442,6 +486,7 @@ function ViewOffersPage() {
                     selectedRows={selectedRows}
                     onRowSelect={handleRowSelect}
                     className={exporting ? 'print-scale' : ''}
+                    currency={currentCurrency}
                   />
                 </div>
               </div>

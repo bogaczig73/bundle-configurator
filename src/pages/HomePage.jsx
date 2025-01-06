@@ -70,7 +70,7 @@ function HomePage() {
               Zde najdete přehled vašich konfigurací a jejich aktuální stav.
             </p>
             <Link
-              to="/configurator"
+              to="/viewoffers"
               className="inline-block mt-4 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors duration-200"
             >
               Zobrazit konfigurace

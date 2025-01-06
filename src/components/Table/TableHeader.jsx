@@ -9,7 +9,8 @@ export function TableHeader({
   flattenedItems, 
   showIndividualDiscount = false, 
   showFixace = false,
-  enableRowSelection = false
+  enableRowSelection = false,
+  currency = 'CZK'
 }) {
   
   const bundleTotals = React.useMemo(() => {
@@ -81,7 +82,7 @@ export function TableHeader({
                         ${isActive ? tableStyles.activeBundle : ''}
                         ${isDisabled ? tableStyles.inactiveBundle.price : ''}
                       `}>
-                        {formatPrice(bundleTotal)}
+                        {formatPrice(bundleTotal, currency)}
                       </span>
                     </div>
                   </th>

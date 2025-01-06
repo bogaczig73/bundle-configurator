@@ -14,6 +14,7 @@ export const BundleTable = forwardRef(({
   exporting = false, 
   showIndividualDiscount = false, 
   showFixace = false,
+  currency = 'CZK',
   enableRowSelection = false,
   selectedRows = {},
   onRowSelect
@@ -46,6 +47,7 @@ export const BundleTable = forwardRef(({
           showIndividualDiscount={showIndividualDiscount}
           showFixace={showFixace}
           enableRowSelection={enableRowSelection}
+          currency={currency}
         />
         <TableBody 
           bundles={bundles}
@@ -59,6 +61,7 @@ export const BundleTable = forwardRef(({
           enableRowSelection={enableRowSelection}
           selectedRows={selectedRows}
           onRowSelect={onRowSelect}
+          currency={currency}
         />
       </div>
   );

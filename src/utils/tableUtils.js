@@ -101,14 +101,25 @@ export const flattenItems = (items, depth = 0, parentId = '') => {
   return result;
 };
 
-export const formatPrice = (price) => {
-  const roundedPrice = Math.ceil(price);
-  return new Intl.NumberFormat('cs-CZ', {
+export const formatPrice = (price, currency = 'CZK') => {
+  // Use different locales based on currency
+  const localeMap = {
+    CZK: 'cs-CZ',
+    EUR: 'de-DE',
+    USD: 'en-US'
+  };
+  
+  const locale = localeMap[currency] || 'cs-CZ';
+  
+  const formatter = new Intl.NumberFormat(locale, {
     style: 'currency',
-    currency: 'CZK',
+    currency: currency,
     minimumFractionDigits: 0,
     maximumFractionDigits: 0,
-  }).format(roundedPrice);
+  });
+  console.log(price);
+  console.log(currency);
+  return formatter.format(price);
 };
 
 // Legacy utility functions (keeping for backward compatibility)
@@ -162,8 +173,6 @@ export const getCheckmarkIcon = (index) => {
 };
 
 export const calculateBundleTotal = (bundle, items, amounts) => {
-
-
   if (!items || !Array.isArray(items)) {
     console.warn('No items provided or items is not an array');
     return 0;
@@ -209,5 +218,7 @@ export const calculateBundleTotal = (bundle, items, amounts) => {
       return total + itemTotal;
     }, 0);
 
-  return total;
+  // Apply global discount if present
+  const globalDiscount = amounts?.globalDiscount ?? 0;
+  return total * (1 - globalDiscount / 100);
 };
