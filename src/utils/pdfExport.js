@@ -327,6 +327,7 @@ export const exportToPDFV2 = (pdfExportComponent, printRef, showFixace, amounts)
       const tableRows = container.querySelectorAll('[data-accordion-row="true"]');
       tableRows.forEach(row => {
         const itemId = row.getAttribute('data-item-id');
+        console.log(amounts);
         if (amounts.amounts[itemId] > 0) {
           row.click(); // Trigger click to expand
         }

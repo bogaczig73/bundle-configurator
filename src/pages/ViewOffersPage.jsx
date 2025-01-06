@@ -9,6 +9,8 @@ import { PDFExport } from '@progress/kendo-react-pdf';
 import '@progress/kendo-theme-default/dist/all.css';
 import '@progress/kendo-font-icons/dist/index.css';
 import { useCurrentUser } from '../api/users';
+import { deleteDoc, doc } from 'firebase/firestore';
+import { db } from '../firebase';
 import { 
   getExportFilename,
   handleExportSetup,
@@ -17,11 +19,43 @@ import {
   exportToPDFV2
 } from '../utils/pdfExport';
 
+// Delete Confirmation Modal Component
+const DeleteConfirmationModal = ({ show, onClose, onConfirm, configurationName }) => {
+  if (!show) return null;
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center">
+      <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+        <h3 className="text-lg font-medium text-gray-900 mb-4">Smazat konfiguraci</h3>
+        <p className="text-sm text-gray-500 mb-4">
+          Opravdu chcete smazat konfiguraci "{configurationName}"? Tato akce je nevratná.
+        </p>
+        <div className="flex justify-end space-x-3">
+          <button
+            onClick={onClose}
+            className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200"
+          >
+            Zrušit
+          </button>
+          <button
+            onClick={onConfirm}
+            className="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-md hover:bg-red-700"
+          >
+            Smazat
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 // Bundle Picker Component - made more compact
-const ConfigurationsPicker = ({ configurations, users, selectedConfiguration, onConfigurationSelect }) => {
+const ConfigurationsPicker = ({ configurations, users, selectedConfiguration, onConfigurationSelect, onDeleteConfiguration }) => {
   const { user } = useCurrentUser();
   const [selectedCustomer, setSelectedCustomer] = useState('all');
   const navigate = useNavigate();
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [configToDelete, setConfigToDelete] = useState(null);
   
   const filteredConfigurations = useMemo(() => {
     if (user?.role === 'customer') return configurations;
@@ -44,6 +78,20 @@ const ConfigurationsPicker = ({ configurations, users, selectedConfiguration, on
       hour: '2-digit',
       minute: '2-digit'
     });
+  };
+
+  const handleDeleteClick = (e, configuration) => {
+    e.stopPropagation(); // Prevent card selection when clicking delete
+    setConfigToDelete(configuration);
+    setShowDeleteModal(true);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (configToDelete) {
+      await onDeleteConfiguration(configToDelete.id);
+      setShowDeleteModal(false);
+      setConfigToDelete(null);
+    }
   };
 
   return (
@@ -71,7 +119,7 @@ const ConfigurationsPicker = ({ configurations, users, selectedConfiguration, on
             <div
               key={configuration.id}
               onClick={() => onConfigurationSelect(configuration)}
-              className={`p-3 rounded-lg cursor-pointer border min-w-[180px] ${
+              className={`p-3 rounded-lg cursor-pointer border min-w-[180px] relative group ${
                 selectedConfiguration?.id === configuration.id
                   ? 'border-blue-500 bg-blue-50'
                   : 'border-gray-200 hover:bg-gray-50'
@@ -91,6 +139,16 @@ const ConfigurationsPicker = ({ configurations, users, selectedConfiguration, on
                   {configuration.currency || 'CZK'}
                 </span>
               </div>
+              {/* Delete button */}
+              <button
+                onClick={(e) => handleDeleteClick(e, configuration)}
+                className="absolute top-2 right-2 p-1 text-gray-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity"
+                title="Smazat konfiguraci"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                </svg>
+              </button>
             </div>
           ))}
         </div>
@@ -105,6 +163,16 @@ const ConfigurationsPicker = ({ configurations, users, selectedConfiguration, on
           </button>
         </div>
       )}
+
+      <DeleteConfirmationModal
+        show={showDeleteModal}
+        onClose={() => {
+          setShowDeleteModal(false);
+          setConfigToDelete(null);
+        }}
+        onConfirm={handleDeleteConfirm}
+        configurationName={configToDelete?.name}
+      />
     </div>
   );
 };
@@ -184,7 +252,8 @@ function ViewOffersPage() {
     users,
     loadItemsForCurrency,
     setProcessedItems,
-    setError
+    setError,
+    refetchData
   } = useConfigData();
   const { user, loading: userLoading, error: userError } = useCurrentUser();
   const [selectedConfiguration, setSelectedConfiguration] = useState(null);
@@ -201,6 +270,7 @@ function ViewOffersPage() {
   const [enableRowSelection, setEnableRowSelection] = usePersistedSettings('enableRowSelection', false);
   const [selectedRows, setSelectedRows] = useState({});
   const pdfExportComponent = useRef(null);
+  const [deleteError, setDeleteError] = useState(null);
 
   // Filter configurations based on current user
   const filteredConfigurations = useMemo(() => {
@@ -359,7 +429,7 @@ function ViewOffersPage() {
     try {
       setExporting(true);
       setExportStatus('Preparing document...');
-      await handleExportSetup(printRef, showFixace, amounts, enableRowSelection, selectedRows);
+      //await handleExportSetup(printRef, showFixace, amounts, enableRowSelection, selectedRows);
       
       exportToPDFV2(pdfExportComponent, printRef, showFixace, amounts);
 
@@ -367,9 +437,24 @@ function ViewOffersPage() {
       console.error('Error in handleExportToPDFV2:', error);
       setExportStatus(`Error: ${error.message}`);
     } finally {
-      handleExportCleanup(printRef, showFixace, amounts, enableRowSelection, selectedRows);
+      // handleExportCleanup(printRef, showFixace, amounts, enableRowSelection, selectedRows);
       setExporting(false);
       setExportStatus('');
+    }
+  };
+
+  const handleDeleteConfiguration = async (configId) => {
+    try {
+      await deleteDoc(doc(db, 'configurations', configId));
+      // If the deleted configuration was selected, clear the selection
+      if (selectedConfiguration?.id === configId) {
+        setSelectedConfiguration(null);
+      }
+      // Refetch the configurations list
+      await refetchData();
+    } catch (err) {
+      console.error('Error deleting configuration:', err);
+      setDeleteError('Failed to delete configuration. Please try again.');
     }
   };
 
@@ -420,9 +505,9 @@ function ViewOffersPage() {
                 </button>
               </div>
             </div>
-            {(error || userError) && (
+            {(error || userError || deleteError) && (
               <div className="mt-4 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">
-                {error || userError}
+                {error || userError || deleteError}
               </div>
             )}
           </div>
@@ -434,6 +519,7 @@ function ViewOffersPage() {
             users={users}
             selectedConfiguration={selectedConfiguration}
             onConfigurationSelect={handleConfigurationSelect}
+            onDeleteConfiguration={handleDeleteConfiguration}
           />
           
           <div className="flex-1 overflow-auto">

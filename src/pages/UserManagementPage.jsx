@@ -201,88 +201,144 @@ function UserManagementPage() {
           </form>
         </div>
         
-        {/* Updated User List */}
+        {/* Updated User List as Tables */}
         <div className="bg-white p-6 rounded-lg shadow-md">
           <h2 className="text-xl font-semibold mb-4">Seznam uživatelů</h2>
           
-          {/* Admin Users */}
+          {/* Admin Users Table */}
           <div className="mb-6">
             <h3 className="text-lg font-medium text-gray-900 mb-2">
               Administrátoři ({getUsersByRole().admin.length})
             </h3>
-            <ul className="divide-y divide-gray-200 bg-gray-50 rounded-lg">
-              {getUsersByRole().admin.map(user => (
-                <li key={user.id} className="p-3 hover:bg-gray-100 flex items-center justify-between">
-                  <div className="flex items-center">
-                    <span className="font-medium">{user.username}</span>
-                    <span className="ml-2 text-sm text-gray-500">{user.email}</span>
-                    <span className="ml-2 px-2 py-1 text-sm rounded-full bg-red-100 text-red-800">
-                      {user.role}
-                    </span>
-                  </div>
-                  <button
-                    onClick={() => handleDeleteUser(user.id)}
-                    className="text-red-600 hover:text-red-800 font-medium"
-                  >
-                    Smazat
-                  </button>
-                </li>
-              ))}
-            </ul>
+            <div className="overflow-x-auto">
+              <table className="min-w-full divide-y divide-gray-200">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="w-1/4 px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Uživatel</th>
+                    <th className="w-1/3 px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
+                    <th className="w-1/6 px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Role</th>
+                    <th className="w-1/6 px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Akce</th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {getUsersByRole().admin.map(user => (
+                    <tr key={user.id} className="hover:bg-gray-50">
+                      <td className="w-1/4 px-6 py-4 whitespace-nowrap">
+                        <div className="font-medium text-gray-900">{user.username}</div>
+                      </td>
+                      <td className="w-1/3 px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {user.email}
+                      </td>
+                      <td className="w-1/6 px-6 py-4 whitespace-nowrap">
+                        <span className="px-2 py-1 text-sm rounded-full bg-red-100 text-red-800">
+                          {user.role}
+                        </span>
+                      </td>
+                      <td className="w-1/6 px-6 py-4 whitespace-nowrap text-sm">
+                        <button
+                          onClick={() => handleDeleteUser(user.id)}
+                          className="text-red-600 hover:text-red-800 font-medium"
+                        >
+                          Smazat
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
 
-          {/* Account Users */}
+          {/* Account Managers Table */}
           <div className="mb-6">
             <h3 className="text-lg font-medium text-gray-900 mb-2">
               Account Managers ({getUsersByRole().account.length})
             </h3>
-            <ul className="divide-y divide-gray-200 bg-gray-50 rounded-lg">
-              {getUsersByRole().account.map(user => (
-                <li key={user.id} className="p-3 hover:bg-gray-100 flex items-center justify-between">
-                  <div className="flex items-center">
-                    <span className="font-medium">{user.username}</span>
-                    <span className="ml-2 text-sm text-gray-500">{user.email}</span>
-                    <span className="ml-2 px-2 py-1 text-sm rounded-full bg-blue-100 text-blue-800">
-                      {user.role}
-                    </span>
-                  </div>
-                  <button
-                    onClick={() => handleDeleteUser(user.id)}
-                    className="text-red-600 hover:text-red-800 font-medium"
-                  >
-                    Smazat
-                  </button>
-                </li>
-              ))}
-            </ul>
+            <div className="overflow-x-auto">
+              <table className="min-w-full divide-y divide-gray-200">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="w-1/4 px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Uživatel</th>
+                    <th className="w-1/3 px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
+                    <th className="w-1/6 px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Role</th>
+                    <th className="w-1/6 px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Akce</th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {getUsersByRole().account.map(user => (
+                    <tr key={user.id} className="hover:bg-gray-50">
+                      <td className="w-1/4 px-6 py-4 whitespace-nowrap">
+                        <div className="font-medium text-gray-900">{user.username}</div>
+                      </td>
+                      <td className="w-1/3 px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {user.email}
+                      </td>
+                      <td className="w-1/6 px-6 py-4 whitespace-nowrap">
+                        <span className="px-2 py-1 text-sm rounded-full bg-blue-100 text-blue-800">
+                          {user.role}
+                        </span>
+                      </td>
+                      <td className="w-1/6 px-6 py-4 whitespace-nowrap text-sm">
+                        <button
+                          onClick={() => handleDeleteUser(user.id)}
+                          className="text-red-600 hover:text-red-800 font-medium"
+                        >
+                          Smazat
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
 
-          {/* Customer Users */}
+          {/* Customers Table */}
           <div className="mb-6">
             <h3 className="text-lg font-medium text-gray-900 mb-2">
               Zákazníci ({getUsersByRole().customer.length})
             </h3>
-            <ul className="divide-y divide-gray-200 bg-gray-50 rounded-lg">
-              {getUsersByRole().customer.map(user => (
-                <li key={user.id} className="p-3 hover:bg-gray-100 flex items-center justify-between">
-                  <div className="flex items-center">
-                    <span className="font-medium">{user.username}</span>
-                    <span className="ml-2 text-sm text-gray-500">{user.email}</span>
-                    <span className="ml-2 px-2 py-1 text-sm rounded-full bg-green-100 text-green-800">
-                      {user.role}
-                    </span>
-                  </div>
-                  <div className="flex gap-2">
-                    <button
-                      onClick={() => handleDeleteUser(user.id)}
-                      className="text-red-600 hover:text-red-800 font-medium"
-                    >
-                      Smazat
-                    </button>
-                  </div>
-                </li>
-              ))}
-            </ul>
+            <div className="overflow-x-auto">
+              <table className="min-w-full divide-y divide-gray-200">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="w-1/5 px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Uživatel</th>
+                    <th className="w-1/4 px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
+                    <th className="w-1/4 px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Společnost</th>
+                    <th className="w-1/6 px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Role</th>
+                    <th className="w-1/6 px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Akce</th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {getUsersByRole().customer.map(user => (
+                    <tr key={user.id} className="hover:bg-gray-50">
+                      <td className="w-1/5 px-6 py-4 whitespace-nowrap">
+                        <div className="font-medium text-gray-900">{user.username}</div>
+                      </td>
+                      <td className="w-1/4 px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {user.email}
+                      </td>
+                      <td className="w-1/4 px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {user.companyName}
+                      </td>
+                      <td className="w-1/6 px-6 py-4 whitespace-nowrap">
+                        <span className="px-2 py-1 text-sm rounded-full bg-green-100 text-green-800">
+                          {user.role}
+                        </span>
+                      </td>
+                      <td className="w-1/6 px-6 py-4 whitespace-nowrap text-sm">
+                        <button
+                          onClick={() => handleDeleteUser(user.id)}
+                          className="text-red-600 hover:text-red-800 font-medium"
+                        >
+                          Smazat
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
         </div>
       </div>

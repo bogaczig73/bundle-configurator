@@ -34,7 +34,8 @@ function BundleSettingsPage() {
     updateItemInTree,
     getAllItems,
     handleNewItem,
-    handleDeleteItem
+    handleDeleteItem,
+    loadItemsForCurrency
   } = useConfigData();
 
   const [bundlesState, setBundlesState] = useState([]);
@@ -62,29 +63,20 @@ function BundleSettingsPage() {
 
   // Load items based on selected currency
   useEffect(() => {
-    const loadItemsForCurrency = async () => {
+    const loadItems = async () => {
       setLoading(true);
       try {
-        const itemsRef = doc(db, 'default', `items_${selectedCurrency.toLowerCase()}`);
-        const itemsSnap = await getDoc(itemsRef);
-        
-        if (itemsSnap.exists()) {
-          const items = itemsSnap.data().items;
-          setProcessedItems(items);
-        } else {
-          // If no currency-specific items exist, load default items
-          setProcessedItems(getDefaultItemsForCurrency(selectedCurrency));
-        }
+        const items = await loadItemsForCurrency(selectedCurrency);
+        setProcessedItems(items);
       } catch (err) {
-        console.error('Error loading items for currency:', err);
-        setError('Failed to load items for selected currency');
+        setError(err.message);
       } finally {
         setLoading(false);
       }
     };
 
-    loadItemsForCurrency();
-  }, [selectedCurrency, setLoading, setError, setProcessedItems]);
+    loadItems();
+  }, [selectedCurrency, setLoading, setError, setProcessedItems, loadItemsForCurrency]);
 
   // 2. Simplify the handlers using the shared function
   const handleItemDiscountChange = useCallback((bundleId, itemId, discountedAmount) => {
@@ -187,12 +179,9 @@ function BundleSettingsPage() {
       
       console.log('Default data loaded successfully for currency:', selectedCurrency);
       
-      // Reload items for the selected currency
-      const itemsRef = doc(db, 'default', `items_${selectedCurrency.toLowerCase()}`);
-      const itemsSnap = await getDoc(itemsRef);
-      if (itemsSnap.exists()) {
-        setProcessedItems(itemsSnap.data().items);
-      }
+      // Load items with categories using the hook's function
+      const items = await loadItemsForCurrency(selectedCurrency);
+      setProcessedItems(items);
     } catch (err) {
       console.error('Error loading defaults:', err);
       setError('Failed to load default data. Please try again.');
@@ -201,11 +190,14 @@ function BundleSettingsPage() {
     }
   };
 
-  // 2. Update the handleItemSubmit function
+  // Update the handleItemSubmit function
   const handleItemSubmit = useCallback(async (formData) => {
     setIsItemSaving(true);
     try {
       await handleNewItem(formData, selectedCurrency);
+      // Reload items after saving
+      const updatedItems = await loadItemsForCurrency(selectedCurrency);
+      setProcessedItems(updatedItems);
       setShowItemModal(false);
       setEditingItem(null);
     } catch (err) {
@@ -213,7 +205,7 @@ function BundleSettingsPage() {
     } finally {
       setIsItemSaving(false);
     }
-  }, [handleNewItem, setError, selectedCurrency]);
+  }, [handleNewItem, setError, selectedCurrency, loadItemsForCurrency, setProcessedItems]);
 
   // Add missing handlers
   const handleEditItem = useCallback((item) => {
@@ -244,11 +236,14 @@ function BundleSettingsPage() {
     );
   });
 
-  // Add handleItemDelete function
+  // Update handleItemDelete function
   const handleItemDelete = useCallback(async (itemId) => {
     setIsItemSaving(true);
     try {
       await handleDeleteItem(itemId);
+      // Reload items for current currency after deletion
+      const updatedItems = await loadItemsForCurrency(selectedCurrency);
+      setProcessedItems(updatedItems);
       setShowItemModal(false);
       setEditingItem(null);
     } catch (err) {
@@ -257,7 +252,7 @@ function BundleSettingsPage() {
     } finally {
       setIsItemSaving(false);
     }
-  }, [handleDeleteItem, setError]);
+  }, [handleDeleteItem, setError, loadItemsForCurrency, selectedCurrency, setProcessedItems]);
 
   return (
     <div className="flex flex-col md:flex-row min-h-screen bg-gray-50">

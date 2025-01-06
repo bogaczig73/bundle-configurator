@@ -117,8 +117,6 @@ export const formatPrice = (price, currency = 'CZK') => {
     minimumFractionDigits: 0,
     maximumFractionDigits: 0,
   });
-  console.log(price);
-  console.log(currency);
   return formatter.format(price);
 };
 

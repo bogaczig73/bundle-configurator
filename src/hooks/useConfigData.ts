@@ -442,23 +442,39 @@ export function useConfigData(bundleId: string | null = null, configId: string |
         await setDoc(categoriesRef, { categories: updatedCategories });
         
         // Also update items that were in this category to have no category
-        const itemsRef = doc(db, 'default', 'items');
-        const itemsSnap = await getDoc(itemsRef);
-        const currentItems = itemsSnap.data()?.items || [];
-        
-        const updatedItems = currentItems.map((item: ItemData) => 
-          item.categoryId === itemId ? { ...item, categoryId: null } : item
-        );
-        
-        await setDoc(itemsRef, { items: updatedItems });
+        // We need to update items in all currency collections
+        const currencies = ['czk', 'eur', 'usd'];
+        await Promise.all(currencies.map(async (currency) => {
+          const itemsRef = doc(db, 'default', `items_${currency}`);
+          const itemsSnap = await getDoc(itemsRef);
+          if (itemsSnap.exists()) {
+            const currentItems = itemsSnap.data()?.items || [];
+            const updatedItems = currentItems.map((item: ItemData) => 
+              item.categoryId === itemId ? { ...item, categoryId: null } : item
+            );
+            await setDoc(itemsRef, { 
+              items: updatedItems,
+              currency: currency.toUpperCase(),
+              updatedAt: serverTimestamp()
+            });
+          }
+        }));
       } else {
-        // Delete item
-        const itemsRef = doc(db, 'default', 'items');
-        const itemsSnap = await getDoc(itemsRef);
-        const currentItems = itemsSnap.data()?.items || [];
-
-        const updatedItems = currentItems.filter((item: ItemData) => item.id !== itemId);
-        await setDoc(itemsRef, { items: updatedItems });
+        // Delete item from all currency collections
+        const currencies = ['czk', 'eur', 'usd'];
+        await Promise.all(currencies.map(async (currency) => {
+          const itemsRef = doc(db, 'default', `items_${currency}`);
+          const itemsSnap = await getDoc(itemsRef);
+          if (itemsSnap.exists()) {
+            const currentItems = itemsSnap.data()?.items || [];
+            const updatedItems = currentItems.filter((item: ItemData) => item.id !== itemId);
+            await setDoc(itemsRef, { 
+              items: updatedItems,
+              currency: currency.toUpperCase(),
+              updatedAt: serverTimestamp()
+            });
+          }
+        }));
       }
 
       await fetchData();
