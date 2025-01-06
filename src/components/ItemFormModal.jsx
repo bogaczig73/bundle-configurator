@@ -111,7 +111,6 @@ function ItemFormModal({ show, onClose, onSubmit, onDelete, items, packages, edi
       discountType: formData.discountType
     };
     
-    console.log('Modal submitting:', submitData);
     onSubmit(submitData);
   };
 

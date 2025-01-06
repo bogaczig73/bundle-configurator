@@ -302,8 +302,6 @@ export function useConfigData(bundleId: string | null = null, configId: string |
   }, [setLoading, setError]);
 
   const handleNewItem = useCallback(async (formData: NewItemFormData) => {
-    console.log('Submitting form data:', formData);
-    
     try {
       if (formData.type === 'category') {
         // Handle category
@@ -382,12 +380,37 @@ export function useConfigData(bundleId: string | null = null, configId: string |
 
   const handleDeleteItem = useCallback(async (itemId: number) => {
     try {
-      const itemsRef = doc(db, 'default', 'items');
-      const itemsSnap = await getDoc(itemsRef);
-      const currentItems = itemsSnap.data()?.items || [];
+      // First check if it's a category
+      const categoriesRef = doc(db, 'default', 'categories');
+      const categoriesSnap = await getDoc(categoriesRef);
+      const currentCategories = categoriesSnap.data()?.categories || [];
+      
+      const isCategory = currentCategories.some((cat: Category) => cat.id === itemId);
+      
+      if (isCategory) {
+        // Delete category
+        const updatedCategories = currentCategories.filter((cat: Category) => cat.id !== itemId);
+        await setDoc(categoriesRef, { categories: updatedCategories });
+        
+        // Also update items that were in this category to have no category
+        const itemsRef = doc(db, 'default', 'items');
+        const itemsSnap = await getDoc(itemsRef);
+        const currentItems = itemsSnap.data()?.items || [];
+        
+        const updatedItems = currentItems.map((item: ItemData) => 
+          item.categoryId === itemId ? { ...item, categoryId: null } : item
+        );
+        
+        await setDoc(itemsRef, { items: updatedItems });
+      } else {
+        // Delete item
+        const itemsRef = doc(db, 'default', 'items');
+        const itemsSnap = await getDoc(itemsRef);
+        const currentItems = itemsSnap.data()?.items || [];
 
-      const updatedItems = currentItems.filter((item: ItemData) => item.id !== itemId);
-      await setDoc(itemsRef, { items: updatedItems });
+        const updatedItems = currentItems.filter((item: ItemData) => item.id !== itemId);
+        await setDoc(itemsRef, { items: updatedItems });
+      }
 
       await fetchData();
     } catch (error) {
