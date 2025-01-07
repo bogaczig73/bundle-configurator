@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react';
 import { createUser, getUsers, deleteUser } from '../api/users';
 import { Link } from 'react-router-dom';
 import Sidebar from '../components/Sidebar';
+import { auth } from '../firebase';
+import { sendPasswordResetEmail } from 'firebase/auth';
 
 function UserManagementPage() {
   const [users, setUsers] = useState([]);
@@ -93,6 +95,21 @@ function UserManagementPage() {
     } catch (err) {
       console.error('Error deleting user:', err);
       setError(err.message || 'Failed to delete user');
+    }
+  };
+
+  const handleResetPassword = async (email) => {
+    if (!window.confirm('Opravdu chcete odeslat email pro reset hesla tomuto uživateli?')) {
+      return;
+    }
+    
+    setError('');
+    try {
+      await sendPasswordResetEmail(auth, email);
+      setSuccess('Email pro reset hesla byl odeslán');
+    } catch (err) {
+      console.error('Error resetting password:', err);
+      setError(err.message || 'Failed to send password reset email');
     }
   };
 
@@ -217,7 +234,7 @@ function UserManagementPage() {
                     <th className="w-1/4 px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Uživatel</th>
                     <th className="w-1/3 px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
                     <th className="w-1/6 px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Role</th>
-                    <th className="w-1/6 px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Akce</th>
+                    <th className="w-1/4 px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Akce</th>
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
@@ -234,7 +251,13 @@ function UserManagementPage() {
                           {user.role}
                         </span>
                       </td>
-                      <td className="w-1/6 px-6 py-4 whitespace-nowrap text-sm">
+                      <td className="w-1/4 px-6 py-4 whitespace-nowrap text-sm space-x-2">
+                        <button
+                          onClick={() => handleResetPassword(user.email)}
+                          className="text-blue-600 hover:text-blue-800 font-medium"
+                        >
+                          Reset hesla
+                        </button>
                         <button
                           onClick={() => handleDeleteUser(user.id)}
                           className="text-red-600 hover:text-red-800 font-medium"
@@ -261,7 +284,7 @@ function UserManagementPage() {
                     <th className="w-1/4 px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Uživatel</th>
                     <th className="w-1/3 px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
                     <th className="w-1/6 px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Role</th>
-                    <th className="w-1/6 px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Akce</th>
+                    <th className="w-1/4 px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Akce</th>
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
@@ -278,7 +301,13 @@ function UserManagementPage() {
                           {user.role}
                         </span>
                       </td>
-                      <td className="w-1/6 px-6 py-4 whitespace-nowrap text-sm">
+                      <td className="w-1/4 px-6 py-4 whitespace-nowrap text-sm space-x-2">
+                        <button
+                          onClick={() => handleResetPassword(user.email)}
+                          className="text-blue-600 hover:text-blue-800 font-medium"
+                        >
+                          Reset hesla
+                        </button>
                         <button
                           onClick={() => handleDeleteUser(user.id)}
                           className="text-red-600 hover:text-red-800 font-medium"
@@ -306,7 +335,7 @@ function UserManagementPage() {
                     <th className="w-1/4 px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
                     <th className="w-1/4 px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Společnost</th>
                     <th className="w-1/6 px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Role</th>
-                    <th className="w-1/6 px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Akce</th>
+                    <th className="w-1/4 px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Akce</th>
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
@@ -326,7 +355,13 @@ function UserManagementPage() {
                           {user.role}
                         </span>
                       </td>
-                      <td className="w-1/6 px-6 py-4 whitespace-nowrap text-sm">
+                      <td className="w-1/4 px-6 py-4 whitespace-nowrap text-sm space-x-2">
+                        <button
+                          onClick={() => handleResetPassword(user.email)}
+                          className="text-blue-600 hover:text-blue-800 font-medium"
+                        >
+                          Reset hesla
+                        </button>
                         <button
                           onClick={() => handleDeleteUser(user.id)}
                           className="text-red-600 hover:text-red-800 font-medium"

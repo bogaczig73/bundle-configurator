@@ -14,7 +14,6 @@ import { getDefaultItemsForCurrency } from '../data/items';
 const CURRENCIES = [
   { code: 'CZK', symbol: 'Kč', name: 'Czech Koruna' },
   { code: 'EUR', symbol: '€', name: 'Euro' },
-  { code: 'USD', symbol: '$', name: 'US Dollar' }
 ];
 
 function ConfiguratorPage() {
@@ -188,7 +187,7 @@ function ConfiguratorPage() {
               <div className="flex items-center gap-4">
                 <div className="flex items-center gap-2">
                   <label htmlFor="currency" className="text-sm font-medium text-gray-700">
-                    Currency:
+                    Měna:
                   </label>
                   <select
                     id="currency"
@@ -203,7 +202,7 @@ function ConfiguratorPage() {
                     ))}
                   </select>
                 </div>
-                <div className="flex items-center space-x-2">
+                {/* <div className="flex items-center space-x-2">
                   <label className="text-sm text-gray-600">Globální sleva (%)</label>
                   <input
                     type="number"
@@ -213,7 +212,7 @@ function ConfiguratorPage() {
                     onChange={(e) => setGlobalDiscount(Math.min(100, Math.max(0, Number(e.target.value))))}
                     className="w-20 px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
                   />
-                </div>
+                </div> */}
                 <button
                   onClick={() => setIsSettingsModalOpen(true)}
                   className="bg-gray-100 text-gray-700 px-4 py-2 rounded hover:bg-gray-200"

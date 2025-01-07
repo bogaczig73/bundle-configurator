@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { auth } from '../firebase';
-import { signInWithEmailAndPassword } from 'firebase/auth';
+import { signInWithEmailAndPassword, sendPasswordResetEmail } from 'firebase/auth';
 import { useNavigate } from 'react-router-dom';
 import abraLogo from '../images/ABRA_Color_Primary_transparent.png';
 
@@ -8,6 +8,7 @@ function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
@@ -22,6 +23,27 @@ function LoginPage() {
     } catch (err) {
       console.error('Login error:', err);
       setError('Failed to log in. Please check your credentials.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleForgotPassword = async () => {
+    if (!email) {
+      setError('Please enter your email address first');
+      return;
+    }
+    
+    setError('');
+    setSuccess('');
+    setLoading(true);
+    
+    try {
+      await sendPasswordResetEmail(auth, email);
+      setSuccess('Password reset email has been sent. Please check your inbox.');
+    } catch (err) {
+      console.error('Password reset error:', err);
+      setError('Failed to send password reset email. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -46,6 +68,11 @@ function LoginPage() {
             {error && (
               <div className="bg-red-50 border border-red-400 text-red-700 px-4 py-3 rounded relative">
                 {error}
+              </div>
+            )}
+            {success && (
+              <div className="bg-green-50 border border-green-400 text-green-700 px-4 py-3 rounded relative">
+                {success}
               </div>
             )}
             
@@ -95,6 +122,16 @@ function LoginPage() {
               </button>
             </div>
           </form>
+          
+          <div className="mt-4 text-center">
+            <button
+              onClick={handleForgotPassword}
+              disabled={loading}
+              className="text-sm text-blue-600 hover:text-blue-500"
+            >
+              Zapomenuté heslo?
+            </button>
+          </div>
         </div>
       </div>
     </div>

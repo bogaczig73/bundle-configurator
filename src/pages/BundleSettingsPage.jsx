@@ -13,8 +13,7 @@ import ItemFormModal from '../components/ItemFormModal';
 // Available currencies
 const CURRENCIES = [
   { code: 'CZK', symbol: 'Kč', name: 'Czech Koruna' },
-  { code: 'EUR', symbol: '€', name: 'Euro' },
-  { code: 'USD', symbol: '$', name: 'US Dollar' }
+  { code: 'EUR', symbol: '€', name: 'Euro' }
 ];
 
 function BundleSettingsPage() {
@@ -268,7 +267,7 @@ function BundleSettingsPage() {
               <div className="flex items-center gap-4">
                 <div className="flex items-center gap-2">
                   <label htmlFor="currency" className="text-sm font-medium text-gray-700">
-                    Currency:
+                    Měna:
                   </label>
                   <select
                     id="currency"
