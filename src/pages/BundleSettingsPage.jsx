@@ -9,12 +9,8 @@ import { getDefaultItemsForCurrency } from '../data/items';
 import { defaultCategories } from '../data/categories';
 import { defaultPackages } from '../data/packages';
 import ItemFormModal from '../components/ItemFormModal';
-
-// Available currencies
-const CURRENCIES = [
-  { code: 'CZK', symbol: 'Kč', name: 'Czech Koruna' },
-  { code: 'EUR', symbol: '€', name: 'Euro' }
-];
+import { CURRENCIES } from '../hooks/useConfigData';
+import { useTableStyles } from '../components/Table/useTableStyles';
 
 function BundleSettingsPage() {
   const { userId } = useParams();
@@ -266,14 +262,14 @@ function BundleSettingsPage() {
               </h1>
               <div className="flex items-center gap-4">
                 <div className="flex items-center gap-2">
-                  <label htmlFor="currency" className="text-sm font-medium text-gray-700">
-                    Měna:
+                  <label htmlFor="currency" className="text-sm font-medium text-gray-700 w-full">
+                    Jazyk balíčku:
                   </label>
                   <select
                     id="currency"
                     value={selectedCurrency}
                     onChange={(e) => setSelectedCurrency(e.target.value)}
-                    className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                    className={useTableStyles().currencySelect}
                   >
                     {CURRENCIES.map(currency => (
                       <option key={currency.code} value={currency.code}>

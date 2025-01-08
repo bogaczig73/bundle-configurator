@@ -54,6 +54,7 @@ export const useTableStyles = (exporting = false) => ({
     priceNote: "text-xs text-gray-500",
     itemRow: "hover:bg-gray-50/70 transition-colors duration-150",
     activeBundle: "!text-white !font-bold",
+    currencySelect: "block w-full rounded-md min-w-[150px] border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm",
 
     // Add new accordion-related styles
     accordionWrapper: "flex items-center gap-2 w-full",

@@ -9,12 +9,15 @@ import { usePersistedSettings } from '../hooks/usePersistedSettings';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '../firebase';
 import { getDefaultItemsForCurrency } from '../data/items';
+import { CURRENCIES } from '../hooks/useConfigData';
+import { useTableStyles } from '../components/Table/useTableStyles';
 
-// Available currencies
-const CURRENCIES = [
-  { code: 'CZK', symbol: 'Kč', name: 'Czech Koruna' },
-  { code: 'EUR', symbol: '€', name: 'Euro' },
-];
+
+// // Available currencies
+// const CURRENCIES = [
+//   { code: 'CZK', symbol: 'Kč', name: 'Český' },
+//   { code: 'EUR', symbol: '€', name: 'Slovenský' },
+// ];
 
 function ConfiguratorPage() {
   const { bundleId } = useParams();
@@ -186,14 +189,14 @@ function ConfiguratorPage() {
               </h1>
               <div className="flex items-center gap-4">
                 <div className="flex items-center gap-2">
-                  <label htmlFor="currency" className="text-sm font-medium text-gray-700">
-                    Měna:
+                  <label htmlFor="currency" className="text-sm font-medium text-gray-700 w-full">
+                    Jazyk balíčku:
                   </label>
                   <select
                     id="currency"
                     value={selectedCurrency}
                     onChange={(e) => setSelectedCurrency(e.target.value)}
-                    className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                    className={useTableStyles().currencySelect}
                   >
                     {CURRENCIES.map(currency => (
                       <option key={currency.code} value={currency.code}>

@@ -86,6 +86,12 @@ interface NewItemFormData {
   note?: string;
 }
 
+
+export const CURRENCIES = [
+  { code: 'CZK', symbol: 'Kč', name: 'Český' },
+  { code: 'EUR', symbol: '€', name: 'Slovenský' },
+];
+
 // Helper function to clean objects before saving to Firestore
 const cleanObject = (obj: any): any => {
   if (Array.isArray(obj)) {

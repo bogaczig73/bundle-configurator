@@ -23,7 +23,7 @@ function ActionButtons({ userId, loading, onSave, onExport, onImport, onReset })
       ) : (
         <>
           <button onClick={onSave} className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded">
-            Save Changes
+            Uložit změny
           </button>
         </>
       )}
