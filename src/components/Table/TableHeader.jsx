@@ -33,7 +33,7 @@ export function TableHeader({
         <thead>
           <tr>
             {enableRowSelection && (
-              <th className={`${tableStyles.headerCell} w-10`}>
+              <th className={`${tableStyles.headerCell} w-10`} data-selector-column>
                 <div className={tableStyles.centerWrapper}>
                   Výběr
                 </div>

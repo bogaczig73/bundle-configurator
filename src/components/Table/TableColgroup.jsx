@@ -10,7 +10,7 @@ export function TableColgroup({
   return (
     <colgroup>
       {enableRowSelection && (
-        <col className="w-10" />
+        <col className="w-10" data-selector-column />
       )}
       <col className={tableStyles.columnWidths.details} />
       <col className={tableStyles.columnWidths.amount} />

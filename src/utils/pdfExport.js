@@ -33,20 +33,17 @@ export const generateCanvas = async (printRef) => {
     // Store and show normal rows
     normalRows.forEach(row => {
       rowStates.set(row, row.style.display);
-      row.style.display = 'table-row';
     });
 
     // Store and show accordion rows
     accordionRows.forEach(row => {
       rowStates.set(row, row.style.display);
-      row.style.display = 'table-row';
       // Find and show related content
       const itemId = row.getAttribute('data-item-id');
       if (itemId) {
         const relatedContent = element.querySelectorAll(`[data-parent-id="${itemId}"]`);
         relatedContent.forEach(content => {
           rowStates.set(content, content.style.display);
-          content.style.display = 'table-row';
         });
       }
     });
@@ -54,7 +51,6 @@ export const generateCanvas = async (printRef) => {
     // Store and show category rows
     categoryRows.forEach(row => {
       rowStates.set(row, row.style.display);
-      row.style.display = 'table-row';
     });
 
     // Force layout recalculation
@@ -86,28 +82,41 @@ export const generateCanvas = async (printRef) => {
           clonedElement.style.position = 'relative';
           clonedElement.style.transform = 'none';
           
-          // Make sure all rows are visible in the clone
+          // Make sure table is properly displayed
           const clonedTable = clonedElement.querySelector('table');
           if (clonedTable) {
             clonedTable.style.display = 'table';
             clonedTable.style.width = '100%';
             
-            // Show all types of rows in the clone
-            clonedTable.querySelectorAll('tr, [data-accordion-row="true"], [data-category-row="true"], [data-parent-id]').forEach(row => {
-              row.style.display = 'table-row';
-              row.style.visibility = 'visible';
-              row.style.height = 'auto';
-              row.style.opacity = '1';
+            // Add style to hide selector column in cloned document
+            const style = clonedDoc.createElement('style');
+            style.textContent = `
+              [data-selector-column] {
+                display: none !important;
+                width: 0 !important;
+                padding: 0 !important;
+                margin: 0 !important;
+                border: none !important;
+              }
+            `;
+            clonedDoc.head.appendChild(style);
+            
+            // Preserve visibility states from original
+            const originalRows = element.querySelectorAll('tr');
+            const clonedRows = clonedTable.querySelectorAll('tr');
+            
+            clonedRows.forEach((row, index) => {
+              const originalRow = originalRows[index];
+              if (originalRow) {
+                row.style.display = originalRow.style.display;
+                row.style.visibility = originalRow.style.display === 'none' ? 'hidden' : 'visible';
+                row.style.height = originalRow.style.display === 'none' ? '0' : 'auto';
+              }
             });
           }
         }
         return Promise.resolve();
       }
-    });
-
-    // Restore original display states
-    rowStates.forEach((display, element) => {
-      element.style.display = display;
     });
 
     return canvas;
@@ -119,49 +128,65 @@ export const generateCanvas = async (printRef) => {
 
 export const handleExportSetup = async (printRef, showFixace, amounts, enableRowSelection, selectedRows) => {
   if (enableRowSelection && Object.keys(selectedRows).length > 0) {
-    const tableRows = document.querySelectorAll('[data-accordion-row="true"], [data-category-row="true"]');
-    
-    // First pass: Hide unselected items
-    tableRows.forEach(row => {
+    const container = printRef.current;
+    if (!container) return;
+
+    // Get all rows including nested ones
+    const allRows = container.querySelectorAll('tr[data-accordion-row="true"], tr[data-category-row="true"], tr[data-parent-id]');
+    const categoryVisibility = new Map();
+
+    // First pass: Hide unselected items and their sub-items
+    allRows.forEach(row => {
       const itemId = row.getAttribute('data-item-id');
+      const parentId = row.getAttribute('data-parent-id');
       const isCategory = row.getAttribute('data-category-row') === 'true';
       
-      if (!isCategory && !selectedRows[itemId]) {
-        row.style.display = 'none';
-      }
-    });
-
-    // Second pass: Hide categories with no visible items
-    tableRows.forEach(row => {
-      const isCategory = row.getAttribute('data-category-row') === 'true';
-      if (isCategory) {
-        let nextRow = row.nextElementSibling;
-        const nextRows = [];
-        
-        while (nextRow && nextRow.getAttribute('data-category-row') !== 'true') {
-          nextRows.push(nextRow);
-          nextRow = nextRow.nextElementSibling;
+      if (!isCategory) {
+        // For main items
+        if (!parentId && !selectedRows[itemId]) {
+          row.style.display = 'none';
+          // Hide all sub-items of this item
+          const subItems = container.querySelectorAll(`tr[data-parent-id="${itemId}"]`);
+          subItems.forEach(subItem => {
+            subItem.style.display = 'none';
+          });
         }
-
-        const allHidden = nextRows.every(row => row.style.display === 'none');
-        if (allHidden) {
+        // For sub-items, hide if parent is not selected
+        else if (parentId && !selectedRows[parentId]) {
           row.style.display = 'none';
         }
       }
     });
-  }
 
-  if (showFixace) {
-    const tableRows = document.querySelectorAll('[data-accordion-row="true"]');
-    tableRows.forEach(row => {
-      const itemId = row.getAttribute('data-item-id');
-      if (amounts.amounts[itemId] > 0) {
-        row.click(); // Trigger click to expand
+    // Second pass: Hide empty categories
+    const categories = container.querySelectorAll('tr[data-category-row="true"]');
+    categories.forEach(category => {
+      let nextRow = category.nextElementSibling;
+      let hasVisibleItems = false;
+
+      // Check all rows until next category or end
+      while (nextRow && !nextRow.getAttribute('data-category-row')) {
+        if (nextRow.style.display !== 'none' && 
+            (nextRow.getAttribute('data-accordion-row') === 'true' || 
+             nextRow.getAttribute('data-parent-id'))) {
+          hasVisibleItems = true;
+          break;
+        }
+        nextRow = nextRow.nextElementSibling;
       }
+
+      if (!hasVisibleItems) {
+        category.style.display = 'none';
+      }
+      
+      categoryVisibility.set(category, hasVisibleItems);
     });
+
+    // Store the visibility state for cleanup
+    container.categoryVisibility = categoryVisibility;
   }
 
-  // Scale up the content for better quality
+  // Add style for hiding selector column
   if (printRef.current) {
     const table = printRef.current.querySelector('table');
     if (table) {
@@ -175,14 +200,43 @@ export const handleExportSetup = async (printRef, showFixace, amounts, enableRow
         cell.style.padding = '1em';
       });
 
+      // Add style tag for hiding selector column
+      const style = document.createElement('style');
+      style.id = 'hide-selector-style';
+      style.textContent = `
+        [data-selector-column] {
+          display: none !important;
+          width: 0 !important;
+          padding: 0 !important;
+          margin: 0 !important;
+          border: none !important;
+        }
+      `;
+      document.head.appendChild(style);
+
       // Store cleanup function
       printRef.current.scaleCleanup = () => {
         table.style.fontSize = originalFontSize;
         table.querySelectorAll('th, td').forEach(cell => {
           cell.style.padding = '';
         });
+        // Remove the style tag
+        const styleTag = document.getElementById('hide-selector-style');
+        if (styleTag) {
+          styleTag.remove();
+        }
       };
     }
+  }
+
+  if (showFixace) {
+    const tableRows = document.querySelectorAll('[data-accordion-row="true"]');
+    tableRows.forEach(row => {
+      const itemId = row.getAttribute('data-item-id');
+      if (amounts.amounts[itemId] > 0) {
+        row.click(); // Trigger click to expand
+      }
+    });
   }
 
   await new Promise(resolve => setTimeout(resolve, 100));
@@ -190,10 +244,19 @@ export const handleExportSetup = async (printRef, showFixace, amounts, enableRow
 
 export const handleExportCleanup = (printRef, showFixace, amounts, enableRowSelection, selectedRows) => {
   if (enableRowSelection && Object.keys(selectedRows).length > 0) {
-    const tableRows = document.querySelectorAll('[data-accordion-row="true"], [data-category-row="true"]');
-    tableRows.forEach(row => {
+    const container = printRef.current;
+    if (!container) return;
+
+    // Restore all rows visibility
+    const allRows = container.querySelectorAll('tr[data-accordion-row="true"], tr[data-category-row="true"], tr[data-parent-id]');
+    allRows.forEach(row => {
       row.style.display = '';
     });
+
+    // Clean up stored category visibility
+    if (container.categoryVisibility) {
+      delete container.categoryVisibility;
+    }
   }
 
   if (showFixace) {
@@ -206,7 +269,7 @@ export const handleExportCleanup = (printRef, showFixace, amounts, enableRowSele
     });
   }
 
-  // Clean up scaling
+  // Clean up scaling and show selector column again
   if (printRef.current && printRef.current.scaleCleanup) {
     printRef.current.scaleCleanup();
     delete printRef.current.scaleCleanup;
@@ -303,7 +366,7 @@ export const exportToA4PDF = async (printRef, selectedConfiguration, setExportSt
   }
 };
 
-export const exportToPDFV2 = (pdfExportComponent, printRef, showFixace, amounts) => {
+export const exportToPDFV2 = (pdfExportComponent, printRef, showFixace, amounts, enableRowSelection, selectedRows) => {
   if (!pdfExportComponent.current) return;
   
   // Store original font family
@@ -322,12 +385,23 @@ export const exportToPDFV2 = (pdfExportComponent, printRef, showFixace, amounts)
       cell.style.fontFamily = '"DejaVu Sans", sans-serif';
     });
 
+    // Store original display states
+    const rowDisplayStates = new Map();
+    const rows = container.querySelectorAll('tr');
+    rows.forEach(row => {
+      rowDisplayStates.set(row, row.style.display);
+    });
+
+    // Apply row selection if enabled
+    if (enableRowSelection && Object.keys(selectedRows).length > 0) {
+      handleExportSetup(printRef, showFixace, amounts, enableRowSelection, selectedRows);
+    }
+
     // Expand all carousels if fixace is enabled
     if (showFixace) {
       const tableRows = container.querySelectorAll('[data-accordion-row="true"]');
       tableRows.forEach(row => {
         const itemId = row.getAttribute('data-item-id');
-        console.log(amounts);
         if (amounts.amounts[itemId] > 0) {
           row.click(); // Trigger click to expand
         }
@@ -343,6 +417,16 @@ export const exportToPDFV2 = (pdfExportComponent, printRef, showFixace, amounts)
       cells.forEach(cell => {
         cell.style.fontFamily = originalCellFonts.get(cell);
       });
+
+      // Clean up row selection if it was applied
+      if (enableRowSelection && Object.keys(selectedRows).length > 0) {
+        handleExportCleanup(printRef, showFixace, amounts, enableRowSelection, selectedRows);
+      } else {
+        // Restore original display states only if row selection wasn't used
+        rows.forEach(row => {
+          row.style.display = rowDisplayStates.get(row);
+        });
+      }
 
       // Collapse carousels back if they were expanded
       if (showFixace) {

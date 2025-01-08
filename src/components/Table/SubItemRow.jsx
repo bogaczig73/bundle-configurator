@@ -99,7 +99,7 @@ export function SubItemRow({
   return (
     <tr className={`${tableStyles.itemRow} bg-gray-50`}>
       {enableRowSelection && (
-        <td className={`${tableStyles.bodyCell} w-10`}>
+        <td className={`${tableStyles.bodyCell} w-10`} data-selector-column>
           <div className={tableStyles.centerWrapper}></div>
         </td>
       )}

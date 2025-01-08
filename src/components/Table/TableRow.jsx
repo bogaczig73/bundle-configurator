@@ -22,7 +22,7 @@ export function TableRow({ item, bundles, amounts, onAmountChange, readonly = fa
       data-category-id={itemInstance.id}
       >
         {enableRowSelection && (
-          <td className={`${tableStyles.bodyCell} w-10`}>
+          <td className={`${tableStyles.bodyCell} w-10`} data-selector-column>
             <div className={tableStyles.centerWrapper}></div>
           </td>
         )}
@@ -101,7 +101,7 @@ export function TableRow({ item, bundles, amounts, onAmountChange, readonly = fa
         data-expanded={isExpanded}
       >
         {enableRowSelection && (
-          <td className={`${tableStyles.bodyCell} w-10`} onClick={(e) => e.stopPropagation()}>
+          <td className={`${tableStyles.bodyCell} w-10`} onClick={(e) => e.stopPropagation()} data-selector-column>
             <div className={tableStyles.centerWrapper}>
               <input
                 type="checkbox"

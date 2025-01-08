@@ -429,15 +429,13 @@ function ViewOffersPage() {
     try {
       setExporting(true);
       setExportStatus('Preparing document...');
-      //await handleExportSetup(printRef, showFixace, amounts, enableRowSelection, selectedRows);
       
-      exportToPDFV2(pdfExportComponent, printRef, showFixace, amounts);
+      exportToPDFV2(pdfExportComponent, printRef, showFixace, amounts, enableRowSelection, selectedRows);
 
     } catch (error) {
       console.error('Error in handleExportToPDFV2:', error);
       setExportStatus(`Error: ${error.message}`);
     } finally {
-      // handleExportCleanup(printRef, showFixace, amounts, enableRowSelection, selectedRows);
       setExporting(false);
       setExportStatus('');
     }
@@ -488,7 +486,7 @@ function ViewOffersPage() {
                 >
                   {exporting ? (
                     <>
-                      <span className="opacity-0">Export to PDF</span>
+                      <span className="opacity-0">Export do PDF</span>
                       <div className="absolute inset-0 flex items-center justify-center">
                         <div className="flex items-center space-x-2">
                           <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
@@ -573,6 +571,7 @@ function ViewOffersPage() {
                     onRowSelect={handleRowSelect}
                     className={exporting ? 'print-scale' : ''}
                     currency={currentCurrency}
+                    
                   />
                 </div>
               </div>
