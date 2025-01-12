@@ -32,6 +32,46 @@ function SettingsModal({ show, onClose, settings, onSettingChange }) {
               </div>
             </div>
 
+            {/* Preselect options - only show when row selection is enabled */}
+            {settings.enableRowSelection && (
+              <div className="ml-6 space-y-3 border-l-2 border-gray-100 pl-4">
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between bg-gray-50 p-3 rounded-lg">
+                    <span className="text-sm text-gray-700">Položky s nenulovým množstvím</span>
+                    <button
+                      onClick={() => onSettingChange('preselectNonZeroPrices', true)}
+                      className="px-3 py-1.5 text-sm bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors flex items-center gap-2"
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                      </svg>
+                      Vybrat
+                    </button>
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <p className="text-sm font-medium text-gray-700 mb-2">Položky zdarma v bundle:</p>
+                    {settings.bundles?.map((bundle, index) => (
+                      <div key={bundle.id} className="flex items-center justify-between bg-gray-50 p-3 rounded-lg">
+                        <div className="flex items-center gap-3">
+                          <input
+                            type="checkbox"
+                            id={`bundle-${bundle.id}`}
+                            checked={settings.selectedBundles?.[bundle.id] || false}
+                            onChange={(e) => onSettingChange('preselectFreeItems', { bundleId: bundle.id, checked: e.target.checked })}
+                            className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                          />
+                          <label htmlFor={`bundle-${bundle.id}`} className="text-sm text-gray-700 cursor-pointer">
+                            {bundle.name}
+                          </label>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
+
             <div className="flex items-center justify-between">
               <label className="text-sm font-medium text-gray-700">
               Zobrazit sloupec: Fixace

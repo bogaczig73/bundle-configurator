@@ -392,6 +392,52 @@ export const exportToPDFV2 = (pdfExportComponent, printRef, showFixace, amounts,
       rowDisplayStates.set(row, row.style.display);
     });
 
+    // Store original selector column states and hide them
+    const selectorElements = container.querySelectorAll('[data-selector-column]');
+    const selectorStates = new Map();
+    selectorElements.forEach(element => {
+      selectorStates.set(element, {
+        display: element.style.display,
+        width: element.style.width,
+        padding: element.style.padding,
+        margin: element.style.margin,
+        border: element.style.border
+      });
+      element.style.display = 'none';
+      element.style.width = '0';
+      element.style.padding = '0';
+      element.style.margin = '0';
+      element.style.border = 'none';
+    });
+
+    // Add style tag for hiding selector column
+    const style = document.createElement('style');
+    style.id = 'hide-selector-style';
+    style.textContent = `
+      [data-selector-column] {
+        display: none !important;
+        width: 0 !important;
+        padding: 0 !important;
+        margin: 0 !important;
+        border: none !important;
+      }
+      col[data-selector-column] {
+        width: 0 !important;
+        visibility: collapse !important;
+      }
+      th[data-selector-column],
+      td[data-selector-column] {
+        display: none !important;
+        width: 0 !important;
+        max-width: 0 !important;
+        padding: 0 !important;
+        margin: 0 !important;
+        border: none !important;
+        visibility: collapse !important;
+      }
+    `;
+    document.head.appendChild(style);
+
     // Apply row selection if enabled
     if (enableRowSelection && Object.keys(selectedRows).length > 0) {
       handleExportSetup(printRef, showFixace, amounts, enableRowSelection, selectedRows);
@@ -426,6 +472,24 @@ export const exportToPDFV2 = (pdfExportComponent, printRef, showFixace, amounts,
         rows.forEach(row => {
           row.style.display = rowDisplayStates.get(row);
         });
+      }
+
+      // Restore selector column states
+      selectorElements.forEach(element => {
+        const originalState = selectorStates.get(element);
+        if (originalState) {
+          element.style.display = originalState.display;
+          element.style.width = originalState.width;
+          element.style.padding = originalState.padding;
+          element.style.margin = originalState.margin;
+          element.style.border = originalState.border;
+        }
+      });
+
+      // Remove the selector column hiding style
+      const styleTag = document.getElementById('hide-selector-style');
+      if (styleTag) {
+        styleTag.remove();
       }
 
       // Collapse carousels back if they were expanded

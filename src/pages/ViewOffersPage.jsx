@@ -271,6 +271,10 @@ function ViewOffersPage() {
   const [selectedRows, setSelectedRows] = useState({});
   const pdfExportComponent = useRef(null);
   const [deleteError, setDeleteError] = useState(null);
+  const [preselectSettings, setPreselectSettings] = useState({
+    preselectNonZeroPrices: false,
+    selectedBundles: {}
+  });
 
   // Filter configurations based on current user
   const filteredConfigurations = useMemo(() => {
@@ -408,6 +412,27 @@ function ViewOffersPage() {
     }));
   };
 
+  // Helper function to determine if an item should remain selected based on other criteria
+  const shouldKeepSelected = (item, selectedBundles) => {
+    // Check if item should be selected due to non-zero amounts
+    if (preselectSettings.preselectNonZeroPrices) {
+      const hasNonZeroAmount = (amounts.amounts[item.id] || 0) > 0 || (amounts.fixace[item.id] || 0) > 0;
+      if (hasNonZeroAmount) return true;
+    }
+    
+    // Check if item should be selected due to being free in any selected bundle
+    for (const [bundleId, isSelected] of Object.entries(selectedBundles)) {
+      if (isSelected) {
+        const bundlePackage = item.packages?.find(pkg => pkg.packageId === bundleId);
+        if (bundlePackage && bundlePackage.selected && bundlePackage.price === 0) {
+          return true;
+        }
+      }
+    }
+    
+    return false;
+  };
+
   // Handle setting change
   const handleSettingChange = (setting, value) => {
     if (setting === 'showIndividualDiscount') {
@@ -418,7 +443,123 @@ function ViewOffersPage() {
       setEnableRowSelection(value);
       if (!value) {
         setSelectedRows({});
+        setPreselectSettings({
+          preselectNonZeroPrices: false,
+          selectedBundles: {}
+        });
       }
+    } else if (setting === 'preselectNonZeroPrices') {
+      const newSelectedRows = { ...selectedRows };
+      const processAllItems = (items) => {
+        items.forEach(item => {
+          if (item.type === 'item') {
+            const hasNonZeroAmount = (amounts.amounts[item.id] || 0) > 0 || (amounts.fixace[item.id] || 0) > 0;
+            if (hasNonZeroAmount) {
+              newSelectedRows[item.id] = true;
+            }
+          }
+          if (item.children && item.children.length > 0) {
+            processAllItems(item.children);
+          }
+        });
+      };
+      
+      processAllItems(processedItems);
+      setSelectedRows(newSelectedRows);
+      
+    } else if (setting === 'preselectFreeItems') {
+      const { bundleId, checked } = value;
+      console.log('Bundle selection changed:', { bundleId, checked });
+      
+      // Update preselect settings
+      const newPreselectSettings = {
+        ...preselectSettings,
+        selectedBundles: {
+          ...preselectSettings.selectedBundles,
+          [bundleId]: checked
+        }
+      };
+      console.log('New preselect settings:', newPreselectSettings);
+      setPreselectSettings(newPreselectSettings);
+
+      // Create a new selection state starting from current selections
+      const newSelectedRows = { ...selectedRows };
+
+      const processAllItems = (items) => {
+        items.forEach(item => {
+          if (item.type === 'item') {
+            let shouldBeSelected = false;
+
+            // Check if item has non-zero amounts (if that setting is enabled)
+            if (newPreselectSettings.preselectNonZeroPrices) {
+              const hasNonZeroAmount = (amounts.amounts[item.id] || 0) > 0 || (amounts.fixace[item.id] || 0) > 0;
+              if (hasNonZeroAmount) {
+                shouldBeSelected = true;
+                console.log(`Item ${item.id} selected due to non-zero amount`);
+              }
+            }
+
+            // Check if item is free in any currently selected bundle
+            const selectedBundleIds = Object.entries(newPreselectSettings.selectedBundles)
+              .filter(([_, isSelected]) => isSelected)
+              .map(([id]) => id);
+
+            console.log('Selected bundle IDs:', selectedBundleIds);
+
+            if (selectedBundleIds.length > 0) {
+              console.log(`Checking item ${item.id}:`, item);
+              
+              // First check if this item is free in the bundle being toggled
+              if (checked) {
+                const bundlePackage = item.packages?.find(pkg => pkg.packageId === bundleId);
+                const isFreeInCurrentBundle = bundlePackage && bundlePackage.selected && bundlePackage.price === 0;
+                if (isFreeInCurrentBundle) {
+                  shouldBeSelected = true;
+                  console.log(`Item ${item.id} is free in newly selected bundle ${bundleId}`);
+                }
+              } else {
+                // If unchecking a bundle, we need to check if the item is still free in any other selected bundle
+                const isFreeInOtherBundle = selectedBundleIds.some(selectedBundleId => {
+                  if (selectedBundleId === bundleId) return false; // Skip the bundle being unchecked
+                  const bundlePackage = item.packages?.find(pkg => pkg.packageId === selectedBundleId);
+                  const isFree = bundlePackage && bundlePackage.selected && bundlePackage.price === 0;
+                  if (isFree) {
+                    console.log(`Item ${item.id} is still free in bundle ${selectedBundleId}`);
+                  }
+                  return isFree;
+                });
+                
+                if (isFreeInOtherBundle) {
+                  shouldBeSelected = true;
+                }
+              }
+            }
+
+            // Update selection state
+            if (checked) {
+              // When checking a bundle, only add selections
+              if (shouldBeSelected) {
+                newSelectedRows[item.id] = true;
+                console.log(`Selected item ${item.id}`);
+              }
+            } else {
+              // When unchecking a bundle, remove selections only if item is not free in any other bundle
+              if (!shouldBeSelected) {
+                delete newSelectedRows[item.id];
+                console.log(`Unselected item ${item.id}`);
+              }
+            }
+          }
+
+          if (item.children && item.children.length > 0) {
+            processAllItems(item.children);
+          }
+        });
+      };
+
+      processAllItems(processedItems);
+      console.log('Final selected rows:', newSelectedRows);
+      setSelectedRows(newSelectedRows);
     }
   };
 
@@ -498,7 +639,7 @@ function ViewOffersPage() {
                       </div>
                     </>
                   ) : (
-                    'Export to PDF'
+                    'Export do PDF'
                   )}
                 </button>
               </div>
@@ -585,7 +726,9 @@ function ViewOffersPage() {
           settings={{ 
             showIndividualDiscount,
             showFixace,
-            enableRowSelection
+            enableRowSelection,
+            bundles: packages,
+            ...preselectSettings
           }}
           onSettingChange={handleSettingChange}
         />
