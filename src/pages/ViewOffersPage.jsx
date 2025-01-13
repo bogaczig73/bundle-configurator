@@ -4,12 +4,13 @@ import { useConfigData } from '../hooks/useConfigData';
 import { BundleTable } from '../components/Table/BundleTable';
 import { useNavigate, useParams } from 'react-router-dom';
 import SettingsModal from '../components/SettingsModal';
+import Modal from '../components/Modal';
 import { usePersistedSettings } from '../hooks/usePersistedSettings';
 import { PDFExport } from '@progress/kendo-react-pdf';
 import '@progress/kendo-theme-default/dist/all.css';
 import '@progress/kendo-font-icons/dist/index.css';
 import { useCurrentUser } from '../api/users';
-import { deleteDoc, doc } from 'firebase/firestore';
+import { deleteDoc, doc, updateDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '../firebase';
 import { 
   getExportFilename,
@@ -50,18 +51,36 @@ const DeleteConfirmationModal = ({ show, onClose, onConfirm, configurationName }
 };
 
 // Bundle Picker Component - made more compact
-const ConfigurationsPicker = ({ configurations, users, selectedConfiguration, onConfigurationSelect, onDeleteConfiguration }) => {
+const ConfigurationsPicker = ({ 
+  configurations, 
+  users, 
+  selectedConfiguration, 
+  onConfigurationSelect, 
+  onDeleteConfiguration,
+  refetchData,
+  setError,
+  updateConfiguration 
+}) => {
   const { user } = useCurrentUser();
   const [selectedCustomer, setSelectedCustomer] = useState('all');
   const navigate = useNavigate();
   const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
   const [configToDelete, setConfigToDelete] = useState(null);
+  const [configToEdit, setConfigToEdit] = useState(null);
+  const [editForm, setEditForm] = useState({
+    name: '',
+    customer: '',
+    isPrivate: false
+  });
   
-  const filteredConfigurations = useMemo(() => {
-    if (user?.role === 'customer') return configurations;
-    if (selectedCustomer === 'all') return configurations;
+  // For non-customer users, allow additional filtering by customer
+  const displayedConfigurations = useMemo(() => {
+    if (user?.role === 'customer' || selectedCustomer === 'all') {
+      return configurations;
+    }
     return configurations.filter(config => config.customer === selectedCustomer);
-  }, [configurations, selectedCustomer, user]);
+  }, [configurations, selectedCustomer, user?.role]);
 
   const customerUsers = useMemo(() => {
     return users.filter(user => user.role === 'customer');
@@ -94,6 +113,34 @@ const ConfigurationsPicker = ({ configurations, users, selectedConfiguration, on
     }
   };
 
+  const handleEditClick = (e, configuration) => {
+    e.stopPropagation(); // Prevent card selection when clicking edit
+    setConfigToEdit(configuration);
+    setEditForm({
+      name: configuration.name,
+      customer: configuration.customer,
+      isPrivate: configuration.isPrivate || false
+    });
+    setShowEditModal(true);
+  };
+
+  const handleEditSave = async () => {
+    if (!configToEdit) return;
+
+    try {
+      await updateConfiguration(configToEdit.id, {
+        name: editForm.name,
+        customerId: editForm.customer,
+        isPrivate: editForm.isPrivate
+      });
+      setShowEditModal(false);
+      setConfigToEdit(null);
+    } catch (error) {
+      console.error('Error updating configuration:', error);
+      setError('Failed to update configuration');
+    }
+  };
+
   return (
     <div className="px-8 py-4 bg-white border-b">
       {user?.role !== 'customer' && (
@@ -113,9 +160,9 @@ const ConfigurationsPicker = ({ configurations, users, selectedConfiguration, on
         </div>
       )}
       
-      {filteredConfigurations.length > 0 ? (
+      {displayedConfigurations.length > 0 ? (
         <div className="flex space-x-2 overflow-x-auto">
-          {filteredConfigurations.map((configuration) => (
+          {displayedConfigurations.map((configuration) => (
             <div
               key={configuration.id}
               onClick={() => onConfigurationSelect(configuration)}
@@ -125,30 +172,52 @@ const ConfigurationsPicker = ({ configurations, users, selectedConfiguration, on
                   : 'border-gray-200 hover:bg-gray-50'
               }`}
             >
-              <div className="font-medium text-sm">
-                {configuration.name}
+              {/* Action buttons - only show for non-customer users */}
+              {user?.role !== 'customer' && (
+                <div className={`absolute top-2 right-2 flex gap-2 transition-opacity z-10 ${
+                  selectedConfiguration?.id === configuration.id ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
+                }`}>
+                  <button
+                    onClick={(e) => handleEditClick(e, configuration)}
+                    className="p-1 text-gray-400 hover:text-[#e1007b] transition-colors bg-white rounded-full shadow-sm"
+                    title="Upravit konfiguraci"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                    </svg>
+                  </button>
+                  <button
+                    onClick={(e) => handleDeleteClick(e, configuration)}
+                    className="p-1 text-gray-400 hover:text-red-500 transition-colors bg-white rounded-full shadow-sm"
+                    title="Smazat konfiguraci"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                    </svg>
+                  </button>
+                </div>
+              )}
+              <div className="pr-16">
+                <div className="font-medium text-sm flex items-center gap-2">
+                  {configuration.isPrivate && (
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 flex-shrink-0 text-[#e1007b]" viewBox="0 0 20 20" fill="currentColor">
+                      <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
+                    </svg>
+                  )}
+                  <span className="truncate">{configuration.name}</span>
+                </div>
+                <div className="text-xs text-gray-500 mt-1 truncate">
+                 {users.find(user => user.id === configuration.customer)?.username || 'Unknown customer'}
+                </div>
+                <div className="mt-1 flex justify-between items-center">
+                  <span className="text-xs text-gray-500">
+                    {formatDate(configuration.createdAt)}
+                  </span>
+                  <span className="text-xs font-medium text-gray-700 bg-gray-100 px-2 py-0.5 rounded">
+                    {configuration.currency || 'CZK'}
+                  </span>
+                </div>
               </div>
-              <div className="text-xs text-gray-500 mt-1">
-               {users.find(user => user.id === configuration.customer)?.username || 'Unknown customer'}
-              </div>
-              <div className="mt-1 flex justify-between items-center">
-                <span className="text-xs text-gray-500">
-                  {formatDate(configuration.createdAt)}
-                </span>
-                <span className="text-xs font-medium text-gray-700 bg-gray-100 px-2 py-0.5 rounded">
-                  {configuration.currency || 'CZK'}
-                </span>
-              </div>
-              {/* Delete button */}
-              <button
-                onClick={(e) => handleDeleteClick(e, configuration)}
-                className="absolute top-2 right-2 p-1 text-gray-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity"
-                title="Smazat konfiguraci"
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                </svg>
-              </button>
             </div>
           ))}
         </div>
@@ -173,6 +242,72 @@ const ConfigurationsPicker = ({ configurations, users, selectedConfiguration, on
         onConfirm={handleDeleteConfirm}
         configurationName={configToDelete?.name}
       />
+
+      {showEditModal && (
+        <Modal onClose={() => {
+          setShowEditModal(false);
+          setConfigToEdit(null);
+        }}>
+          <div className="p-6">
+            <h2 className="text-xl font-bold mb-4">Upravit konfiguraci</h2>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700">Název konfigurace</label>
+                <input
+                  type="text"
+                  value={editForm.name}
+                  onChange={(e) => setEditForm(prev => ({ ...prev, name: e.target.value }))}
+                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700">Zákazník</label>
+                <select
+                  value={editForm.customer}
+                  onChange={(e) => setEditForm(prev => ({ ...prev, customer: e.target.value }))}
+                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                >
+                  <option value="">Vyber zákazníka</option>
+                  {customerUsers.map(customer => (
+                    <option key={customer.id} value={customer.id}>
+                      {customer.username || customer.email || 'Unknown'}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="flex items-center">
+                <input
+                  type="checkbox"
+                  id="editIsPrivate"
+                  checked={editForm.isPrivate}
+                  onChange={(e) => setEditForm(prev => ({ ...prev, isPrivate: e.target.checked }))}
+                  className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                />
+                <label htmlFor="editIsPrivate" className="ml-2 block text-sm text-gray-900">
+                  Soukromá konfigurace
+                </label>
+              </div>
+              <div className="flex justify-end space-x-3">
+                <button
+                  onClick={() => {
+                    setShowEditModal(false);
+                    setConfigToEdit(null);
+                  }}
+                  className="px-4 py-2 border rounded text-gray-600 hover:bg-gray-50"
+                >
+                  Zrušit
+                </button>
+                <button
+                  onClick={handleEditSave}
+                  className="px-4 py-2 bg-[#e1007b] text-white rounded hover:bg-[#c4006c]"
+                >
+                  Uložit změny
+                </button>
+              </div>
+            </div>
+          </div>
+        </Modal>
+      )}
     </div>
   );
 };
@@ -253,7 +388,8 @@ function ViewOffersPage() {
     loadItemsForCurrency,
     setProcessedItems,
     setError,
-    refetchData
+    refetchData,
+    updateConfiguration
   } = useConfigData();
   const { user, loading: userLoading, error: userError } = useCurrentUser();
   const [selectedConfiguration, setSelectedConfiguration] = useState(null);
@@ -284,8 +420,17 @@ function ViewOffersPage() {
     // Filter configurations based on user role
     let filtered = [];
     if (user.role === 'customer') {
-      filtered = configurations.filter(config => config.customer === user.id);
+      // For customers, only show configurations where:
+      // 1. They are the customer
+      // 2. The configuration is not private
+      filtered = configurations.filter(config => 
+        config.customer === user.id && !config.isPrivate
+      );
+    } else if (user.role === 'admin') {
+      // Admin sees all configurations
+      filtered = configurations;
     } else {
+      // Other roles (like sales) see configurations they created
       filtered = configurations.filter(config => config.createdBy === user.id);
     }
     
@@ -653,7 +798,16 @@ function ViewOffersPage() {
           <div className="p-6">
             <div className="flex justify-between items-center">
               <h1 className="text-2xl font-bold text-gray-900">
-                Náhled konfigurací
+                {selectedConfiguration ? (
+                  <div className="flex flex-col">
+                    <span>Náhled konfigurací</span>
+                    <span className="text-lg font-normal text-gray-600 mt-1">
+                      {selectedConfiguration.name}
+                    </span>
+                  </div>
+                ) : (
+                  'Náhled konfigurací'
+                )}
               </h1>
               <div className="flex justify-between items-center space-x-4">
                 <button
@@ -707,6 +861,9 @@ function ViewOffersPage() {
             selectedConfiguration={selectedConfiguration}
             onConfigurationSelect={handleConfigurationSelect}
             onDeleteConfiguration={handleDeleteConfiguration}
+            refetchData={refetchData}
+            setError={setError}
+            updateConfiguration={updateConfiguration}
           />
           
           <div className="flex-1 overflow-auto">

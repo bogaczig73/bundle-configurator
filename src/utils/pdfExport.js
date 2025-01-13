@@ -233,7 +233,7 @@ export const handleExportSetup = async (printRef, showFixace, amounts, enableRow
     const tableRows = document.querySelectorAll('[data-accordion-row="true"]');
     tableRows.forEach(row => {
       const itemId = row.getAttribute('data-item-id');
-      if (amounts.amounts[itemId] > 0) {
+      if (amounts.amounts[itemId] > 0 && !row.classList.contains('expanded')) {
         row.click(); // Trigger click to expand
       }
     });
@@ -263,7 +263,7 @@ export const handleExportCleanup = (printRef, showFixace, amounts, enableRowSele
     const tableRows = document.querySelectorAll('[data-accordion-row="true"]');
     tableRows.forEach(row => {
       const itemId = row.getAttribute('data-item-id');
-      if (amounts.amounts[itemId] > 0) {
+      if (amounts.amounts[itemId] > 0 && row.classList.contains('expanded')) {
         row.click();
       }
     });
@@ -448,7 +448,7 @@ export const exportToPDFV2 = (pdfExportComponent, printRef, showFixace, amounts,
       const tableRows = container.querySelectorAll('[data-accordion-row="true"]');
       tableRows.forEach(row => {
         const itemId = row.getAttribute('data-item-id');
-        if (amounts.amounts[itemId] > 0) {
+        if (amounts.amounts[itemId] > 0 && !row.classList.contains('expanded')) {
           row.click(); // Trigger click to expand
         }
       });
@@ -497,7 +497,7 @@ export const exportToPDFV2 = (pdfExportComponent, printRef, showFixace, amounts,
         const tableRows = container.querySelectorAll('[data-accordion-row="true"]');
         tableRows.forEach(row => {
           const itemId = row.getAttribute('data-item-id');
-          if (amounts.amounts[itemId] > 0) {
+          if (amounts.amounts[itemId] > 0 && row.classList.contains('expanded')) {
             row.click(); // Trigger click to collapse
           }
         });

@@ -19,7 +19,15 @@ function TableHeader({
       id: bundle.id,
       total: calculateBundleTotal(bundle, flattenedItems, amounts)
     }));
-  }, [bundles, flattenedItems, amounts.amounts, amounts.fixace, amounts.discount, amounts.globalDiscount]);
+  }, [
+    bundles, 
+    flattenedItems, 
+    amounts.amounts, 
+    amounts.fixace, 
+    amounts.discount, 
+    amounts.globalDiscount,
+    JSON.stringify(amounts)  // This ensures we catch all nested changes
+  ]);
 
   return (
     <div className="sticky top-0 z-10 bg-white">

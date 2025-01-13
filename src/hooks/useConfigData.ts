@@ -39,6 +39,7 @@ interface UseConfigDataReturn {
   bundleData: any;
   refetchData: () => Promise<void>;
   saveConfiguration: (configData: SaveConfigurationData) => Promise<any>;
+  updateConfiguration: (configId: string, updates: Partial<SaveConfigurationData>) => Promise<void>;
   configurations: Configuration[];
   currentConfig: Configuration | null;
   getConfigurationById: (configId: string) => Promise<Configuration>;
@@ -67,6 +68,7 @@ interface SaveConfigurationData {
   createdBy: string | null;
   currency: string;
   globalDiscount?: number;
+  isPrivate?: boolean;
 }
 
 interface NewItemFormData {
@@ -314,7 +316,8 @@ export function useConfigData(bundleId: string | null = null, configId: string |
         status: configData.status || 'draft',
         items: configData.items,
         currency: configData.currency || 'CZK',
-        globalDiscount: configData.globalDiscount || 0
+        globalDiscount: configData.globalDiscount || 0,
+        isPrivate: configData.isPrivate || false
       };
 
       const docRef = await addDoc(configRef, configurationData);
@@ -597,6 +600,30 @@ export function useConfigData(bundleId: string | null = null, configId: string |
     });
   }, [updateItemInTree]);
 
+  const updateConfiguration = useCallback(async (configId: string, updates: Partial<SaveConfigurationData>) => {
+    setLoading(true);
+    try {
+      const configRef = doc(db, 'configurations', configId);
+      const updatedData = {
+        ...updates,
+        // Convert customerId to customer field if it exists
+        ...(updates.customerId && { customer: updates.customerId }),
+        updatedAt: serverTimestamp()
+      };
+      // Remove customerId from the update as we use customer in the database
+      if ('customerId' in updatedData) {
+        delete updatedData.customerId;
+      }
+      await updateDoc(configRef, updatedData);
+      await fetchData(); // Refresh data after update
+    } catch (error) {
+      console.error('Error updating configuration:', error);
+      throw new Error('Failed to update configuration');
+    } finally {
+      setLoading(false);
+    }
+  }, [fetchData]);
+
   return {
     loading,
     setLoading,
@@ -611,6 +638,7 @@ export function useConfigData(bundleId: string | null = null, configId: string |
     bundleData,
     refetchData: fetchData,
     saveConfiguration,
+    updateConfiguration,
     configurations,
     currentConfig,
     getConfigurationById,

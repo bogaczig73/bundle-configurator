@@ -47,6 +47,7 @@ function ConfiguratorPage() {
   const [showFixace, setShowFixace] = usePersistedSettings('showFixace', false);
   const [globalDiscount, setGlobalDiscount] = useState(0);
   const [selectedCurrency, setSelectedCurrency] = useState('CZK');
+  const [isPrivate, setIsPrivate] = useState(false);
 
   const customers = useMemo(() => {
     return users.filter(user => user.role === 'customer');
@@ -163,7 +164,8 @@ function ConfiguratorPage() {
         status: 'draft',
         createdBy: '',
         globalDiscount: Number(globalDiscount) || 0,
-        currency: selectedCurrency
+        currency: selectedCurrency,
+        isPrivate: isPrivate
       });
       
       setIsModalOpen(false);
@@ -313,6 +315,18 @@ function ConfiguratorPage() {
                       </option>
                     ))}
                   </select>
+                </div>
+                <div className="flex items-center">
+                  <input
+                    type="checkbox"
+                    id="isPrivate"
+                    checked={isPrivate}
+                    onChange={(e) => setIsPrivate(e.target.checked)}
+                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                  />
+                  <label htmlFor="isPrivate" className="ml-2 block text-sm text-gray-900">
+                    Soukromá konfigurace
+                  </label>
                 </div>
                 <div className="flex justify-end space-x-3">
                   <button
