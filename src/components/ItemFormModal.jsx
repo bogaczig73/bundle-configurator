@@ -130,7 +130,7 @@ function ItemFormModal({ show, onClose, onSubmit, onDelete, items, packages, edi
           {/* Basic Information */}
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block mb-1">Name * </label>
+              <label className="block mb-1">Název * </label>
               <input
                 type="text"
                 value={formData.name}
@@ -139,28 +139,28 @@ function ItemFormModal({ show, onClose, onSubmit, onDelete, items, packages, edi
               />
             </div>
             <div>
-            <label className="block mb-1">Parent Category</label>
+            <label className="block mb-1">Kategorie</label>
             <select
               value={formData.categoryId}
               onChange={(e) => setFormData(prev => ({ ...prev, categoryId: e.target.value }))}
               className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
-              <option value="">Root Level</option>
+              <option value="">Hlavní kategorie</option>
               {categories.map(cat => (
                 <option key={cat.id} value={cat.id}>{cat.name}</option>
               ))}
               </select>
             </div>
             <div>
-              <label className="block mb-1">Type</label>
+              <label className="block mb-1">Typ</label>
               <select
                 value={formData.type}
                 onChange={(e) => setFormData(prev => ({ ...prev, type: e.target.value }))}
                 className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
                 disabled={editingItem && editingItem.type === 'item'}
               >
-                <option value="item">Item</option>
-                <option value="category">Category</option>
+                <option value="item">Položka</option>
+                <option value="category">Kategorie</option>
               </select>
             </div>
           </div>
@@ -170,7 +170,7 @@ function ItemFormModal({ show, onClose, onSubmit, onDelete, items, packages, edi
               {/* Item Specific Fields */}
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block mb-1">Note</label>
+                  <label className="block mb-1">Poznámka</label>
                   <input
                     type="text"
                     value={formData.note}
@@ -189,7 +189,7 @@ function ItemFormModal({ show, onClose, onSubmit, onDelete, items, packages, edi
                     onChange={(e) => setFormData(prev => ({ ...prev, checkbox: e.target.checked }))}
                     className="rounded border-gray-300 focus:ring-blue-500"
                   />
-                  Checkbox
+                  Povoleno
                 </label>
                 
                 <label className="flex items-center gap-2">
@@ -199,21 +199,21 @@ function ItemFormModal({ show, onClose, onSubmit, onDelete, items, packages, edi
                     onChange={(e) => setFormData(prev => ({ ...prev, individual: e.target.checked }))}
                     className="rounded border-gray-300 focus:ring-blue-500"
                   />
-                  Individual
+                  Individuální
                 </label>
               </div>
 
               {/* Package Pricing Table */}
               <div className="mt-4">
-                <h3 className="font-semibold mb-2">Package Settings</h3>
+                <h3 className="font-semibold mb-2">Ceny balíků</h3>
                 <div className="border rounded-lg overflow-hidden">
                   <table className="w-full">
                     <thead className="bg-gray-50">
                       <tr>
-                        <th className="px-4 py-2 text-left">Package</th>
-                        <th className="px-4 py-2 text-center">Selected</th>
-                        <th className="px-4 py-2 text-center">Price</th>
-                        <th className="px-4 py-2 text-center">Discounted Amount</th>
+                        <th className="px-4 py-2 text-left">Balík</th>
+                        <th className="px-4 py-2 text-center">Povoleno</th>
+                        <th className="px-4 py-2 text-center">Cena</th>
+                        <th className="px-4 py-2 text-center">Počet v ceně</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y">

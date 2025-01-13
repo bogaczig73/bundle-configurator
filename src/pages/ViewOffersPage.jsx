@@ -410,7 +410,8 @@ function ViewOffersPage() {
   const [deleteError, setDeleteError] = useState(null);
   const [preselectSettings, setPreselectSettings] = useState({
     preselectNonZeroPrices: false,
-    selectedBundles: {}
+    selectedBundles: {},
+    selectedCategories: {}
   });
 
   // Filter configurations based on current user
@@ -638,7 +639,8 @@ function ViewOffersPage() {
         setSelectedRows({});
         setPreselectSettings({
           preselectNonZeroPrices: false,
-          selectedBundles: {}
+          selectedBundles: {},
+          selectedCategories: {}
         });
       }
     } else if (setting === 'preselectNonZeroPrices') {
@@ -752,6 +754,146 @@ function ViewOffersPage() {
 
       processAllItems(processedItems);
       console.log('Final selected rows:', newSelectedRows);
+      setSelectedRows(newSelectedRows);
+    } else if (setting === 'preselectCategory') {
+      const { categoryId, checked } = value;
+      
+      // Update preselect settings
+      const newPreselectSettings = {
+        ...preselectSettings,
+        selectedCategories: {
+          ...preselectSettings.selectedCategories,
+          [categoryId]: checked
+        }
+      };
+      setPreselectSettings(newPreselectSettings);
+
+      // Create a new selection state starting from current selections
+      const newSelectedRows = { ...selectedRows };
+
+      const processAllItems = (items) => {
+        items.forEach(item => {
+          if (item.type === 'item') {
+            let shouldBeSelected = false;
+
+            // Check if item belongs to the selected category
+            if (item.categoryId === categoryId) {
+              shouldBeSelected = checked;
+            }
+
+            // Check if item should remain selected due to other criteria
+            if (!shouldBeSelected && !checked) {
+              // Keep selection if item has non-zero amounts and that setting is enabled
+              if (preselectSettings.preselectNonZeroPrices) {
+                const hasNonZeroAmount = (amounts.amounts[item.id] || 0) > 0 || (amounts.fixace[item.id] || 0) > 0;
+                if (hasNonZeroAmount) {
+                  shouldBeSelected = true;
+                }
+              }
+
+              // Keep selection if item is free in any selected bundle
+              const selectedBundleIds = Object.entries(preselectSettings.selectedBundles)
+                .filter(([_, isSelected]) => isSelected)
+                .map(([id]) => id);
+
+              if (selectedBundleIds.length > 0) {
+                const isFreeInAnyBundle = selectedBundleIds.some(bundleId => {
+                  const bundlePackage = item.packages?.find(pkg => pkg.packageId === bundleId);
+                  return bundlePackage && bundlePackage.selected && bundlePackage.price === 0;
+                });
+                if (isFreeInAnyBundle) {
+                  shouldBeSelected = true;
+                }
+              }
+
+              // Keep selection if item belongs to any other selected category
+              const belongsToOtherSelectedCategory = Object.entries(newPreselectSettings.selectedCategories)
+                .some(([catId, isSelected]) => {
+                  return isSelected && catId !== categoryId.toString() && item.categoryId === parseInt(catId);
+                });
+              if (belongsToOtherSelectedCategory) {
+                shouldBeSelected = true;
+              }
+            }
+
+            // Update selection state
+            if (shouldBeSelected) {
+              newSelectedRows[item.id] = true;
+            } else {
+              delete newSelectedRows[item.id];
+            }
+          }
+
+          if (item.children && item.children.length > 0) {
+            processAllItems(item.children);
+          }
+        });
+      };
+
+      processAllItems(processedItems);
+      setSelectedRows(newSelectedRows);
+    } else if (setting === 'preselectAllCategories') {
+      // Update preselect settings with the new categories state
+      const newPreselectSettings = {
+        ...preselectSettings,
+        selectedCategories: value
+      };
+      setPreselectSettings(newPreselectSettings);
+
+      // Create a new selection state starting from current selections
+      const newSelectedRows = { ...selectedRows };
+
+      const processAllItems = (items) => {
+        items.forEach(item => {
+          if (item.type === 'item') {
+            let shouldBeSelected = false;
+
+            // Check if item belongs to any selected category
+            if (value[item.categoryId]) {
+              shouldBeSelected = true;
+            }
+
+            // Check if item should remain selected due to other criteria
+            if (!shouldBeSelected) {
+              // Keep selection if item has non-zero amounts and that setting is enabled
+              if (preselectSettings.preselectNonZeroPrices) {
+                const hasNonZeroAmount = (amounts.amounts[item.id] || 0) > 0 || (amounts.fixace[item.id] || 0) > 0;
+                if (hasNonZeroAmount) {
+                  shouldBeSelected = true;
+                }
+              }
+
+              // Keep selection if item is free in any selected bundle
+              const selectedBundleIds = Object.entries(preselectSettings.selectedBundles)
+                .filter(([_, isSelected]) => isSelected)
+                .map(([id]) => id);
+
+              if (selectedBundleIds.length > 0) {
+                const isFreeInAnyBundle = selectedBundleIds.some(bundleId => {
+                  const bundlePackage = item.packages?.find(pkg => pkg.packageId === bundleId);
+                  return bundlePackage && bundlePackage.selected && bundlePackage.price === 0;
+                });
+                if (isFreeInAnyBundle) {
+                  shouldBeSelected = true;
+                }
+              }
+            }
+
+            // Update selection state
+            if (shouldBeSelected) {
+              newSelectedRows[item.id] = true;
+            } else {
+              delete newSelectedRows[item.id];
+            }
+          }
+
+          if (item.children && item.children.length > 0) {
+            processAllItems(item.children);
+          }
+        });
+      };
+
+      processAllItems(processedItems);
       setSelectedRows(newSelectedRows);
     }
   };

@@ -1,12 +1,75 @@
 import React from 'react';
 import Modal from './Modal';
+import { defaultCategories } from '../data/categories';
+
+// Helper function to organize categories hierarchically
+const organizeCategories = (categories) => {
+  const categoryMap = new Map();
+  const rootCategories = [];
+
+  // First, create a map of all categories
+  categories.forEach(category => {
+    categoryMap.set(category.id, { ...category, children: [] });
+  });
+
+  // Then, organize them into a tree structure
+  categories.forEach(category => {
+    const categoryWithChildren = categoryMap.get(category.id);
+    if (category.parentId === null) {
+      rootCategories.push(categoryWithChildren);
+    } else {
+      const parent = categoryMap.get(category.parentId);
+      if (parent) {
+        parent.children.push(categoryWithChildren);
+      }
+    }
+  });
+
+  return rootCategories;
+};
+
+// Component to render a category and its children
+const CategoryItem = ({ category, depth = 0, selectedCategories, onSettingChange }) => {
+  return (
+    <>
+      <div 
+        className="flex items-center justify-between bg-gray-50 p-2 rounded-lg"
+        style={{ paddingLeft: `${depth * 1.5 + 0.75}rem` }}
+      >
+        <div className="flex items-center gap-3">
+          <input
+            type="checkbox"
+            id={`category-${category.id}`}
+            checked={selectedCategories?.[category.id] || false}
+            onChange={(e) => onSettingChange('preselectCategory', { categoryId: category.id, checked: e.target.checked })}
+            className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+          />
+          <label htmlFor={`category-${category.id}`} className="text-sm text-gray-700 cursor-pointer">
+            {category.name}
+          </label>
+        </div>
+      </div>
+      {category.children?.map(child => (
+        <CategoryItem
+          key={child.id}
+          category={child}
+          depth={depth + 1}
+          selectedCategories={selectedCategories}
+          onSettingChange={onSettingChange}
+        />
+      ))}
+    </>
+  );
+};
 
 function SettingsModal({ show, onClose, settings, onSettingChange }) {
+  const organizedCategories = React.useMemo(() => organizeCategories(defaultCategories), []);
+
   return (
     show && (
       <Modal onClose={onClose}>
-        <div className="p-6">
-          <h2 className="text-xl font-bold mb-4">Table Settings</h2>
+        <div className="p-6 w-[800px] max-w-[90vw]">
+          <h2 className="text-xl font-bold mb-4">Nastavení tabulky</h2>
           <div className="space-y-4">
             <div className="flex items-center justify-between">
               <label className="text-sm font-medium text-gray-700">
@@ -47,6 +110,36 @@ function SettingsModal({ show, onClose, settings, onSettingChange }) {
                       </svg>
                       Vybrat
                     </button>
+                  </div>
+                  
+                  {/* Category selection */}
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <p className="text-sm font-medium text-gray-700">Vybrat položky podle kategorie:</p>
+                      <button
+                        onClick={() => {
+                          const allSelected = Object.keys(settings.selectedCategories || {}).length === defaultCategories.length;
+                          const newCategories = {};
+                          defaultCategories.forEach(cat => {
+                            newCategories[cat.id] = !allSelected;
+                          });
+                          onSettingChange('preselectAllCategories', newCategories);
+                        }}
+                        className="text-sm text-blue-600 hover:text-blue-700"
+                      >
+                        {Object.keys(settings.selectedCategories || {}).length === defaultCategories.length ? 'Odznačit vše' : 'Vybrat vše'}
+                      </button>
+                    </div>
+                    <div className="max-h-60 overflow-y-auto space-y-1 pr-2">
+                      {organizedCategories.map((category) => (
+                        <CategoryItem
+                          key={category.id}
+                          category={category}
+                          selectedCategories={settings.selectedCategories}
+                          onSettingChange={onSettingChange}
+                        />
+                      ))}
+                    </div>
                   </div>
                   
                   <div className="space-y-2">
