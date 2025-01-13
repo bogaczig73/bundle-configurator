@@ -130,23 +130,11 @@ export class Item implements ItemData {
     const discountedAmount = this.getDiscount(bundleId);
     
     // Calculate fixace part
-    const fixacePrice = basePrice * this._fixaceAmount * (1 - this._fixaceDiscount / 100);
+    const fixacePrice = Math.ceil(basePrice * this._fixaceAmount * (1 - this._fixaceDiscount / 100));
     
     // Calculate over-fixace part (taking into account discounted amount)
     const overAmount = Math.max(0, this._overAmount - discountedAmount);
-    const overPrice = basePrice * overAmount * (1 - this._overDiscount / 100);
-    
-    console.log('Item price calculation:', {
-      id: this.id,
-      basePrice,
-      fixaceAmount: this._fixaceAmount,
-      fixaceDiscount: this._fixaceDiscount,
-      fixacePrice,
-      overAmount,
-      overDiscount: this._overDiscount,
-      overPrice,
-      total: fixacePrice + overPrice
-    });
+    const overPrice = Math.ceil(basePrice * overAmount * (1 - this._overDiscount / 100));
     
     return fixacePrice + overPrice;
   }

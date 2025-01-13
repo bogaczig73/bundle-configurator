@@ -1,18 +1,9 @@
 import React from 'react';
-import { 
-  getItemPrice, 
-  getItemSelected, 
-  getItemDiscount,
-  formatPrice,
-  isBundleActive,
-  isBundleDisabled,
-  roundPrice
-} from '../../utils/tableUtils';
-
+import { roundPrice, formatPrice } from '../../utils/priceUtils';
+import { isBundleDisabled } from '../../utils/bundleUtils';
 import { getColorHex } from './useTableStyles';
 
-
-export function SubItemRow({ 
+export const SubItemRow = ({ 
   content, 
   bundles, 
   amounts, 
@@ -25,7 +16,7 @@ export function SubItemRow({
   readonly = false,
   enableRowSelection = false,
   currency = 'CZK'
-}) {
+}) => {
 
   // Calculate displayed amount based on type
   const getDisplayedAmount = () => {
@@ -61,7 +52,7 @@ export function SubItemRow({
 
   const calculateFinalPrice = (basePrice, type, amounts, parentItem, bundle) => {
     const discountKey = `${parentItem.id}_${type === 'fixace' ? 'fixed_items' : 'over_fixation_items'}`;
-    const discountedAmount = getItemDiscount(parentItem, bundle.id);
+    const discountedAmount = parentItem.getDiscount(bundle.id);
     const discountPercentage = type === 'fixace' ? 
       (amounts.globalDiscount ?? 0) : 
       (amounts.discount?.[discountKey] ?? parentItem.discount ?? 0);
@@ -220,9 +211,9 @@ export function SubItemRow({
             ${isBundleDisabled(bundle, index, amounts.amounts) ? tableStyles.inactiveBundle.cell : ''}
           `}>
             <div className="flex flex-col items-center">
-              {getItemPrice(parentItem, bundle.id) === 0 ? (
+              {bundle.id === 0 ? (
                 <span className="">
-                  {getItemSelected(parentItem, bundle.id) ? (
+                  {parentItem.isSelected(bundle.id) ? (
                     <svg id="Vrstva_1" data-name="Vrstva 1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 80" className={`w-12 h-12 scale-150`}>
                       <path fill={getColorHex(index)} d="m47.54,32.21l.31.44c-1.25.94-2.65,2.4-4.18,4.36s-2.71,3.8-3.52,5.5l-.65.44c-.54.38-.91.65-1.1.83-.08-.28-.24-.73-.5-1.35l-.25-.57c-.35-.82-.68-1.43-.98-1.82-.3-.39-.64-.65-1.02-.78.63-.67,1.21-1,1.74-1,.45,0,.95.61,1.5,1.84l.27.62c.99-1.67,2.26-3.29,3.81-4.87s3.07-2.79,4.55-3.63Z"/>
                     </svg>
@@ -237,7 +228,7 @@ export function SubItemRow({
                   <span className="text-[11px] font-medium italic">
                     {(() => {
                       const priceInfo = calculateFinalPrice(
-                        getItemPrice(parentItem, bundle.id),
+                        bundle.id === 0 ? 0 : parentItem.getPrice(bundle.id),
                         type,
                         amounts,
                         parentItem,
@@ -250,7 +241,7 @@ export function SubItemRow({
                     {parentItem.individual ? 'individuální paušál' : `${formatPrice(getItemPrice(parentItem, bundle.id))} za kus`}
                   </span> */}
                   <span className="text-[10px] text-gray-500 italic">
-                    {(getItemDiscount(parentItem, bundle.id) > 0 && type === 'over') ? ` První ${getItemDiscount(parentItem, bundle.id)} v ceně` : ''}
+                    {(parentItem.getDiscount(bundle.id) > 0 && type === 'over') ? ` První ${parentItem.getDiscount(bundle.id)} v ceně` : ''}
                   </span>
                   {((amounts.discount?.[`${parentItem.id}_${type === 'fixace' ? 'fixed_items' : 'over_fixation_items'}`] ?? parentItem.discount ?? 0) > 0 || (type === 'fixace' && amounts.globalDiscount > 0)) && (
                     <span className="text-[10px] text-gray-500 italic">

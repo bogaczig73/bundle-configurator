@@ -310,14 +310,46 @@ function ViewOffersPage() {
   // Function to handle configuration selection and load correct items
   const handleConfigurationSelect = async (config) => {
     try {
-      // Load items for the configuration's currency
       const currency = config.currency || 'CZK';
+      let newItems = processedItems;
+      
+      // Only load new items if currency changed
       if (currency !== currentCurrency) {
-        const items = await loadItemsForCurrency(currency);
-        setProcessedItems(items);
+        newItems = await loadItemsForCurrency(currency);
+      }
+
+      // Prepare amounts data
+      const configAmounts = {
+        amounts: {},
+        discount: {},
+        fixace: {}
+      };
+
+      // Process configuration items
+      if (config.items) {
+        Object.entries(config.items).forEach(([itemId, itemData]) => {
+          configAmounts.amounts[itemId] = itemData.amount || 0;
+          configAmounts.fixace[itemId] = itemData.fixace || 0;
+          if (itemData.discount) configAmounts.discount[itemId] = itemData.discount;
+          if (itemData.subItemDiscounts) {
+            if (itemData.subItemDiscounts.fixace) {
+              configAmounts.discount[`${itemId}_fixed_items`] = itemData.subItemDiscounts.fixace;
+            }
+            if (itemData.subItemDiscounts.over) {
+              configAmounts.discount[`${itemId}_over_fixation_items`] = itemData.subItemDiscounts.over;
+            }
+          }
+        });
+      }
+
+      // Batch all state updates
+      if (currency !== currentCurrency) {
+        setProcessedItems(newItems);
         setCurrentCurrency(currency);
       }
       setSelectedConfiguration(config);
+      setGlobalDiscount(config.globalDiscount ?? 0);
+      setAmounts(configAmounts);
     } catch (err) {
       setError(err.message);
     }

@@ -1,12 +1,12 @@
 import React from 'react';
-import { getColorHex, abraColors } from './useTableStyles';
+import { getColorHex } from './useTableStyles';
 import { SubItemRow } from './SubItemRow';
 import { useTableStyles } from './useTableStyles';
 import { Item } from '../../types/Item';
-import { formatPrice, roundPrice } from '../../utils/tableUtils';
-import { isBundleActive, isBundleDisabled } from '../../utils/tableUtils';
+import { roundPrice, formatPrice } from '../../utils/priceUtils';
+import { isBundleDisabled } from '../../utils/bundleUtils';
 
-export function TableRow({ item, bundles, amounts, onAmountChange, readonly = false, showIndividualDiscount = false, showFixace = false, enableRowSelection = false, selectedRows = {}, onRowSelect, currency = 'CZK' }) {
+export const TableRow = ({ item, bundles, amounts, onAmountChange, readonly = false, showIndividualDiscount = false, showFixace = false, enableRowSelection = false, selectedRows = {}, onRowSelect, currency = 'CZK' }) => {
   const tableStyles = useTableStyles();
   const [isExpanded, setIsExpanded] = React.useState(false);
   // Convert plain item object to Item instance if it isn't already
@@ -412,11 +412,9 @@ export function TableRow({ item, bundles, amounts, onAmountChange, readonly = fa
                         const totalAmount = amounts.amounts[itemInstance.id] || 0;
                         const overFixaceAmount = Math.max(0, totalAmount - fixedAmount - itemInstance.getDiscount(bundle.id));
                         const overFixacePrice = Math.ceil(roundPrice(baseFixedPrice * overFixaceAmount * (1 - overFixaceDiscount / 100)));
-                        console.log("prices", fixedPrice,overFixacePrice );
                         // Apply final item discount and round
                         const discount = amounts.discount?.[itemInstance.id] ?? itemInstance.discount ?? 0;
                         const finalPrice = Math.ceil(roundPrice((fixedPrice + overFixacePrice) * (1 - discount / 100)));
-                        console.log("finalPrice", finalPrice);
                         return formatPrice(finalPrice, currency);
                       })()
                     ) : (
