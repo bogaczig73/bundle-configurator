@@ -69,12 +69,12 @@ export const calculateBundleTotal = (bundle, items, amounts) => {
     .reduce((total, item) => {
       const amount = amounts?.amounts?.[item.id.toString()] ?? 0;
       const fixaceAmount = amounts?.fixace?.[item.id.toString()] ?? 0;
-      
       // Update item's internal state with amounts and discounts
       item.setAmounts(amount, fixaceAmount);
       item.setDiscounts(
         amounts?.discount?.[`${item.id}_fixed_items`] ?? amounts?.globalDiscount ?? 0,
-        amounts?.discount?.[`${item.id}_over_fixation_items`] ?? item.discount ?? 0
+        amounts?.discount?.[`${item.id}_over_fixation_items`] ?? 0,
+        amounts?.discount?.[`${item.id}`] ?? 0
       );
 
       return total + item.calculateTotalPrice(bundle.id);

@@ -471,11 +471,15 @@ function ViewOffersPage() {
         fixace: {}
       };
 
-      // Process configuration items
+      // Process configuration items and check for fixations
+      let hasFixations = false;
       if (config.items) {
         Object.entries(config.items).forEach(([itemId, itemData]) => {
           configAmounts.amounts[itemId] = itemData.amount || 0;
           configAmounts.fixace[itemId] = itemData.fixace || 0;
+          if (itemData.fixace > 0) {
+            hasFixations = true;
+          }
           if (itemData.discount) configAmounts.discount[itemId] = itemData.discount;
           if (itemData.subItemDiscounts) {
             if (itemData.subItemDiscounts.fixace) {
@@ -486,6 +490,11 @@ function ViewOffersPage() {
             }
           }
         });
+      }
+
+      // If configuration has fixations, automatically enable showFixace
+      if (hasFixations) {
+        setShowFixace(true);
       }
 
       // Batch all state updates
@@ -517,9 +526,14 @@ function ViewOffersPage() {
         setGlobalDiscount(0);
       }
 
+      // Check for fixations while processing items
+      let hasFixations = false;
       Object.entries(selectedConfiguration.items).forEach(([itemId, itemData]) => {
         configAmounts.amounts[itemId] = itemData.amount || 0;
         configAmounts.fixace[itemId] = itemData.fixace || 0;
+        if (itemData.fixace > 0) {
+          hasFixations = true;
+        }
         
         // Handle main item discount
         if (itemData.discount) configAmounts.discount[itemId] = itemData.discount;
@@ -534,6 +548,12 @@ function ViewOffersPage() {
           }
         }
       });
+
+      // If configuration has fixations, automatically enable showFixace
+      if (hasFixations) {
+        setShowFixace(true);
+      }
+
       setAmounts(configAmounts);
     } else {
       setAmounts({

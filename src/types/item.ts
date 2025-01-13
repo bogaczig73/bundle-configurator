@@ -41,7 +41,7 @@ export class Item implements ItemData {
   checkbox: boolean;
   individual: boolean;
   readonly fixace?: number;
-  discount?: number;
+  discount: number;
   children?: Item[];
   depth?: number;
   price?: number;
@@ -69,7 +69,7 @@ export class Item implements ItemData {
     this.checkbox = data.checkbox ?? false;
     this.individual = data.individual ?? false;
     this.fixace = data.fixace;
-    this.discount = data.discount;
+    this.discount = data.discount ?? 0;
     this.children = data.children?.map(child => Item.create(child));
     this.depth = data.depth;
     this.price = data.price;
@@ -84,9 +84,10 @@ export class Item implements ItemData {
     this._overAmount = Math.max(0, totalAmount - fixaceAmount);
   }
 
-  setDiscounts(fixaceDiscount: number, overDiscount: number) {
+  setDiscounts(fixaceDiscount: number, overDiscount: number, individualDiscount: number) {
     this._fixaceDiscount = fixaceDiscount;
     this._overDiscount = overDiscount;
+    this.discount = individualDiscount;
   }
 
   // Getters for internal values
@@ -100,6 +101,10 @@ export class Item implements ItemData {
 
   getFixaceDiscount(): number {
     return this._fixaceDiscount;
+  }
+
+  getIndividualDiscount(): number {
+    return this.discount;
   }
 
   getOverDiscount(): number {
@@ -135,8 +140,9 @@ export class Item implements ItemData {
     // Calculate over-fixace part (taking into account discounted amount)
     const overAmount = Math.max(0, this._overAmount - discountedAmount);
     const overPrice = Math.ceil(basePrice * overAmount * (1 - this._overDiscount / 100));
-    
-    return fixacePrice + overPrice;
+    const individualDiscount = 1-this.getIndividualDiscount()/100;
+    const totalPrice = (fixacePrice + overPrice) * individualDiscount;
+    return totalPrice;
   }
 
   hasIndividualDiscounts(amounts: { discount: Record<string, number> }): boolean {

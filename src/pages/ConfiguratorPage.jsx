@@ -104,13 +104,13 @@ function ConfiguratorPage() {
           newAmounts[field][subItemId] = Number(value);
         }
 
-        // If parent discount changes, reset subitem discounts
-        if (field === 'discount' && !subItemId) {
-          const subitems = ['Fixované položky', 'Položky nad rámec fixace'];
-          subitems.forEach(subitem => {
-            delete newAmounts[field][subitem];
-          });
-        }
+        // // If parent discount changes, reset subitem discounts
+        // if (field === 'discount' && !subItemId) {
+        //   const subitems = ['Fixované položky', 'Položky nad rámec fixace'];
+        //   subitems.forEach(subitem => {
+        //     delete newAmounts[field][subitem];
+        //   });
+        // }
       } else {
         // Handle regular amount changes
         if (!newAmounts[field]) {

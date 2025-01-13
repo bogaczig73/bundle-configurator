@@ -28,12 +28,13 @@ export function useItem(
     const pkg = item.packages.find(p => p.packageId === bundleId);
     const amount = amounts[item.id.toString()] ?? 0;
     const fixaceAmount = item.fixace ?? 0;
-    const fixaceDiscount = discounts[`${item.id}-fixace`] ?? discounts[item.id.toString()] ?? item.discount ?? 0;
-    const overDiscount = discounts[`${item.id}-over`] ?? discounts[item.id.toString()] ?? item.discount ?? 0;
+    const fixaceDiscount = discounts[`${item.id}-fixace`] ?? 0;
+    const overDiscount = discounts[`${item.id}-over`] ?? 0;
+    const individualDiscount = discounts[item.id.toString()] ?? item.discount ?? 0;
 
     // Update item's internal state
     item.setAmounts(amount, fixaceAmount);
-    item.setDiscounts(fixaceDiscount, overDiscount);
+    item.setDiscounts(fixaceDiscount, overDiscount, individualDiscount);
 
     return {
       id: item.id,

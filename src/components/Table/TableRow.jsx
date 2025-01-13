@@ -408,7 +408,7 @@ export const TableRow = ({ item, bundles, amounts, onAmountChange, readonly = fa
                         const fixedPrice = roundPrice(baseFixedPrice * fixedAmount * (1 - (amounts.globalDiscount ?? 0) / 100));
 
                         // Calculate price for items over fixace with its own discount
-                        const overFixaceDiscount = amounts.discount?.[`${itemInstance.id}_over_fixation_items`] ?? itemInstance.discount ?? 0;
+                        const overFixaceDiscount = amounts.discount?.[`${itemInstance.id}_over_fixation_items`] ?? 0;
                         const totalAmount = amounts.amounts[itemInstance.id] || 0;
                         const overFixaceAmount = Math.max(0, totalAmount - fixedAmount - itemInstance.getDiscount(bundle.id));
                         const overFixacePrice = Math.ceil(roundPrice(baseFixedPrice * overFixaceAmount * (1 - overFixaceDiscount / 100)));
@@ -430,7 +430,7 @@ export const TableRow = ({ item, bundles, amounts, onAmountChange, readonly = fa
                     )}
                   </span>
                 )}
-                <span className="text-xs text-gray-500">
+                <span className="text-xs text-gray-500 italic">
                   {itemInstance.getPrice(bundle.id) === 0 ? '' : 
                     itemInstance.individual ? 'individuální paušál' : (
                       <>
@@ -439,11 +439,11 @@ export const TableRow = ({ item, bundles, amounts, onAmountChange, readonly = fa
                     )
                   }
                 </span>
-                <span className="text-xs text-gray-500">
+                <span className="text-xs text-gray-500 italic">
                   {(itemInstance.getDiscount(bundle.id) > 0 ? ` První ${itemInstance.getDiscount(bundle.id)} v ceně` : '')}
                 </span>
                 {((amounts.discount?.[itemInstance.id] ?? itemInstance.discount ?? 0) > 0) && (
-                  <span className="text-xs text-gray-500">
+                  <span className="text-xs text-gray-500 italic">
                     {`Sleva: ${amounts.discount?.[itemInstance.id] ?? itemInstance.discount ?? 0}%`}
                   </span>
                 )}

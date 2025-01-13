@@ -55,7 +55,7 @@ export const SubItemRow = ({
     const discountedAmount = parentItem.getDiscount(bundle.id);
     const discountPercentage = type === 'fixace' ? 
       (amounts.globalDiscount ?? 0) : 
-      (amounts.discount?.[discountKey] ?? parentItem.discount ?? 0);
+      (amounts.discount?.[discountKey] ?? 0);
     
     // Calculate applicable units based on type
     let applicableUnits = 0;
@@ -170,7 +170,7 @@ export const SubItemRow = ({
                       type="text"
                       min={0}
                       max={100}
-                      value={amounts.discount?.[`${parentItem.id}_${type === 'fixace' ? 'fixed_items' : 'over_fixation_items'}`] ?? parentItem.discount ?? 0}
+                      value={amounts.discount?.[`${parentItem.id}_${type === 'fixace' ? 'fixed_items' : 'over_fixation_items'}`] ?? 0}
                       onChange={(e) => {
                         e.stopPropagation();
                         const value = Math.min(100, Math.max(0, Number(e.target.value)));
@@ -243,9 +243,9 @@ export const SubItemRow = ({
                   <span className="text-[10px] text-gray-500 italic">
                     {(parentItem.getDiscount(bundle.id) > 0 && type === 'over') ? ` První ${parentItem.getDiscount(bundle.id)} v ceně` : ''}
                   </span>
-                  {((amounts.discount?.[`${parentItem.id}_${type === 'fixace' ? 'fixed_items' : 'over_fixation_items'}`] ?? parentItem.discount ?? 0) > 0 || (type === 'fixace' && amounts.globalDiscount > 0)) && (
+                  {((amounts.discount?.[`${parentItem.id}_${type === 'fixace' ? 'fixed_items' : 'over_fixation_items'}`] ?? 0) > 0 || (type === 'fixace' && amounts.globalDiscount > 0)) && (
                     <span className="text-[10px] text-gray-500 italic">
-                      {`Sleva: ${type === 'fixace' ? amounts.globalDiscount : (amounts.discount?.[`${parentItem.id}_${type === 'fixace' ? 'fixed_items' : 'over_fixation_items'}`] ?? parentItem.discount ?? 0)}%`}
+                      {`Sleva: ${type === 'fixace' ? amounts.globalDiscount : (amounts.discount?.[`${parentItem.id}_${type === 'fixace' ? 'fixed_items' : 'over_fixation_items'}`] ?? 0)}%`}
                     </span>
                   )}
                 </>
