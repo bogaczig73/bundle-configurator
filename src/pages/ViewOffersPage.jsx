@@ -12,6 +12,7 @@ import '@progress/kendo-font-icons/dist/index.css';
 import { useCurrentUser } from '../api/users';
 import { deleteDoc, doc, updateDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '../firebase';
+import { SummaryTable } from '../components/Table/SummaryTable';
 import { 
   getExportFilename,
   handleExportSetup,
@@ -413,6 +414,7 @@ function ViewOffersPage() {
     selectedBundles: {},
     selectedCategories: {}
   });
+  const [showSummaryTable, setShowSummaryTable] = usePersistedSettings('showSummaryTable', false);
 
   // Filter configurations based on current user
   const filteredConfigurations = useMemo(() => {
@@ -653,6 +655,8 @@ function ViewOffersPage() {
       setShowIndividualDiscount(value);
     } else if (setting === 'showFixace') {
       setShowFixace(value);
+    } else if (setting === 'showSummaryTable') {
+      setShowSummaryTable(value);
     } else if (setting === 'enableRowSelection') {
       setEnableRowSelection(value);
       if (!value) {
@@ -1081,6 +1085,18 @@ function ViewOffersPage() {
                     currency={currentCurrency}
                     globalDiscount={globalDiscount}
                   />
+
+                  {showSummaryTable && (
+                    <SummaryTable
+                      items={processedItems}
+                      amounts={{
+                        ...amounts,
+                        globalDiscount
+                      }}
+                      currency={currentCurrency}
+                      bundles={packages}
+                    />
+                  )}
                 </div>
               </div>
             </PDFExport>
@@ -1093,6 +1109,7 @@ function ViewOffersPage() {
           settings={{ 
             showIndividualDiscount,
             showFixace,
+            showSummaryTable,
             enableRowSelection,
             bundles: packages,
             ...preselectSettings
