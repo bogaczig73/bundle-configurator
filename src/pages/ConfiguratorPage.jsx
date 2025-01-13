@@ -81,6 +81,11 @@ function ConfiguratorPage() {
         discount: {},
         fixace: {}
       });
+
+      // Load global discount if present
+      if (bundleData.globalDiscount !== undefined) {
+        setGlobalDiscount(bundleData.globalDiscount);
+      }
     }
   }, [bundleData]);
 
@@ -93,7 +98,10 @@ function ConfiguratorPage() {
         if (!newAmounts[field]) {
           newAmounts[field] = {};
         }
-        newAmounts[field][subItemId] = Number(value);
+        // Don't set discount for fixed items as they use global discount
+        if (!(field === 'discount' && subItemId.endsWith('fixed_items'))) {
+          newAmounts[field][subItemId] = Number(value);
+        }
 
         // If parent discount changes, reset subitem discounts
         if (field === 'discount' && !subItemId) {
@@ -111,9 +119,6 @@ function ConfiguratorPage() {
         const key = itemId.toString();
         newAmounts[field][key] = Number(value);
       }
-      
-      console.log('Updated amounts:', newAmounts);
-      console.log('newAmounts', newAmounts);
       return newAmounts;
     });
   };
@@ -138,7 +143,6 @@ function ConfiguratorPage() {
             discount: Number(amounts.discount?.[itemId]) || 0,
             fixace: Number(amounts.fixace?.[itemId]) || 0,
             subItemDiscounts: {
-              'fixace': Number(amounts.discount?.[`${itemId}_fixed_items`]) || 0,
               'over': Number(amounts.discount?.[`${itemId}_over_fixation_items`]) || 0
             }
           };
@@ -158,7 +162,7 @@ function ConfiguratorPage() {
         items: validItems,
         status: 'draft',
         createdBy: '',
-        globalDiscount: globalDiscount,
+        globalDiscount: Number(globalDiscount) || 0,
         currency: selectedCurrency
       });
       
@@ -205,9 +209,12 @@ function ConfiguratorPage() {
                     ))}
                   </select>
                 </div>
-                {/* <div className="flex items-center space-x-2">
-                  <label className="text-sm text-gray-600">Globální sleva (%)</label>
+                <div className="flex items-center gap-2">
+                  <label htmlFor="globalDiscount" className="text-sm font-medium text-gray-700">
+                    Globální sleva (%):
+                  </label>
                   <input
+                    id="globalDiscount"
                     type="number"
                     min="0"
                     max="100"
@@ -215,7 +222,7 @@ function ConfiguratorPage() {
                     onChange={(e) => setGlobalDiscount(Math.min(100, Math.max(0, Number(e.target.value))))}
                     className="w-20 px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
                   />
-                </div> */}
+                </div>
                 <button
                   onClick={() => setIsSettingsModalOpen(true)}
                   className="bg-gray-100 text-gray-700 px-4 py-2 rounded hover:bg-gray-200"
@@ -266,10 +273,11 @@ function ConfiguratorPage() {
                 })}
                 items={processedItems || []}
                 onAmountChange={handleAmountChange}
-                amounts={{...amounts, globalDiscount}}
+                amounts={amounts}
                 showIndividualDiscount={showIndividualDiscount}
                 showFixace={showFixace}
                 currency={selectedCurrency}
+                globalDiscount={globalDiscount}
               />
               
             </div>

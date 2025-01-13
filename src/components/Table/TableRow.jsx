@@ -3,7 +3,7 @@ import { getColorHex, abraColors } from './useTableStyles';
 import { SubItemRow } from './SubItemRow';
 import { useTableStyles } from './useTableStyles';
 import { Item } from '../../types/Item';
-import { formatPrice } from '../../utils/tableUtils';
+import { formatPrice, roundPrice } from '../../utils/tableUtils';
 import { isBundleActive, isBundleDisabled } from '../../utils/tableUtils';
 
 export function TableRow({ item, bundles, amounts, onAmountChange, readonly = false, showIndividualDiscount = false, showFixace = false, enableRowSelection = false, selectedRows = {}, onRowSelect, currency = 'CZK' }) {
@@ -402,20 +402,22 @@ export function TableRow({ item, bundles, amounts, onAmountChange, readonly = fa
                   <span className="text-xs font-medium">
                     {showFixace ? (
                       (() => {
-                        // Calculate price for fixed items with its own discount
-                        const fixedDiscount = amounts.discount?.[`${itemInstance.id}_fixed_items`] ?? itemInstance.discount ?? 0;
+                        // Calculate price for fixed items with global discount
                         const fixedAmount = amounts.fixace[itemInstance.id] || 0;
                         const baseFixedPrice = itemInstance.getPrice(bundle.id);
-                        const fixedPrice = baseFixedPrice * fixedAmount * (1 - fixedDiscount / 100);
+                        const fixedPrice = roundPrice(baseFixedPrice * fixedAmount * (1 - (amounts.globalDiscount ?? 0) / 100));
 
                         // Calculate price for items over fixace with its own discount
                         const overFixaceDiscount = amounts.discount?.[`${itemInstance.id}_over_fixation_items`] ?? itemInstance.discount ?? 0;
                         const totalAmount = amounts.amounts[itemInstance.id] || 0;
                         const overFixaceAmount = Math.max(0, totalAmount - fixedAmount - itemInstance.getDiscount(bundle.id));
-                        const overFixacePrice = baseFixedPrice * overFixaceAmount * (1 - overFixaceDiscount / 100);
+                        const overFixacePrice = Math.ceil(roundPrice(baseFixedPrice * overFixaceAmount * (1 - overFixaceDiscount / 100)));
+                        console.log("prices", fixedPrice,overFixacePrice );
+                        // Apply final item discount and round
                         const discount = amounts.discount?.[itemInstance.id] ?? itemInstance.discount ?? 0;
-
-                        return formatPrice((fixedPrice + overFixacePrice) * (1 - discount / 100), currency);
+                        const finalPrice = Math.ceil(roundPrice((fixedPrice + overFixacePrice) * (1 - discount / 100)));
+                        console.log("finalPrice", finalPrice);
+                        return formatPrice(finalPrice, currency);
                       })()
                     ) : (
                       (() => {
@@ -423,7 +425,9 @@ export function TableRow({ item, bundles, amounts, onAmountChange, readonly = fa
                         const amount = amounts.amounts[itemInstance.id] || 0;
                         const basePrice = itemInstance.getPrice(bundle.id);
                         const discountedAmount = Math.max(0, amount - itemInstance.getDiscount(bundle.id));
-                        return formatPrice(basePrice * discountedAmount * (1 - discount / 100), currency);
+                        const priceBeforeDiscount = roundPrice(basePrice * discountedAmount);
+                        const finalPrice = roundPrice(priceBeforeDiscount * (1 - discount / 100));
+                        return formatPrice(finalPrice, currency);
                       })()
                     )}
                   </span>

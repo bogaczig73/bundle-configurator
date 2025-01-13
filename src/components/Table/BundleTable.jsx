@@ -17,7 +17,8 @@ export const BundleTable = forwardRef(({
   currency = 'CZK',
   enableRowSelection = false,
   selectedRows = {},
-  onRowSelect
+  onRowSelect,
+  globalDiscount = 0
 }, ref) => {
   const tableStyles = useTableStyles(exporting);
   const flattenedItems = useMemo(() => {
@@ -41,7 +42,7 @@ export const BundleTable = forwardRef(({
       <div id="bundle-table-container" ref={ref} className={tableStyles.container}>
         <TableHeader 
           bundles={bundles}
-          amounts={amounts}
+          amounts={{...amounts, globalDiscount}}
           tableStyles={tableStyles}
           flattenedItems={flattenedItems}
           showIndividualDiscount={showIndividualDiscount}
@@ -52,7 +53,7 @@ export const BundleTable = forwardRef(({
         <TableBody 
           bundles={bundles}
           items={flattenedItems}
-          amounts={amounts}
+          amounts={{...amounts, globalDiscount}}
           onAmountChange={onAmountChange}
           tableStyles={tableStyles}
           readonly={readonly}

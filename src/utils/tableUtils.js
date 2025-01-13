@@ -101,7 +101,14 @@ export const flattenItems = (items, depth = 0, parentId = '') => {
   return result;
 };
 
+export const roundPrice = (price) => {
+  return Math.ceil(price*100)/100;
+};
+
 export const formatPrice = (price, currency = 'CZK') => {
+  // First round the price to 2 decimal places (round up)
+  const roundedPrice = Math.ceil(price);
+  console.log(price,roundedPrice);
   // Use different locales based on currency
   const localeMap = {
     CZK: 'cs-CZ',
@@ -114,10 +121,10 @@ export const formatPrice = (price, currency = 'CZK') => {
   const formatter = new Intl.NumberFormat(locale, {
     style: 'currency',
     currency: currency,
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
   });
-  return formatter.format(price);
+  return formatter.format(roundedPrice);
 };
 
 // Legacy utility functions (keeping for backward compatibility)
@@ -193,30 +200,29 @@ export const calculateBundleTotal = (bundle, items, amounts) => {
       const amount = amounts?.amounts?.[item.id.toString()] ?? 0;
       const fixaceAmount = amounts?.fixace?.[item.id.toString()] ?? 0;
       const discount = amounts?.discount?.[item.id.toString()] ?? item.discount ?? 0;
-      const fixaceDiscount = amounts?.discount?.[`${item.id}_fixed_items`] ?? item.discount ?? 0;
       const overDiscount = amounts?.discount?.[`${item.id}_over_fixation_items`] ?? item.discount ?? 0;
       const basePrice = item.getPrice(bundle.id);
 
       let itemTotal = 0;
       if (amounts.fixace) {
-        // Calculate price for fixed items with its own discount
-        const fixedPrice = basePrice * fixaceAmount * (1 - fixaceDiscount / 100);
+        // Calculate price for fixed items with global discount
+        const fixedPrice = Math.ceil(basePrice * fixaceAmount * (1 - (amounts.globalDiscount ?? 0) / 100));
 
         // Calculate price for items over fixace with its own discount
         const overFixaceAmount = Math.max(0, amount - fixaceAmount - item.getDiscount(bundle.id));
-        const overFixacePrice = basePrice * overFixaceAmount * (1 - overDiscount / 100);
+        const overFixacePrice = Math.ceil(basePrice * overFixaceAmount * (1 - overDiscount / 100));
 
+        // Ceil the final item total after applying the item discount
         itemTotal = (fixedPrice + overFixacePrice) * (1 - discount / 100);
       } else {
         // Non-fixace case
         const discountedAmount = Math.max(0, amount - item.getDiscount(bundle.id));
-        itemTotal = basePrice * discountedAmount * (1 - discount / 100);
+        // Ceil the final item total
+        itemTotal = Math.ceil(basePrice * discountedAmount * (1 - discount / 100));
       }
-      
+      console.log("itemTotal", itemTotal);
       return total + itemTotal;
     }, 0);
 
-  // Apply global discount if present
-  const globalDiscount = amounts?.globalDiscount ?? 0;
-  return total * (1 - globalDiscount / 100);
+  return total;
 };

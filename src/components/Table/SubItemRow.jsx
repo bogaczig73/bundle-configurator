@@ -5,7 +5,8 @@ import {
   getItemDiscount,
   formatPrice,
   isBundleActive,
-  isBundleDisabled
+  isBundleDisabled,
+  roundPrice
 } from '../../utils/tableUtils';
 
 import { getColorHex } from './useTableStyles';
@@ -33,12 +34,8 @@ export function SubItemRow({
     } else if (type === 'over') {
       const parentAmount = amounts.amounts[parentItem.id] || 0;
       const parentFixace = amounts.fixace[parentItem.id] || 0;
-      // Sum up all discounted amounts across bundles
-      const totalDiscountedAmount = bundles.reduce((sum, bundle) => {
-        const packageInfo = parentItem.packages?.find(p => p.packageId === bundle.id);
-        return sum + (packageInfo?.discountedAmount || 0);
-      }, 0);
-      return Math.max(0, parentAmount - parentFixace - totalDiscountedAmount);
+      // For over-fixation row, just show the difference without subtracting discounted amount
+      return Math.max(0, parentAmount - parentFixace);
     }
     return parentItem.amount;
   };
@@ -46,12 +43,8 @@ export function SubItemRow({
   // Add helper function to get discount note
   const getDiscountNote = () => {
     if (type === 'over') {
-      // Sum up all discounted amounts across bundles
-      const totalDiscountedAmount = bundles.reduce((sum, bundle) => {
-        const packageInfo = parentItem.packages?.find(p => p.packageId === bundle.id);
-        return sum + (packageInfo?.discountedAmount || 0);
-      }, 0);
-      return totalDiscountedAmount > 0 ? `První ${totalDiscountedAmount} v ceně` : '';
+      // Don't show the discount note for over-fixation row
+      return '';
     }
     return '';
   };
@@ -69,7 +62,9 @@ export function SubItemRow({
   const calculateFinalPrice = (basePrice, type, amounts, parentItem, bundle) => {
     const discountKey = `${parentItem.id}_${type === 'fixace' ? 'fixed_items' : 'over_fixation_items'}`;
     const discountedAmount = getItemDiscount(parentItem, bundle.id);
-    const discountPercentage = amounts.discount?.[discountKey] ?? parentItem.discount ?? 0;
+    const discountPercentage = type === 'fixace' ? 
+      (amounts.globalDiscount ?? 0) : 
+      (amounts.discount?.[discountKey] ?? parentItem.discount ?? 0);
     
     // Calculate applicable units based on type
     let applicableUnits = 0;
@@ -81,11 +76,11 @@ export function SubItemRow({
       applicableUnits = Math.max(0, totalAmount - fixaceAmount - discountedAmount);
     }
 
-    // Apply the discount to the price
-    const priceAfterDiscount = basePrice * (1 - discountPercentage / 100);
-
-    // Calculate final price
-    const finalPrice = priceAfterDiscount * applicableUnits;
+    // Apply discount to base price and round
+    const priceAfterDiscount = roundPrice(basePrice * (1 - discountPercentage / 100));
+    
+    // Calculate final price and round again
+    const finalPrice = roundPrice(priceAfterDiscount * applicableUnits);
 
     return {
       finalPrice,
@@ -150,54 +145,65 @@ export function SubItemRow({
           <div className={tableStyles.centerWrapper}>
             {readonly ? (
               <span className="text-gray-700 text-xs">
-                {(amounts.discount?.[`${parentItem.id}_${type === 'fixace' ? 'fixed_items' : 'over_fixation_items'}`] ?? parentItem.discount) ? 
-                  `${amounts.discount?.[`${parentItem.id}_${type === 'fixace' ? 'fixed_items' : 'over_fixation_items'}`] ?? parentItem.discount}%` : 
-                  '-'
+                {type === 'fixace' ? 
+                  (amounts.globalDiscount ? `${amounts.globalDiscount}%` : '-') :
+                  ((amounts.discount?.[`${parentItem.id}_${type === 'fixace' ? 'fixed_items' : 'over_fixation_items'}`] ?? parentItem.discount) ? 
+                    `${amounts.discount?.[`${parentItem.id}_${type === 'fixace' ? 'fixed_items' : 'over_fixation_items'}`] ?? parentItem.discount}%` : 
+                    '-'
+                  )
                 }
               </span>
             ) : (
               <div className="flex items-center" onClick={(e) => e.stopPropagation()}>
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    const discountKey = `${parentItem.id}_${type === 'fixace' ? 'fixed_items' : 'over_fixation_items'}`;
-                    const currentDiscount = amounts.discount?.[discountKey] ?? parentItem.discount ?? 0;
-                    onDiscountChange(discountKey, Math.max(0, currentDiscount - 5));
-                  }}
-                  className={tableStyles.inputCounterButton + " rounded-s-md"}
-                >
-                  <svg className={tableStyles.counterButtonSymbols} aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 18 2">
-                    <path stroke="currentColor" strokeLinejoin="round" strokeWidth="2" d="M1 1h16"/>
-                  </svg>
-                </button>
-                
-                <input
-                  type="text"
-                  min={0}
-                  max={100}
-                  value={amounts.discount?.[`${parentItem.id}_${type === 'fixace' ? 'fixed_items' : 'over_fixation_items'}`] ?? parentItem.discount ?? 0}
-                  onChange={(e) => {
-                    e.stopPropagation();
-                    const value = Math.min(100, Math.max(0, Number(e.target.value)));
-                    onDiscountChange(`${parentItem.id}_${type === 'fixace' ? 'fixed_items' : 'over_fixation_items'}`, value);
-                  }}
-                  onClick={(e) => e.stopPropagation()}
-                  className={tableStyles.numberInput}
-                />
-                
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    const discountKey = `${parentItem.id}_${type === 'fixace' ? 'fixed_items' : 'over_fixation_items'}`;
-                    const currentDiscount = amounts.discount?.[discountKey] ?? parentItem.discount ?? 0;
-                    onDiscountChange(discountKey, Math.min(100, currentDiscount + 5));
-                  }}
-                  className={tableStyles.inputCounterButton + " rounded-e-md"}
-                >
-                  <svg className={tableStyles.counterButtonSymbols} aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 18 18">
-                    <path stroke="currentColor" strokeLinejoin="round" strokeWidth="2" d="M9 1v16M1 9h16"/>
-                  </svg>
-                </button>
+                {type === 'fixace' ? (
+                  <span className="text-gray-700 text-xs">
+                    {amounts.globalDiscount ? `${amounts.globalDiscount}%` : '-'}
+                  </span>
+                ) : (
+                  <>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        const discountKey = `${parentItem.id}_${type === 'fixace' ? 'fixed_items' : 'over_fixation_items'}`;
+                        const currentDiscount = amounts.discount?.[discountKey] ?? parentItem.discount ?? 0;
+                        onDiscountChange(discountKey, Math.max(0, currentDiscount - 5));
+                      }}
+                      className={tableStyles.inputCounterButton + " rounded-s-md"}
+                    >
+                      <svg className={tableStyles.counterButtonSymbols} aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 18 2">
+                        <path stroke="currentColor" strokeLinejoin="round" strokeWidth="2" d="M1 1h16"/>
+                      </svg>
+                    </button>
+                    
+                    <input
+                      type="text"
+                      min={0}
+                      max={100}
+                      value={amounts.discount?.[`${parentItem.id}_${type === 'fixace' ? 'fixed_items' : 'over_fixation_items'}`] ?? parentItem.discount ?? 0}
+                      onChange={(e) => {
+                        e.stopPropagation();
+                        const value = Math.min(100, Math.max(0, Number(e.target.value)));
+                        onDiscountChange(`${parentItem.id}_${type === 'fixace' ? 'fixed_items' : 'over_fixation_items'}`, value);
+                      }}
+                      onClick={(e) => e.stopPropagation()}
+                      className={tableStyles.numberInput}
+                    />
+                    
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        const discountKey = `${parentItem.id}_${type === 'fixace' ? 'fixed_items' : 'over_fixation_items'}`;
+                        const currentDiscount = amounts.discount?.[discountKey] ?? parentItem.discount ?? 0;
+                        onDiscountChange(discountKey, Math.min(100, currentDiscount + 5));
+                      }}
+                      className={tableStyles.inputCounterButton + " rounded-e-md"}
+                    >
+                      <svg className={tableStyles.counterButtonSymbols} aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 18 18">
+                        <path stroke="currentColor" strokeLinejoin="round" strokeWidth="2" d="M9 1v16M1 9h16"/>
+                      </svg>
+                    </button>
+                  </>
+                )}
               </div>
             )}
           </div>
@@ -244,11 +250,11 @@ export function SubItemRow({
                     {parentItem.individual ? 'individuální paušál' : `${formatPrice(getItemPrice(parentItem, bundle.id))} za kus`}
                   </span> */}
                   <span className="text-[10px] text-gray-500 italic">
-                    {(getItemDiscount(parentItem, bundle.id) > 0 ? ` První ${getItemDiscount(parentItem, bundle.id)} v ceně` : '')}
+                    {(getItemDiscount(parentItem, bundle.id) > 0 && type === 'over') ? ` První ${getItemDiscount(parentItem, bundle.id)} v ceně` : ''}
                   </span>
-                  {((amounts.discount?.[`${parentItem.id}_${type === 'fixace' ? 'fixed_items' : 'over_fixation_items'}`] ?? parentItem.discount ?? 0) > 0) && (
+                  {((amounts.discount?.[`${parentItem.id}_${type === 'fixace' ? 'fixed_items' : 'over_fixation_items'}`] ?? parentItem.discount ?? 0) > 0 || (type === 'fixace' && amounts.globalDiscount > 0)) && (
                     <span className="text-[10px] text-gray-500 italic">
-                      {`Sleva: ${amounts.discount?.[`${parentItem.id}_${type === 'fixace' ? 'fixed_items' : 'over_fixation_items'}`] ?? parentItem.discount ?? 0}%`}
+                      {`Sleva: ${type === 'fixace' ? amounts.globalDiscount : (amounts.discount?.[`${parentItem.id}_${type === 'fixace' ? 'fixed_items' : 'over_fixation_items'}`] ?? parentItem.discount ?? 0)}%`}
                     </span>
                   )}
                 </>

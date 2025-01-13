@@ -65,7 +65,7 @@ export function TableHeader({
               const bundleTotal = bundleTotals.find(bt => bt.id === bundle.id)?.total ?? 0;
               const isActive = isBundleActive(bundle, index, amounts.amounts, bundles);
               const isDisabled = isBundleDisabled(bundle, index, amounts.amounts);
-
+              console.log("bundleTotal", bundleTotal);
               return (
                 <React.Fragment key={`${bundle.id}-header`}>
                   <th className="w-[20px] border-none" />

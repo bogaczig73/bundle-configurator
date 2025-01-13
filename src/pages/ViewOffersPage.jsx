@@ -259,6 +259,7 @@ function ViewOffersPage() {
   const [selectedConfiguration, setSelectedConfiguration] = useState(null);
   const [amounts, setAmounts] = useState({});
   const [currentCurrency, setCurrentCurrency] = useState('CZK');
+  const [globalDiscount, setGlobalDiscount] = useState(0);
   const navigate = useNavigate();
   const printRef = useRef(null);
   const tableRef = useRef(null);
@@ -280,13 +281,20 @@ function ViewOffersPage() {
   const filteredConfigurations = useMemo(() => {
     if (!user || !configurations) return [];
     
-    // For customers, show only configurations made for them
+    // Filter configurations based on user role
+    let filtered = [];
     if (user.role === 'customer') {
-      return configurations.filter(config => config.customer === user.id);
+      filtered = configurations.filter(config => config.customer === user.id);
+    } else {
+      filtered = configurations.filter(config => config.createdBy === user.id);
     }
     
-    // For other roles (admin, etc), show configurations they created
-    return configurations.filter(config => config.createdBy === user.id);
+    // Sort by createdAt in descending order (newest first)
+    return filtered.sort((a, b) => {
+      const dateA = a.createdAt?.seconds || 0;
+      const dateB = b.createdAt?.seconds || 0;
+      return dateB - dateA;
+    });
   }, [configurations, user]);
 
   // Effect to handle URL parameter and load correct items for currency
@@ -323,6 +331,14 @@ function ViewOffersPage() {
         discount: {},
         fixace: {}
       };
+      
+      // Set global discount if present in configuration
+      if (selectedConfiguration.globalDiscount !== undefined) {
+        setGlobalDiscount(selectedConfiguration.globalDiscount);
+      } else {
+        setGlobalDiscount(0);
+      }
+
       Object.entries(selectedConfiguration.items).forEach(([itemId, itemData]) => {
         configAmounts.amounts[itemId] = itemData.amount || 0;
         configAmounts.fixace[itemId] = itemData.fixace || 0;
@@ -712,7 +728,7 @@ function ViewOffersPage() {
                     onRowSelect={handleRowSelect}
                     className={exporting ? 'print-scale' : ''}
                     currency={currentCurrency}
-                    
+                    globalDiscount={globalDiscount}
                   />
                 </div>
               </div>
