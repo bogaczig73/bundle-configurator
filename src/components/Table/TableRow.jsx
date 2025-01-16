@@ -73,7 +73,7 @@ export const TableRow = ({ item, bundles, amounts, onAmountChange, readonly = fa
 
         {bundles.map((bundle, index) => (
           <React.Fragment key={`${itemInstance.id}-${bundle.id}-group`}>
-            <td className="w-[20px]" />
+            <td className="!w-[20px] min-w-[20px]" />
             <td className={`
               ${tableStyles.columnWidths.bundle} 
               ${tableStyles.packageBodyCell} 
@@ -378,7 +378,7 @@ export const TableRow = ({ item, bundles, amounts, onAmountChange, readonly = fa
 
         {bundles.map((bundle, index) => (
           <React.Fragment key={`${itemInstance.id}-${bundle.id}-group`}>
-            <td className="w-[20px]" />
+            <td className="!w-[20px] min-w-[20px]" />
             <td className={`
               ${tableStyles.columnWidths.bundle} 
               ${tableStyles.packageBodyCell} 

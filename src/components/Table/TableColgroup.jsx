@@ -22,7 +22,7 @@ export function TableColgroup({
       )}
       {bundles.map((bundle, index) => (
         <React.Fragment key={`${bundle.id}-group`}>
-          <col className="w-[20px]" />
+          <col className="!w-[20px] min-w-[20px]" />
           <col className={`${tableStyles.columnWidths.bundle} ${tableStyles.getBundleBorderClasses(index)}`} />
         </React.Fragment>
       ))}

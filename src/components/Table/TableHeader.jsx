@@ -76,7 +76,7 @@ function TableHeader({
               const isDisabled = isBundleDisabled(bundle, index, amounts.amounts);
               return (
                 <React.Fragment key={`${bundle.id}-header`}>
-                  <th className="w-[20px] border-none" />
+                  <th className="!w-[20px] min-w-[20px] border-none" />
                   <th className={`
                     ${tableStyles.packageHeaderCell} 
                     ${tableStyles.getBundleHeaderBorderClasses(index)}

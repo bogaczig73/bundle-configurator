@@ -94,6 +94,18 @@ function ItemFormModal({ show, onClose, onSubmit, onDelete, items, packages, edi
     }));
   };
 
+  useEffect(() => {
+    if (formData.individual) {
+      setFormData(prev => ({
+        ...prev,
+        packages: prev.packages.map(pkg => ({
+          ...pkg,
+          price: 1
+        }))
+      }));
+    }
+  }, [formData.individual]);
+
   const handleSubmit = (e) => {
     e.preventDefault();
     const submitData = {
@@ -189,7 +201,7 @@ function ItemFormModal({ show, onClose, onSubmit, onDelete, items, packages, edi
                     onChange={(e) => setFormData(prev => ({ ...prev, checkbox: e.target.checked }))}
                     className="rounded border-gray-300 focus:ring-blue-500"
                   />
-                  Povoleno
+                  Ano/Ne položka
                 </label>
                 
                 <label className="flex items-center gap-2">
@@ -237,6 +249,7 @@ function ItemFormModal({ show, onClose, onSubmit, onDelete, items, packages, edi
                               value={pkg.price || 0}
                               onChange={(e) => handlePackageChange(pkg.packageId, 'price', e.target.value)}
                               className="w-24 px-2 py-1 border border-gray-300 rounded text-center"
+                              readOnly={formData.individual}
                             />
                           </td>
                           <td className="px-4 py-2 text-center">

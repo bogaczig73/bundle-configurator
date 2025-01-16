@@ -198,14 +198,14 @@ const ConfigurationsPicker = ({
                   </button>
                 </div>
               )}
-              <div className="pr-16">
+              <div className="">
                 <div className="font-medium text-sm flex items-center gap-2">
                   {configuration.isPrivate && (
                     <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 flex-shrink-0 text-[#e1007b]" viewBox="0 0 20 20" fill="currentColor">
                       <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
                     </svg>
                   )}
-                  <span className="truncate">{configuration.name}</span>
+                  <span className="pr-16 truncate">{configuration.name}</span>
                 </div>
                 <div className="text-xs text-gray-500 mt-1 truncate">
                  {users.find(user => user.id === configuration.customer)?.username || 'Unknown customer'}
@@ -1109,12 +1109,14 @@ function ViewOffersPage() {
           settings={{ 
             showIndividualDiscount,
             showFixace,
-            showSummaryTable,
             enableRowSelection,
-            bundles: packages,
-            ...preselectSettings
+            showSummaryTable,
+            selectedCategories: preselectSettings.selectedCategories,
+            selectedBundles: preselectSettings.selectedBundles,
+            bundles: packages
           }}
           onSettingChange={handleSettingChange}
+          page="viewoffers"
         />
       </div>
     </div>

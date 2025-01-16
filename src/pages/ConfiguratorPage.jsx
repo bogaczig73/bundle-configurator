@@ -222,7 +222,7 @@ function ConfiguratorPage() {
                     max="100"
                     value={globalDiscount}
                     onChange={(e) => setGlobalDiscount(Math.min(100, Math.max(0, Number(e.target.value))))}
-                    className="w-20 px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
+                    className="w-20 px-2 py-2 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
                   />
                 </div>
                 <button
@@ -357,6 +357,7 @@ function ConfiguratorPage() {
             showFixace
           }}
           onSettingChange={handleSettingChange}
+          page="configurator"
         />
       </div>
     </div>

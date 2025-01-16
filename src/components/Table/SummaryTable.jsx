@@ -79,68 +79,64 @@ export const SummaryTable = ({ items, amounts, currency, bundles, exporting = fa
     <div className="mt-8">
       <table className={styles.container}>
         <colgroup>
-
-          <col className={styles.columnWidths.details} />
+          <col className="w-full" /> {/* Text column */}
+          <col className="w-full" /> {/* Spacer column */}
           {bundleTotals.map((_, index) => (
-            <React.Fragment key={index}>
-              <col className="w-[20px]" />
-              <col className={styles.columnWidths.bundle} />
-            </React.Fragment>
+            <col key={index} className={styles.columnWidths.bundle} />
           ))}
         </colgroup>
         <thead>
           <tr>
-            <th className={`${styles.headerCell} text-left ${styles.columnWidths.details}`}>
+            <th className={`${styles.headerCell} text-left px-4 py-3`}>
               Položka
             </th>
+            <th /> {/* Empty spacer cell */}
             {bundleTotals.map(({ bundle }, index) => (
-              <React.Fragment key={bundle.id}>
-                <th className="w-[20px]" />
-                <th 
-                  className={`${styles.packageHeaderCell} text-right text-white w-32 px-[5px] ${styles.getBundleHeaderBorderClasses(index)}`}
-                  style={{ backgroundColor: getColorHex(index) }}
-                >
-                  <div className={styles.centerWrapper}>
-                    {bundle.name}
-                  </div>
-                </th>
-              </React.Fragment>
+              <th 
+                key={bundle.id}
+                className={`${styles.packageHeaderCell} text-right text-white ${styles.columnWidths.bundle} ${styles.getBundleHeaderBorderClasses(index)} px-4 py-3`}
+                style={{ backgroundColor: getColorHex(index) }}
+              >
+                <div className={styles.centerWrapper}>
+                  {bundle.name}
+                </div>
+              </th>
             ))}
           </tr>
         </thead>
         <tbody>
           <tr>
-            <td className={`${styles.bodyCell} ${styles.itemName.item} ${styles.columnWidths.details}`}>
+            <td className={`${styles.bodyCell} ${styles.itemName.item} px-4 py-3`}>
               Cena bez slev
             </td>
+            <td /> {/* Empty spacer cell */}
             {bundleTotals.map(({ bundle, totals }, index) => (
-              <React.Fragment key={bundle.id}>
-                
-                <td className="w-[20px]" />
-                <td 
-                  className={`${styles.packageBodyCell} text-right w-32 px-[5px] ${styles.getBundleBorderClasses(index)}`}
-                >
-                  <div className={styles.centerWrapper}>
+              <td 
+                key={bundle.id}
+                className={`${styles.packageBodyCell} text-right ${styles.columnWidths.bundle} ${styles.getBundleBorderClasses(index)} px-4 py-3`}
+              >
+                <div className={styles.centerWrapper}>
+                  <div className="flex flex-col items-center">
                     <div className="text-sm text-gray-700">
                       {formatPrice(totals.withoutDiscount, currency)}
                     </div>
                   </div>
-                </td>
-              </React.Fragment>
+                </div>
+              </td>
             ))}
           </tr>
           <tr>
-            <td className={`${styles.bodyCell} ${styles.itemName.item} ${styles.columnWidths.details}`}>
+            <td className={`${styles.bodyCell} ${styles.itemName.item} px-4 py-3`}>
               Po globální slevě ({amounts.globalDiscount}%)
             </td>
+            <td /> {/* Empty spacer cell */}
             {bundleTotals.map(({ bundle, totals }, index) => (
-              <React.Fragment key={bundle.id}>
-                
-                <td className="w-[20px]" />
-                <td 
-                  className={`${styles.packageBodyCell} text-right w-32 px-[5px] ${styles.getBundleBorderClasses(index)}`}
-                >
-                  <div className={styles.centerWrapper}>
+              <td 
+                key={bundle.id}
+                className={`${styles.packageBodyCell} text-right ${styles.columnWidths.bundle} ${styles.getBundleBorderClasses(index)} px-4 py-3`}
+              >
+                <div className={styles.centerWrapper}>
+                  <div className="flex flex-col items-center">
                     <div className="text-sm text-gray-700">
                       {formatPrice(totals.withGlobalDiscount, currency)}
                     </div>
@@ -148,23 +144,22 @@ export const SummaryTable = ({ items, amounts, currency, bundles, exporting = fa
                       (-{formatPrice(totals.withoutDiscount - totals.withGlobalDiscount, currency)})
                     </div>
                   </div>
-                </td>
-              </React.Fragment>
+                </div>
+              </td>
             ))}
           </tr>
           <tr>
-            <td className={`${styles.bodyCell} ${styles.itemName.item} ${styles.columnWidths.details}`}>
+            <td className={`${styles.bodyCell} ${styles.itemName.item} px-4 py-3`}>
               Po slevách na položkách
             </td>
-
+            <td /> {/* Empty spacer cell */}
             {bundleTotals.map(({ bundle, totals }, index) => (
-              <React.Fragment key={bundle.id}>
-                
-                <td className="w-[20px]" />
-                <td 
-                  className={`${styles.packageBodyCell} text-right w-32 px-[5px] ${styles.getBundleBorderClasses(index)}`}
-                >
-                  <div className={styles.centerWrapper}>
+              <td 
+                key={bundle.id}
+                className={`${styles.packageBodyCell} text-right ${styles.columnWidths.bundle} ${styles.getBundleBorderClasses(index)} px-4 py-3`}
+              >
+                <div className={styles.centerWrapper}>
+                  <div className="flex flex-col items-center">
                     <div className="text-sm text-gray-700">
                       {formatPrice(totals.withItemDiscount, currency)}
                     </div>
@@ -172,21 +167,22 @@ export const SummaryTable = ({ items, amounts, currency, bundles, exporting = fa
                       (-{formatPrice(totals.withGlobalDiscount - totals.withItemDiscount, currency)})
                     </div>
                   </div>
-                </td>
-              </React.Fragment>
+                </div>
+              </td>
             ))}
           </tr>
           <tr className="bg-gray-50">
-            <td className={`${styles.bodyCell} ${styles.itemName.category} ${styles.columnWidths.details}`}>
+            <td className={`${styles.bodyCell} ${styles.itemName.category} px-4 py-3`}>
               Celková cena
             </td>
+            <td /> {/* Empty spacer cell */}
             {bundleTotals.map(({ bundle, totals }, index) => (
-              <React.Fragment key={bundle.id}>
-                <td className="w-[20px]" />
-                <td 
-                  className={`${styles.packageBodyCell} text-right w-32 px-[5px] ${styles.getBundleBorderClasses(index)}`}
-                >
-                  <div className={styles.centerWrapper}>
+              <td 
+                key={bundle.id}
+                className={`${styles.packageBodyCell} text-right ${styles.columnWidths.bundle} ${styles.getBundleBorderClasses(index)} px-4 py-3`}
+              >
+                <div className={styles.centerWrapper}>
+                  <div className="flex flex-col items-center">
                     <div className="text-sm font-medium text-gray-900">
                       {formatPrice(totals.final, currency)}
                     </div>
@@ -194,8 +190,8 @@ export const SummaryTable = ({ items, amounts, currency, bundles, exporting = fa
                       (-{formatPrice(totals.withoutDiscount - totals.final, currency)})
                     </div>
                   </div>
-                </td>
-              </React.Fragment>
+                </div>
+              </td>
             ))}
           </tr>
         </tbody>
