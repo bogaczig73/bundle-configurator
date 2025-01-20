@@ -45,6 +45,7 @@ function BundleSettingsPage() {
     if (packages.length) {
       setBundlesState(packages.map(pkg => ({
         ...pkg,
+        note: pkg.note || '',
         items: items.reduce((acc, item) => ({
           ...acc,
           [item.id]: {
@@ -96,7 +97,8 @@ function BundleSettingsPage() {
           newPackages.push({
             packageId: bundleId,
             price: 0,
-            selected: true
+            selected: true,
+            note: ''
           });
         }
         
@@ -127,6 +129,17 @@ function BundleSettingsPage() {
     );
   });
 
+  // Add handler for note changes
+  const handleNoteChange = useCallback((bundleId, note) => {
+    setBundlesState(prevBundles => 
+      prevBundles.map(bundle => 
+        bundle.id === bundleId 
+          ? { ...bundle, note }
+          : bundle
+      )
+    );
+  });
+
   // Modify the save function to include userLimit and currency
   const handleSave = async () => {
     setLoading(true);
@@ -136,11 +149,12 @@ function BundleSettingsPage() {
       // Save items using the hook's method with currency
       await saveItems(processedItems, selectedCurrency);
 
-      // Save packages with userLimit
-      const updatedPackages = bundlesState.map(({ id, name, userLimit }) => ({
+      // Save packages with userLimit and note
+      const updatedPackages = bundlesState.map(({ id, name, userLimit, note }) => ({
         id,
         name,
-        userLimit: userLimit || 0
+        userLimit: userLimit || 0,
+        note: note || ''
       }));
       await updateDoc(doc(db, 'default', 'packages'), { packages: updatedPackages });
 
@@ -249,6 +263,32 @@ function BundleSettingsPage() {
     }
   }, [handleDeleteItem, setError, loadItemsForCurrency, selectedCurrency, setProcessedItems]);
 
+  // Add handler for note changes
+  const handleItemNoteChange = useCallback((bundleId, itemId, note) => {
+    setProcessedItems(prevItems => 
+      updateItemInTree(prevItems, itemId, (item) => {
+        const newPackages = [...(item.packages || [])];
+        const packageIndex = newPackages.findIndex(p => p.packageId === bundleId);
+        
+        if (packageIndex >= 0) {
+          newPackages[packageIndex] = {
+            ...newPackages[packageIndex],
+            note
+          };
+        } else {
+          newPackages.push({
+            packageId: bundleId,
+            price: 0,
+            selected: false,
+            note
+          });
+        }
+        
+        return { ...item, packages: newPackages };
+      })
+    );
+  }, [updateItemInTree]);
+
   return (
     <div className="flex flex-col md:flex-row min-h-screen bg-gray-50">
       <Sidebar />
@@ -314,6 +354,8 @@ function BundleSettingsPage() {
                 onIndividualChange={handleIndividualChange}
                 itemPrices={itemPrices}
                 onAddNewItem={handleAddNewItem}
+                onNoteChange={handleNoteChange}
+                onItemNoteChange={handleItemNoteChange}
               />
             </div>
           )}
@@ -346,7 +388,9 @@ function BundleTable({
   onCheckboxChange,
   onIndividualChange,
   itemPrices,
-  onAddNewItem
+  onAddNewItem,
+  onNoteChange,
+  onItemNoteChange
 }) {
   const flattenedItems = useMemo(() => flattenItems(items), [items]);
   // Add border color array
@@ -544,22 +588,34 @@ function BundleTable({
                       <td className="w-[20px]" />
                       <td className={`${tableStyles.columnWidths.bundle} ${tableStyles.packageBodyCell} ${getBundleBorderClasses(index)}`}>
                         {item.type === 'item' && (
-                          <div className={tableStyles.centerWrapper + " gap-2"}>
-                            <input
-                              type="checkbox"
-                              checked={getItemSelected(item, bundle.id)}
-                              onChange={() => onItemToggle(bundle.id, item.id)}
-                              className={tableStyles.checkbox}
-                              disabled
-                            />
-                            <div className="flex gap-2">
-                              <span className={tableStyles.numberInput}>
-                                {getItemPrice(item, bundle.id)}
-                              </span>
-                              <span className={tableStyles.numberInput}>
-                                {getItemDiscountedAmount(item, bundle.id)}
-                              </span>
+                          <div className={tableStyles.centerWrapper + " gap-2 flex-col"}>
+                            <div className="flex items-center gap-2">
+                              <input
+                                type="checkbox"
+                                checked={getItemSelected(item, bundle.id)}
+                                onChange={() => onItemToggle(bundle.id, item.id)}
+                                className={tableStyles.checkbox}
+                              />
+                              <div className="flex gap-2">
+                                <input
+                                  type="number"
+                                  value={getItemPrice(item, bundle.id)}
+                                  onChange={(e) => onItemPriceChange(bundle.id, item.id, e.target.value)}
+                                  className={tableStyles.numberInput}
+                                />
+                                <input
+                                  type="number"
+                                  value={getItemDiscountedAmount(item, bundle.id)}
+                                  onChange={(e) => onItemDiscountChange(bundle.id, item.id, e.target.value)}
+                                  className={tableStyles.numberInput}
+                                />
+                              </div>
                             </div>
+                            {item.packages?.find(p => p.packageId === bundle.id)?.note && (
+                              <div className="text-xs text-gray-500 mt-1 max-w-[200px] truncate">
+                                {item.packages?.find(p => p.packageId === bundle.id)?.note}
+                              </div>
+                            )}
                           </div>
                         )}
                       </td>

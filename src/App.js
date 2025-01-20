@@ -8,6 +8,7 @@ import UserManagementPage from "./pages/UserManagementPage";
 import { BundleProvider } from "./context/BundleContext";
 import ViewOffersPage from "./pages/ViewOffersPage";
 import LoginPage from "./pages/LoginPage";
+import LogoutPage from "./pages/LogoutPage";
 import { useEffect, useState } from "react";
 import { auth } from "./firebase";
 import { onAuthStateChanged } from "firebase/auth";
@@ -37,6 +38,7 @@ function App() {
       <Router>
         <Routes>
           <Route path="/login" element={!user ? <LoginPage /> : <Navigate to="/" />} />
+          <Route path="/logout" element={<LogoutPage />} />
           <Route path="/unauthorized" element={<UnauthorizedPage />} />
           
           <Route path="/*" element={

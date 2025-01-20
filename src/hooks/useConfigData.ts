@@ -23,6 +23,7 @@ interface ItemPackage {
   price: number;
   selected: boolean;
   discountedAmount?: number;
+  note?: string;
 }
 
 interface UseConfigDataReturn {
@@ -81,6 +82,7 @@ interface NewItemFormData {
     price: number | string;
     selected: boolean;
     discountedAmount?: number;
+    note?: string;
   }>;
   amount: number;
   checkbox: boolean;
@@ -401,7 +403,8 @@ export function useConfigData(bundleId: string | null = null, configId: string |
             packageId: Number(pkg.packageId),
             price: Number(pkg.price) || 0,
             selected: pkg.selected || false,
-            discountedAmount: Number(pkg.discountedAmount) || 0
+            discountedAmount: Number(pkg.discountedAmount) || 0,
+            note: pkg.note || ''
           })),
           amount: Number(formData.amount) || 0,
           checkbox: formData.checkbox || false,

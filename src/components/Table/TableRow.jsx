@@ -439,6 +439,11 @@ export const TableRow = ({ item, bundles, amounts, onAmountChange, readonly = fa
                     )
                   }
                 </span>
+                {itemInstance.packages?.find(p => p.packageId === bundle.id)?.note && (
+                  <span className="text-xs text-gray-500 italic">
+                    {itemInstance.packages?.find(p => p.packageId === bundle.id)?.note}
+                  </span>
+                )}
                 <span className="text-xs text-gray-500 italic">
                   {(itemInstance.getDiscount(bundle.id) > 0 ? ` První ${itemInstance.getDiscount(bundle.id)} v ceně` : '')}
                 </span>

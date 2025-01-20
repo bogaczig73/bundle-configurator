@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { auth } from '../firebase';
 import { signInWithEmailAndPassword, sendPasswordResetEmail } from 'firebase/auth';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import abraLogo from '../images/ABRA_Color_Primary_transparent.png';
 
 function LoginPage() {
@@ -11,6 +11,10 @@ function LoginPage() {
   const [success, setSuccess] = useState('');
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
+  const location = useLocation();
+
+  // Get the redirect path from state, default to home
+  const from = location.state?.from || '/';
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -19,7 +23,8 @@ function LoginPage() {
 
     try {
       await signInWithEmailAndPassword(auth, email, password);
-      navigate('/'); // Redirect to users page after successful login
+      // Redirect to the original requested URL
+      navigate(from, { replace: true });
     } catch (err) {
       console.error('Login error:', err);
       setError('Failed to log in. Please check your credentials.');

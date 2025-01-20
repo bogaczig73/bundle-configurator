@@ -3,6 +3,7 @@ export interface Package {
   price: number;
   selected: boolean;
   discountedAmount?: number;
+  note?: string;
 }
 
 export type ItemType = 'item' | 'category';
