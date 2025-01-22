@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useCallback } from 'react';
 
 function ItemFormModal({ show, onClose, onSubmit, onDelete, items, packages, editingItem = null, isLoading = false }) {
   const [formData, setFormData] = useState({
@@ -9,7 +9,7 @@ function ItemFormModal({ show, onClose, onSubmit, onDelete, items, packages, edi
     checkbox: false,
     individual: false,
     amount: 0,
-    order: 0,
+    order: 1,
     packages: packages.map(pkg => ({
       packageId: pkg.id,
       price: 0,
@@ -18,52 +18,6 @@ function ItemFormModal({ show, onClose, onSubmit, onDelete, items, packages, edi
     })),
     id: null,
   });
-
-  useEffect(() => {
-    if (editingItem) {
-      if (editingItem.type === 'category') {
-        setFormData({
-          id: editingItem.id,
-          name: editingItem.name,
-          type: 'category',
-          categoryId: editingItem.parentId || '',
-          order: editingItem.order || 0,
-        });
-      } else {
-        setFormData({
-          ...editingItem,
-          id: editingItem.id,
-          order: editingItem.order || 0,
-          packages: packages.map(pkg => {
-            const existingPackage = editingItem.packages?.find(p => p.packageId === pkg.id);
-            return existingPackage || {
-              packageId: pkg.id,
-              price: 0,
-              selected: false,
-              discountedAmount: 0
-            };
-          })
-        });
-      }
-    } else {
-      setFormData({
-        name: '',
-        type: 'item',
-        categoryId: '',
-        note: '',
-        checkbox: false,
-        individual: false,
-        amount: 0,
-        order: 0,
-        packages: packages.map(pkg => ({
-          packageId: pkg.id,
-          price: 0,
-          selected: false,
-          discountedAmount: 0
-        }))
-      });
-    }
-  }, [editingItem, packages]);
 
   const categories = useMemo(() => {
     const getCategories = (items, prefix = '') => {
@@ -82,6 +36,104 @@ function ItemFormModal({ show, onClose, onSubmit, onDelete, items, packages, edi
     };
     return getCategories(items);
   }, [items]);
+
+  // Function to get the next available order number for a category
+  const getNextOrderNumber = useCallback((categoryId) => {
+    // Convert empty string to null for root category
+    const targetCategoryId = categoryId === '' ? null : Number(categoryId);
+    
+    // Get all items in the selected category
+    const itemsInCategory = items.reduce((acc, item) => {
+      if (item.type === 'category') {
+        // For categories, check if it's in the same parent category
+        const itemParentId = item.parentId ? Number(item.parentId) : null;
+        if (itemParentId === targetCategoryId) {
+          acc.push(item);
+        }
+        // Also check items in all categories
+        if (item.children) {
+          item.children.forEach(child => {
+            if (child.categoryId === targetCategoryId) {
+              acc.push(child);
+            }
+          });
+        }
+      } else if (item.categoryId === targetCategoryId) {
+        // For items, check if they're in the target category
+        acc.push(item);
+      }
+      return acc;
+    }, []);
+
+    // Find the highest order number
+    const maxOrder = itemsInCategory.reduce((max, item) => {
+      const itemOrder = item.order || 0;
+      return itemOrder > max ? itemOrder : max;
+    }, 0);
+
+    // Return next number (at least 1)
+    return Math.max(1, maxOrder + 1);
+  }, [items]);
+
+  useEffect(() => {
+    if (editingItem) {
+      if (editingItem.type === 'category') {
+        setFormData({
+          id: editingItem.id,
+          name: editingItem.name,
+          type: 'category',
+          categoryId: editingItem.parentId || '',
+          order: editingItem.order || 1,
+        });
+      } else {
+        setFormData({
+          ...editingItem,
+          id: editingItem.id,
+          order: editingItem.order || 1,
+          packages: packages.map(pkg => {
+            const existingPackage = editingItem.packages?.find(p => p.packageId === pkg.id);
+            return existingPackage || {
+              packageId: pkg.id,
+              price: 0,
+              selected: false,
+              discountedAmount: 0
+            };
+          })
+        });
+      }
+    } else {
+      const initialOrder = formData.categoryId ? getNextOrderNumber(formData.categoryId) : 1;
+      setFormData(prev => ({
+        ...prev,
+        name: '',
+        type: 'item',
+        categoryId: '',
+        note: '',
+        checkbox: false,
+        individual: false,
+        amount: 0,
+        order: initialOrder,
+        packages: packages.map(pkg => ({
+          packageId: pkg.id,
+          price: 0,
+          selected: false,
+          discountedAmount: 0
+        }))
+      }));
+    }
+  }, [editingItem, packages, getNextOrderNumber]);
+
+  // Update category change handler
+  const handleCategoryChange = (e) => {
+    const newCategoryId = e.target.value;
+    const nextOrder = getNextOrderNumber(newCategoryId);
+    
+    setFormData(prev => ({
+      ...prev,
+      categoryId: newCategoryId,
+      order: nextOrder
+    }));
+  };
 
   const handlePackageChange = (packageId, field, value) => {
     setFormData(prev => ({
@@ -203,7 +255,7 @@ function ItemFormModal({ show, onClose, onSubmit, onDelete, items, packages, edi
                 </label>
                 <select
                   value={formData.categoryId}
-                  onChange={(e) => setFormData(prev => ({ ...prev, categoryId: e.target.value }))}
+                  onChange={handleCategoryChange}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
                   <option value="">Hlavní kategorie</option>
@@ -220,14 +272,54 @@ function ItemFormModal({ show, onClose, onSubmit, onDelete, items, packages, edi
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Pořadí
                 </label>
-                <input
-                  type="number"
-                  min="1"
+                <select
                   value={formData.order}
-                  onChange={(e) => setFormData(prev => ({ ...prev, order: parseInt(e.target.value) || 0 }))}
+                  onChange={(e) => setFormData(prev => ({ ...prev, order: parseInt(e.target.value) }))}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="Zadejte pořadí..."
-                />
+                >
+                  {(() => {
+                    // Get items in the current category
+                    const targetCategoryId = formData.categoryId === '' ? null : Number(formData.categoryId);
+                    const itemsInCategory = items.reduce((acc, item) => {
+                      if (item.type === 'category') {
+                        const itemParentId = item.parentId ? Number(item.parentId) : null;
+                        if (itemParentId === targetCategoryId) {
+                          acc.push(item);
+                        }
+                        if (item.children) {
+                          item.children.forEach(child => {
+                            if (child.categoryId === targetCategoryId) {
+                              acc.push(child);
+                            }
+                          });
+                        }
+                      } else if (item.categoryId === targetCategoryId) {
+                        acc.push(item);
+                      }
+                      return acc;
+                    }, []);
+
+                    // Get max order
+                    const maxOrder = itemsInCategory.reduce((max, item) => {
+                      const itemOrder = item.order || 0;
+                      return itemOrder > max ? itemOrder : max;
+                    }, 0);
+
+                    // Generate array of numbers from 1 to maxOrder + 1
+                    const orderNumbers = Array.from({ length: maxOrder + 1 }, (_, i) => i + 1);
+
+                    // If editing, include current position if it's higher than maxOrder
+                    if (editingItem && editingItem.order > maxOrder) {
+                      orderNumbers.push(editingItem.order);
+                    }
+
+                    return orderNumbers.map(num => (
+                      <option key={num} value={num}>
+                        {num}
+                      </option>
+                    ));
+                  })()}
+                </select>
               </div>
             </div>
 
