@@ -6,7 +6,7 @@ import { Item } from '../../types/Item';
 import { roundPrice, formatPrice } from '../../utils/priceUtils';
 import { isBundleDisabled } from '../../utils/bundleUtils';
 
-export const TableRow = ({ item, bundles, amounts, onAmountChange, readonly = false, showIndividualDiscount = false, showFixace = false, enableRowSelection = false, selectedRows = {}, onRowSelect, currency = 'CZK', userRole = 'customer' }) => {
+export const TableRow = ({ item, bundles, amounts, onAmountChange, readonly = false, showIndividualDiscount = false, showFixace = false, enableRowSelection = false, selectedRows = {}, onRowSelect, currency = 'CZK', userRole = 'customer', settings = {} }) => {
   const tableStyles = useTableStyles();
   const [isExpanded, setIsExpanded] = React.useState(false);
   // Convert plain item object to Item instance if it isn't already
@@ -201,6 +201,20 @@ export const TableRow = ({ item, bundles, amounts, onAmountChange, readonly = fa
                     <path stroke="currentColor" strokeLinejoin="round" strokeWidth="2" d="M9 1v16M1 9h16"/>
                   </svg>
                 </button>
+                {showFixace && !readonly && settings.showCopyToFixationButton && (
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onAmountChange(itemInstance.id, amounts.amounts[itemInstance.id] || 0, 'fixace');
+                    }}
+                    className={`${tableStyles.inputCounterButton} ml-2 rounded-md border-abraMagenta`}
+                    title="Kopírovat do fixace"
+                  >
+                    <svg className={tableStyles.counterButtonSymbols} aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 14 10">
+                      <path stroke="#e1007b" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M1 5h12m0 0L9 1m4 4L9 9"/>
+                    </svg>
+                  </button>
+                )}
               </div>
             )}
           </div>

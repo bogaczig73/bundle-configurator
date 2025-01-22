@@ -18,7 +18,8 @@ export const BundleTable = forwardRef(({
   selectedRows = {},
   onRowSelect,
   globalDiscount = 0,
-  userRole = 'customer'
+  userRole = 'customer',
+  settings = {}
 }, ref) => {
   const tableStyles = useTableStyles(exporting);
   const flattenedItems = useMemo(() => processItems(items), [items]);
@@ -49,6 +50,7 @@ export const BundleTable = forwardRef(({
         onRowSelect={onRowSelect}
         currency={currency}
         userRole={userRole}
+        settings={settings}
       />
     </div>
   );

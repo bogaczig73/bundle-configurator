@@ -340,8 +340,10 @@ function ViewOffersPage() {
   const [exporting, setExporting] = useState(false);
   const [exportStatus, setExportStatus] = useState('');
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
-  const [showIndividualDiscount, setShowIndividualDiscount] = usePersistedSettings('showIndividualDiscount', false);
   const [showFixace, setShowFixace] = usePersistedSettings('showFixace', false);
+  const [showIndividualDiscount, setShowIndividualDiscount] = usePersistedSettings('showIndividualDiscount', false);
+  const [showSummaryTable, setShowSummaryTable] = usePersistedSettings('showSummaryTable', true);
+  const [showCopyToFixationButton, setShowCopyToFixationButton] = usePersistedSettings('showCopyToFixationButton', false);
   const [enableRowSelection, setEnableRowSelection] = usePersistedSettings('enableRowSelection', false);
   const [selectedRows, setSelectedRows] = useState({});
   const pdfExportComponent = useRef(null);
@@ -351,7 +353,6 @@ function ViewOffersPage() {
     selectedBundles: {},
     selectedCategories: {}
   });
-  const [showSummaryTable, setShowSummaryTable] = usePersistedSettings('showSummaryTable', true);
 
   // Filter configurations based on current user
   const filteredConfigurations = useMemo(() => {
@@ -584,6 +585,8 @@ function ViewOffersPage() {
       setShowFixace(value);
     } else if (setting === 'showSummaryTable') {
       setShowSummaryTable(value);
+    } else if (setting === 'showCopyToFixationButton') {
+      setShowCopyToFixationButton(value);
     } else if (setting === 'enableRowSelection') {
       setEnableRowSelection(value);
       if (!value) {
@@ -883,6 +886,18 @@ function ViewOffersPage() {
     }
   };
 
+  // Pass settings to SettingsModal
+  const settings = {
+    showFixace,
+    showIndividualDiscount,
+    showSummaryTable,
+    showCopyToFixationButton,
+    enableRowSelection,
+    selectedCategories: preselectSettings.selectedCategories,
+    selectedBundles: preselectSettings.selectedBundles,
+    bundles: packages
+  };
+
   return (
     <div className="flex h-screen overflow-hidden">
       <Sidebar />
@@ -1009,6 +1024,8 @@ function ViewOffersPage() {
                     className={exporting ? 'print-scale' : ''}
                     currency={currentCurrency}
                     globalDiscount={globalDiscount}
+                    settings={settings}
+                    userRole={user?.role}
                   />
 
                   {showSummaryTable && (
@@ -1041,15 +1058,7 @@ function ViewOffersPage() {
         <SettingsModal
           show={isSettingsModalOpen}
           onClose={() => setIsSettingsModalOpen(false)}
-          settings={{ 
-            showIndividualDiscount,
-            showFixace,
-            enableRowSelection,
-            showSummaryTable,
-            selectedCategories: preselectSettings.selectedCategories,
-            selectedBundles: preselectSettings.selectedBundles,
-            bundles: packages
-          }}
+          settings={settings}
           onSettingChange={handleSettingChange}
           page="viewoffers"
         />

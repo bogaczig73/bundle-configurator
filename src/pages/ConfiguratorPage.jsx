@@ -47,6 +47,7 @@ function ConfiguratorPage() {
   const [selectedCustomer, setSelectedCustomer] = useState('');
   const [showIndividualDiscount, setShowIndividualDiscount] = usePersistedSettings('showIndividualDiscount', false);
   const [showSummaryTable, setShowSummaryTable] = usePersistedSettings('showSummaryTable', true);
+  const [showCopyToFixationButton, setShowCopyToFixationButton] = usePersistedSettings('showCopyToFixationButton', true);
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
   const [showFixace, setShowFixace] = usePersistedSettings('showFixace', false);
   const [globalDiscount, setGlobalDiscount] = useState(0);
@@ -212,6 +213,8 @@ function ConfiguratorPage() {
       setShowFixace(value);
     } else if (setting === 'showSummaryTable') {
       setShowSummaryTable(value);
+    } else if (setting === 'showCopyToFixationButton') {
+      setShowCopyToFixationButton(value);
     }
   };
 
@@ -339,6 +342,9 @@ function ConfiguratorPage() {
                 currency={selectedCurrency}
                 globalDiscount={globalDiscount}
                 userRole={user?.role ?? 'customer'}
+                settings={{
+                  showCopyToFixationButton
+                }}
               />
               
               {showSummaryTable && (
@@ -441,7 +447,8 @@ function ConfiguratorPage() {
           settings={{ 
             showIndividualDiscount,
             showFixace,
-            showSummaryTable
+            showSummaryTable,
+            showCopyToFixationButton
           }}
           onSettingChange={handleSettingChange}
           page="configurator"

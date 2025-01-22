@@ -16,7 +16,8 @@ export const TableBody = ({
   selectedRows = {},
   onRowSelect,
   currency = 'CZK',
-  userRole = 'customer'
+  userRole = 'customer',
+  settings ={},
 }) => {
   return (
     <div className={tableStyles.tableWrapper}>
@@ -46,6 +47,7 @@ export const TableBody = ({
               onRowSelect={onRowSelect}
               currency={currency}
               userRole={userRole}
+              settings={settings}
             />
           ))}
         </tbody>
