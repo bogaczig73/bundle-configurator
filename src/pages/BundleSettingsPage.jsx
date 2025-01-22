@@ -636,7 +636,10 @@ function flattenItems(items, depth = 0, parentId = '') {
   
   const result = [];
   
-  items.forEach((item, index) => {
+  // Sort items by order before flattening
+  const sortedItems = [...items].sort((a, b) => (a.order || 0) - (b.order || 0));
+  
+  sortedItems.forEach((item, index) => {
     // Create a unique ID by combining parent path and current index
     const uniqueId = parentId ? `${parentId}-${index}` : `${index}`;
     
@@ -649,7 +652,7 @@ function flattenItems(items, depth = 0, parentId = '') {
       children: item.children || []  // Ensure children array exists
     });
     
-    // Recursively add children if they exist
+    // Recursively add children if they exist, and sort them by order
     if (item.children && item.children.length > 0) {
       result.push(...flattenItems(item.children, depth + 1, uniqueId));
     }

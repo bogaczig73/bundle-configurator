@@ -9,6 +9,7 @@ function ItemFormModal({ show, onClose, onSubmit, onDelete, items, packages, edi
     checkbox: false,
     individual: false,
     amount: 0,
+    order: 0,
     packages: packages.map(pkg => ({
       packageId: pkg.id,
       price: 0,
@@ -26,11 +27,13 @@ function ItemFormModal({ show, onClose, onSubmit, onDelete, items, packages, edi
           name: editingItem.name,
           type: 'category',
           categoryId: editingItem.parentId || '',
+          order: editingItem.order || 0,
         });
       } else {
         setFormData({
           ...editingItem,
           id: editingItem.id,
+          order: editingItem.order || 0,
           packages: packages.map(pkg => {
             const existingPackage = editingItem.packages?.find(p => p.packageId === pkg.id);
             return existingPackage || {
@@ -51,6 +54,7 @@ function ItemFormModal({ show, onClose, onSubmit, onDelete, items, packages, edi
         checkbox: false,
         individual: false,
         amount: 0,
+        order: 0,
         packages: packages.map(pkg => ({
           packageId: pkg.id,
           price: 0,
@@ -119,6 +123,7 @@ function ItemFormModal({ show, onClose, onSubmit, onDelete, items, packages, edi
       checkbox: formData.checkbox,
       individual: formData.individual,
       amount: formData.amount,
+      order: formData.order,
       packages: formData.packages,
       userLimit: formData.userLimit,
       discountAmount: formData.discountAmount,
@@ -206,6 +211,23 @@ function ItemFormModal({ show, onClose, onSubmit, onDelete, items, packages, edi
                     <option key={cat.id} value={cat.id}>{cat.name}</option>
                   ))}
                 </select>
+              </div>
+            </div>
+
+            {/* Order Field */}
+            <div className="grid grid-cols-2 gap-6">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Pořadí
+                </label>
+                <input
+                  type="number"
+                  min="1"
+                  value={formData.order}
+                  onChange={(e) => setFormData(prev => ({ ...prev, order: parseInt(e.target.value) || 0 }))}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="Zadejte pořadí..."
+                />
               </div>
             </div>
 

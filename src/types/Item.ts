@@ -22,6 +22,7 @@ export interface ItemBase {
   discount?: number;
   price?: number;
   selected?: boolean;
+  order?: number;
 }
 
 export interface ItemData extends ItemBase {
@@ -47,6 +48,7 @@ export class Item implements ItemData {
   depth?: number;
   price?: number;
   selected?: boolean;
+  order?: number;
 
   // New fields for better calculation handling
   private _fixaceAmount: number = 0;
@@ -75,6 +77,7 @@ export class Item implements ItemData {
     this.depth = data.depth;
     this.price = data.price;
     this.selected = data.selected;
+    this.order = data.order;
 
     Object.freeze(this.packages); // Make packages immutable
   }
@@ -183,7 +186,8 @@ export class Item implements ItemData {
       children: this.children?.map(child => child.toPlainObject()),
       depth: this.depth,
       price: this.price,
-      selected: this.selected
+      selected: this.selected,
+      order: this.order
     };
   }
 }
@@ -194,6 +198,7 @@ export interface Category {
   type: 'category';
   parentId?: number | null;
   children: (ItemData | Category)[];
+  order?: number;
 }
 
 export interface ItemPrice {

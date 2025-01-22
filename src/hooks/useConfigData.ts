@@ -88,6 +88,7 @@ interface NewItemFormData {
   checkbox: boolean;
   individual: boolean;
   note?: string;
+  order?: number;
 }
 
 
@@ -361,32 +362,56 @@ export function useConfigData(bundleId: string | null = null, configId: string |
     try {
       if (formData.type === 'category') {
         // Handle category
+        const categoriesRef = doc(db, 'default', 'categories');
+        const categoriesSnap = await getDoc(categoriesRef);
+        const currentCategories = categoriesSnap.data()?.categories || [];
+
+        // Get categories at the same level and sort them by current order
+        const siblingCategories = currentCategories
+          .filter((cat: Category) => {
+            const catParentId = cat.parentId ? Number(cat.parentId) : null;
+            const formParentId = formData.categoryId ? Number(formData.categoryId) : null;
+            return catParentId === formParentId && cat.id !== formData.id;
+          })
+          .sort((a: Category, b: Category) => (a.order || 1) - (b.order || 1));
+
+        const newOrder = Math.max(1, formData.order || 1);
+        let currentOrder = 1;
+
+        // Recalculate orders for all siblings
+        siblingCategories.forEach((cat: Category) => {
+          if (currentOrder === newOrder) {
+            currentOrder++;
+          }
+          cat.order = currentOrder++;
+        });
+
         const newCategoryData = cleanObject({
           id: formData.id || Date.now(),
           name: formData.name,
           type: 'category',
           parentId: formData.categoryId ? Number(formData.categoryId) : null,
-          children: []
+          children: [],
+          order: newOrder
         });
 
-        // Get current categories
-        const categoriesRef = doc(db, 'default', 'categories');
-        const categoriesSnap = await getDoc(categoriesRef);
-        const currentCategories = categoriesSnap.data()?.categories || [];
+        // Update categories with reordered items
+        const updatedCategories = currentCategories.map((cat: Category) => {
+          const matchingSibling = siblingCategories.find((s: Category) => s.id === cat.id);
+          if (matchingSibling) {
+            return { ...cat, order: matchingSibling.order };
+          }
+          if (cat.id === formData.id) {
+            return newCategoryData;
+          }
+          return cat;
+        });
 
-        if (formData.id) {
-          // Editing existing category
-          const updatedCategories = currentCategories.map((cat: Category) => 
-            cat.id === formData.id ? newCategoryData : cat
-          );
-          await setDoc(categoriesRef, { categories: updatedCategories });
-        } else {
-          // Creating new category
-          await updateDoc(categoriesRef, {
-            categories: arrayUnion(newCategoryData)
-          });
+        if (!formData.id) {
+          updatedCategories.push(newCategoryData);
         }
 
+        await setDoc(categoriesRef, { categories: updatedCategories });
         await fetchData();
         return newCategoryData;
       } else {
@@ -394,6 +419,24 @@ export function useConfigData(bundleId: string | null = null, configId: string |
         const itemsRef = doc(db, 'default', `items_${currency.toLowerCase()}`);
         const itemsSnap = await getDoc(itemsRef);
         const currentItems = itemsSnap.data()?.items || [];
+
+        // Get items in the same category and sort them by current order
+        const siblingItems = currentItems
+          .filter((item: ItemData) => 
+            item.categoryId === (Number(formData.categoryId) || 0) && item.id !== formData.id
+          )
+          .sort((a: ItemData, b: ItemData) => (a.order || 1) - (b.order || 1));
+
+        const newOrder = Math.max(1, formData.order || 1);
+        let currentOrder = 1;
+
+        // Recalculate orders for all siblings
+        siblingItems.forEach((item: ItemData) => {
+          if (currentOrder === newOrder) {
+            currentOrder++;
+          }
+          item.order = currentOrder++;
+        });
 
         const newItemData = cleanObject({
           id: formData.id || Date.now(),
@@ -410,25 +453,39 @@ export function useConfigData(bundleId: string | null = null, configId: string |
           checkbox: formData.checkbox || false,
           individual: formData.individual || false,
           note: formData.note || "",
-          type: 'item'
+          type: 'item',
+          order: newOrder
         });
 
-        if (formData.id) {
-          // Editing existing item
-          const updatedItems = currentItems.map((item: ItemData) => 
-            item.id === formData.id ? newItemData : item
-          );
-          await setDoc(itemsRef, { 
-            items: updatedItems,
-            currency: currency,
-            updatedAt: serverTimestamp()
-          });
-        } else {
-          // Creating new item
-          await updateDoc(itemsRef, {
-            items: arrayUnion(newItemData)
-          });
+        // Update items with reordered siblings
+        const updatedItems = currentItems.map((item: ItemData) => {
+          const matchingSibling = siblingItems.find((s: ItemData) => s.id === item.id);
+          if (matchingSibling) {
+            return { ...item, order: matchingSibling.order };
+          }
+          if (item.id === formData.id) {
+            return newItemData;
+          }
+          return item;
+        });
+
+        if (!formData.id) {
+          updatedItems.push(newItemData);
         }
+
+        // Sort items by category and order
+        updatedItems.sort((a: ItemData, b: ItemData) => {
+          if (a.categoryId === b.categoryId) {
+            return (a.order || 1) - (b.order || 1);
+          }
+          return a.categoryId - b.categoryId;
+        });
+
+        await setDoc(itemsRef, { 
+          items: updatedItems,
+          currency: currency,
+          updatedAt: serverTimestamp()
+        });
 
         await fetchData();
         return Item.create(newItemData);
