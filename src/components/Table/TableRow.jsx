@@ -330,7 +330,7 @@ export const TableRow = ({ item, bundles, amounts, onAmountChange, readonly = fa
                 <span className={tableStyles.itemAmount}>
                   {amounts.discount[itemInstance.id] ? `${amounts.discount[itemInstance.id]}%` : '-'}
                 </span>
-              ) : (
+              ) : !showFixace ? (
                 <div className="flex items-center" onClick={(e) => e.stopPropagation()}>
                   <button
                     onClick={(e) => {
@@ -371,6 +371,10 @@ export const TableRow = ({ item, bundles, amounts, onAmountChange, readonly = fa
                     </svg>
                   </button>
                 </div>
+              ) : (
+                <span className={tableStyles.itemAmount}>
+                  {amounts.discount[itemInstance.id] ? `${amounts.discount[itemInstance.id]}%` : '-'}
+                </span>
               )}
             </div>
           </td>

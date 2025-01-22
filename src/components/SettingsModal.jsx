@@ -33,7 +33,7 @@ const CategoryItem = ({ category, depth = 0, selectedCategories, onSettingChange
   return (
     <>
       <div 
-        className="flex items-center justify-between bg-gray-50 p-2 rounded-lg"
+        className="flex items-center justify-between bg-gray-100 p-2 rounded-lg hover:bg-gray-200 transition-colors"
         style={{ paddingLeft: `${depth * 1.5 + 0.75}rem` }}
       >
         <div className="flex items-center gap-3">
@@ -42,9 +42,9 @@ const CategoryItem = ({ category, depth = 0, selectedCategories, onSettingChange
             id={`category-${category.id}`}
             checked={selectedCategories?.[category.id] || false}
             onChange={(e) => onSettingChange('preselectCategory', { categoryId: category.id, checked: e.target.checked })}
-            className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+            className="rounded border-gray-400 text-blue-600 focus:ring-blue-500"
           />
-          <label htmlFor={`category-${category.id}`} className="text-sm text-gray-700 cursor-pointer">
+          <label htmlFor={`category-${category.id}`} className="text-sm text-gray-900 font-medium cursor-pointer">
             {category.name}
           </label>
         </div>
@@ -69,13 +69,13 @@ function SettingsModal({ show, onClose, settings, onSettingChange, page = 'confi
   return (
     show && (
       <Modal onClose={onClose}>
-        <div className="p-6 w-[800px] max-w-[90vw]">
-          <h2 className="text-xl font-bold mb-4">Nastavení tabulky</h2>
-          <div className="space-y-4">
+        <div className="p-6 w-[800px] max-w-[calc(100vw-4rem)] max-h-[calc(100vh-4rem)] overflow-auto">
+          <h2 className="text-2xl font-bold mb-6 text-gray-900">Nastavení tabulky</h2>
+          <div className="space-y-5">
             {!isConfigurator && (
               <>
-                <div className="flex items-center justify-between">
-                  <label className="text-sm font-medium text-gray-700">
+                <div className="flex items-center justify-between bg-white p-3 rounded-lg border border-gray-200">
+                  <label className="text-sm font-semibold text-gray-900">
                       Povolit výběr řádků pro zobrazení
                   </label>
                   <div className="relative inline-flex items-center">
@@ -84,7 +84,7 @@ function SettingsModal({ show, onClose, settings, onSettingChange, page = 'confi
                       className={`
                         relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent 
                         transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-blue-600 focus:ring-offset-2
-                        ${settings.enableRowSelection ? 'bg-blue-600' : 'bg-gray-200'}
+                        ${settings.enableRowSelection ? 'bg-blue-600' : 'bg-gray-300'}
                       `}
                       role="switch"
                       aria-checked={settings.enableRowSelection}
@@ -98,15 +98,14 @@ function SettingsModal({ show, onClose, settings, onSettingChange, page = 'confi
                   </div>
                 </div>
 
-                {/* Preselect options - only show when row selection is enabled */}
                 {settings.enableRowSelection && (
-                  <div className="ml-6 space-y-3 border-l-2 border-gray-100 pl-4">
+                  <div className="ml-6 space-y-4 border-l-2 border-gray-200 pl-4">
                     <div className="space-y-4">
-                      <div className="flex items-center justify-between bg-gray-50 p-3 rounded-lg">
-                        <span className="text-sm text-gray-700">Položky s nenulovým množstvím</span>
+                      <div className="flex items-center justify-between bg-gray-100 p-4 rounded-lg border border-gray-200">
+                        <span className="text-sm font-medium text-gray-900">Položky s nenulovým množstvím</span>
                         <button
                           onClick={() => onSettingChange('preselectNonZeroPrices', true)}
-                          className="px-3 py-1.5 text-sm bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors flex items-center gap-2"
+                          className="px-3 py-1.5 text-sm bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors flex items-center gap-2 font-medium"
                         >
                           <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
@@ -115,10 +114,9 @@ function SettingsModal({ show, onClose, settings, onSettingChange, page = 'confi
                         </button>
                       </div>
                       
-                      {/* Category selection */}
-                      <div className="space-y-2">
+                      <div className="space-y-3">
                         <div className="flex items-center justify-between">
-                          <p className="text-sm font-medium text-gray-700">Vybrat položky podle kategorie:</p>
+                          <p className="text-sm font-semibold text-gray-900">Vybrat položky podle kategorie:</p>
                           <button
                             onClick={() => {
                               const allSelected = Object.keys(settings.selectedCategories || {}).length === defaultCategories.length;
@@ -128,12 +126,12 @@ function SettingsModal({ show, onClose, settings, onSettingChange, page = 'confi
                               });
                               onSettingChange('preselectAllCategories', newCategories);
                             }}
-                            className="text-sm text-blue-600 hover:text-blue-700"
+                            className="text-sm font-medium text-blue-700 hover:text-blue-800"
                           >
                             {Object.keys(settings.selectedCategories || {}).length === defaultCategories.length ? 'Odznačit vše' : 'Vybrat vše'}
                           </button>
                         </div>
-                        <div className="max-h-60 overflow-y-auto space-y-1 pr-2">
+                        <div className="max-h-60 overflow-y-auto space-y-2 pr-2">
                           {organizedCategories.map((category) => (
                             <CategoryItem
                               key={category.id}
@@ -145,19 +143,19 @@ function SettingsModal({ show, onClose, settings, onSettingChange, page = 'confi
                         </div>
                       </div>
                       
-                      <div className="space-y-2">
-                        <p className="text-sm font-medium text-gray-700 mb-2">Položky zdarma v bundle:</p>
-                        {settings.bundles?.map((bundle, index) => (
-                          <div key={bundle.id} className="flex items-center justify-between bg-gray-50 p-3 rounded-lg">
+                      <div className="space-y-3">
+                        <p className="text-sm font-semibold text-gray-900">Položky zdarma v bundle:</p>
+                        {settings.bundles?.map((bundle) => (
+                          <div key={bundle.id} className="flex items-center justify-between bg-gray-100 p-3 rounded-lg border border-gray-200">
                             <div className="flex items-center gap-3">
                               <input
                                 type="checkbox"
                                 id={`bundle-${bundle.id}`}
                                 checked={settings.selectedBundles?.[bundle.id] || false}
                                 onChange={(e) => onSettingChange('preselectFreeItems', { bundleId: bundle.id, checked: e.target.checked })}
-                                className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                                className="rounded border-gray-400 text-blue-600 focus:ring-blue-500"
                               />
-                              <label htmlFor={`bundle-${bundle.id}`} className="text-sm text-gray-700 cursor-pointer">
+                              <label htmlFor={`bundle-${bundle.id}`} className="text-sm text-gray-900 font-medium cursor-pointer">
                                 {bundle.name}
                               </label>
                             </div>
@@ -170,9 +168,9 @@ function SettingsModal({ show, onClose, settings, onSettingChange, page = 'confi
               </>
             )}
 
-            <div className="flex items-center justify-between">
-              <label className="text-sm font-medium text-gray-700">
-              Zobrazit sloupec: Fixace
+            <div className="flex items-center justify-between bg-white p-3 rounded-lg border border-gray-200">
+              <label className="text-sm font-semibold text-gray-900">
+                Zobrazit sloupec: Fixace
               </label>
               <div className="relative inline-flex items-center">
                 <button
@@ -180,7 +178,7 @@ function SettingsModal({ show, onClose, settings, onSettingChange, page = 'confi
                   className={`
                     relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent 
                     transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-blue-600 focus:ring-offset-2
-                    ${settings.showFixace ? 'bg-blue-600' : 'bg-gray-200'}
+                    ${settings.showFixace ? 'bg-blue-600' : 'bg-gray-300'}
                   `}
                   role="switch"
                   aria-checked={settings.showFixace}
@@ -194,8 +192,8 @@ function SettingsModal({ show, onClose, settings, onSettingChange, page = 'confi
               </div>
             </div>
 
-            <div className="flex items-center justify-between">
-              <label className="text-sm font-medium text-gray-700">
+            <div className="flex items-center justify-between bg-white p-3 rounded-lg border border-gray-200">
+              <label className="text-sm font-semibold text-gray-900">
                 Zobrazit sloupec: Individuální slevy
               </label>
               <div className="relative inline-flex items-center">
@@ -204,7 +202,7 @@ function SettingsModal({ show, onClose, settings, onSettingChange, page = 'confi
                   className={`
                     relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent 
                     transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-blue-600 focus:ring-offset-2
-                    ${settings.showIndividualDiscount ? 'bg-blue-600' : 'bg-gray-200'}
+                    ${settings.showIndividualDiscount ? 'bg-blue-600' : 'bg-gray-300'}
                   `}
                   role="switch"
                   aria-checked={settings.showIndividualDiscount}
@@ -218,8 +216,8 @@ function SettingsModal({ show, onClose, settings, onSettingChange, page = 'confi
               </div>
             </div>
 
-            <div className="flex items-center justify-between">
-              <label className="text-sm font-medium text-gray-700">
+            <div className="flex items-center justify-between bg-white p-3 rounded-lg border border-gray-200">
+              <label className="text-sm font-semibold text-gray-900">
                 Zobrazit souhrnnou tabulku
               </label>
               <div className="relative inline-flex items-center">
@@ -228,7 +226,7 @@ function SettingsModal({ show, onClose, settings, onSettingChange, page = 'confi
                   className={`
                     relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent 
                     transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-blue-600 focus:ring-offset-2
-                    ${settings.showSummaryTable ? 'bg-blue-600' : 'bg-gray-200'}
+                    ${settings.showSummaryTable ? 'bg-blue-600' : 'bg-gray-300'}
                   `}
                   role="switch"
                   aria-checked={settings.showSummaryTable}
@@ -243,10 +241,10 @@ function SettingsModal({ show, onClose, settings, onSettingChange, page = 'confi
             </div>
           </div>
           
-          <div className="mt-6 flex justify-end">
+          <div className="mt-8 flex justify-end">
             <button
               onClick={onClose}
-              className="px-4 py-2 bg-gray-100 text-gray-700 rounded hover:bg-gray-200 transition-colors"
+              className="px-4 py-2 bg-gray-200 text-gray-800 font-medium rounded-md hover:bg-gray-300 transition-colors"
             >
               Zavřít
             </button>

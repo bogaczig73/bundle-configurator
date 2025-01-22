@@ -123,7 +123,7 @@ export const SummaryTable = ({ items = [], amounts = {}, currency = 'CZK', bundl
           {/* Price without discounts */}
           <tr>
             <td className={`${styles.bodyCell} ${styles.itemName.item} font-medium py-4`}>
-              Cena bez slev
+              Plná cena bez slevy
             </td>
             {showFixace && <td />}
             {showIndividualDiscount && <td />}
@@ -160,7 +160,7 @@ export const SummaryTable = ({ items = [], amounts = {}, currency = 'CZK', bundl
           {/* Total discounted amount */}
           <tr>
             <td className={`${styles.bodyCell} ${styles.itemName.item} font-medium py-4`}>
-              Celková sleva
+              Výše slevy
             </td>
             {showFixace && <td />}
             {showIndividualDiscount && <td />}
@@ -197,7 +197,7 @@ export const SummaryTable = ({ items = [], amounts = {}, currency = 'CZK', bundl
           {/* Final price after all discounts */}
           <tr>
             <td className={`${styles.bodyCell} ${styles.itemName.item} py-4`}>
-              Konečná cena po slevách
+            Celková cena po slevě za měsíc bez DPH
             </td>
             {showFixace && <td />}
             {showIndividualDiscount && <td />}
