@@ -2,6 +2,8 @@ import React from 'react';
 import { roundPrice, formatPrice } from '../../utils/priceUtils';
 import { Item } from '../../types/Item';
 import { abraColors, getColorHex, useTableStyles } from './useTableStyles';
+import { TableColgroup } from './TableColgroup';
+import { isBundleActive, isBundleDisabled } from '../../utils/bundleUtils';
 
 const processItems = (items) => {
   const result = [];
@@ -15,184 +17,219 @@ const processItems = (items) => {
   return result;
 };
 
-const calculateBundleTotals = (flatItems, amounts, bundle) => {
+const calculateBundleTotals = (flatItems, amounts = {}, bundle) => {
   let totals = {
     withoutDiscount: 0,
-    withGlobalDiscount: 0,
-    withItemDiscount: 0,
+    totalDiscount: 0,
     final: 0
   };
+
+  if (!flatItems?.length || !bundle) return totals;
 
   flatItems.forEach(item => {
     const itemInstance = item instanceof Item ? item : new Item(item);
     const basePrice = itemInstance.getPrice(bundle.id);
-    const fixedAmount = amounts.fixace[itemInstance.id] || 0;
-    const totalAmount = amounts.amounts[itemInstance.id] || 0;
+    const fixedAmount = amounts.fixace?.[itemInstance.id] || 0;
+    const totalAmount = amounts.amounts?.[itemInstance.id] || 0;
     
     if (basePrice === 0 || totalAmount === 0) return;
 
-    // Calculate base price without any discounts
-    const priceBeforeDiscount = roundPrice(basePrice * totalAmount);
-    totals.withoutDiscount += priceBeforeDiscount;
-
-    // Calculate price after global discount
-    const globalDiscount = amounts.globalDiscount ?? 0;
-    const priceAfterGlobalDiscount = roundPrice(priceBeforeDiscount * (1 - globalDiscount / 100));
-    totals.withGlobalDiscount += priceAfterGlobalDiscount;
-
-    // Calculate price after item discounts
-    let priceAfterItemDiscount = priceAfterGlobalDiscount;
-    if (fixedAmount > 0) {
-      const fixedPrice = roundPrice(basePrice * fixedAmount);
-      const remainingAmount = totalAmount - fixedAmount;
-      
-      if (remainingAmount > 0) {
-        const overFixedDiscount = amounts.discount?.[`${itemInstance.id}_over_fixation_items`] ?? 0;
-        priceAfterItemDiscount = roundPrice(
-          fixedPrice * (1 - globalDiscount / 100) +
-          (basePrice * remainingAmount) * (1 - overFixedDiscount / 100)
-        );
-      }
-    } else {
-      const itemDiscount = amounts.discount?.[itemInstance.id] ?? itemInstance.discount ?? 0;
-      priceAfterItemDiscount = roundPrice(priceAfterGlobalDiscount * (1 - itemDiscount / 100));
-    }
+    // Set the amounts and discounts on the item instance
+    itemInstance.setAmounts(totalAmount, fixedAmount);
     
-    totals.withItemDiscount += priceAfterItemDiscount;
-    totals.final = totals.withItemDiscount;
+    // Set discounts - handle global discount for fixed items
+    const fixedItemsKey = `${itemInstance.id}_fixed_items`;
+    const overFixationKey = `${itemInstance.id}_over_fixation_items`;
+    
+    const fixedDiscount = amounts.individualDiscounts?.[fixedItemsKey] ? 
+      amounts.discount?.[fixedItemsKey] : 
+      amounts.globalDiscount ?? 0;
+      
+    itemInstance.setDiscounts(
+      fixedDiscount, // fixace discount (use global if no individual)
+      amounts.discount?.[overFixationKey] ?? 0, // over fixation discount
+      amounts.discount?.[itemInstance.id] ?? itemInstance.discount ?? 0 // individual item discount
+    );
+
+    // Calculate totals
+    const priceBeforeDiscount = basePrice * totalAmount;
+    const finalPrice = itemInstance.calculateTotalPrice(bundle.id);
+    const itemDiscount = itemInstance.calculateTotalDiscount(bundle.id);
+
+    totals.withoutDiscount += priceBeforeDiscount;
+    totals.totalDiscount += itemDiscount;
+    totals.final += finalPrice;
   });
 
   return totals;
 };
 
-export const SummaryTable = ({ items, amounts, currency, bundles, exporting = false }) => {
+export const SummaryTable = ({ items = [], amounts = {}, currency = 'CZK', bundles = [], exporting = false, globalDiscount = 0, showIndividualDiscount = false, showFixace = false }) => {
   const styles = useTableStyles(exporting);
   const flatItems = processItems(items);
+
+  // Map all bundles, not just ones with non-zero totals
   const bundleTotals = bundles.map(bundle => ({
     bundle,
-    totals: calculateBundleTotals(flatItems, amounts, bundle)
-  })).filter(({ totals }) => totals.withoutDiscount > 0);
+    totals: calculateBundleTotals(flatItems, { ...amounts, globalDiscount }, bundle)
+  }));
   
-  if (bundleTotals.length === 0) return null;
 
   return (
     <div className="mt-8">
-      <table className={styles.container}>
-        <colgroup>
-          <col className="w-full" /> {/* Text column */}
-          <col className="w-full" /> {/* Spacer column */}
-          {bundleTotals.map((_, index) => (
-            <col key={index} className={styles.columnWidths.bundle} />
-          ))}
-        </colgroup>
+      <table className={styles.table}>
+        <TableColgroup 
+          bundles={bundles} 
+          tableStyles={styles}
+          showIndividualDiscount={showIndividualDiscount}
+          showFixace={showFixace}
+          enableRowSelection={false}
+        />
         <thead>
           <tr>
-            <th className={`${styles.headerCell} text-left px-4 py-3`}>
-              Položka
+            <th className={`${styles.headerCell} text-left py-4`}>
+              Souhrn
             </th>
-            <th /> {/* Empty spacer cell */}
-            {bundleTotals.map(({ bundle }, index) => (
-              <th 
-                key={bundle.id}
-                className={`${styles.packageHeaderCell} text-right text-white ${styles.columnWidths.bundle} ${styles.getBundleHeaderBorderClasses(index)} px-4 py-3`}
-                style={{ backgroundColor: getColorHex(index) }}
-              >
-                <div className={styles.centerWrapper}>
-                  {bundle.name}
-                </div>
-              </th>
-            ))}
+            {showFixace && <th className={`${styles.headerCell}`}>
+            </th>}
+            {showIndividualDiscount && <th className={`${styles.headerCell}`}>
+            </th>}
+            <th className={`${styles.headerCell}`}></th> {/* Empty spacer cell */}
+
+            {bundleTotals.map(({ bundle }, index) => {
+              const isActive = isBundleActive(bundle, index, amounts.amounts, bundles);
+              const isDisabled = isBundleDisabled(bundle, index, amounts.amounts);
+              return (
+                <React.Fragment key={bundle.id}>
+                  <th className="!w-[20px] min-w-[20px]" /> {/* Separator header */}
+                  <th 
+                    className={`
+                      ${styles.packageHeaderCell} 
+                      ${styles.getBundleHeaderBorderClasses(index)}
+                      ${isActive ? `bg-${abraColors[index]} ${styles.activeBundle}` : ''}
+                      ${isDisabled ? styles.inactiveBundle.header : ''}
+                    `}
+                  >
+                    <div className={styles.centerWrapper}>
+                      {bundle.name}
+                    </div>
+                  </th>
+                </React.Fragment>
+              );
+            })}
           </tr>
         </thead>
         <tbody>
+          {/* Price without discounts */}
           <tr>
-            <td className={`${styles.bodyCell} ${styles.itemName.item} px-4 py-3`}>
+            <td className={`${styles.bodyCell} ${styles.itemName.item} font-medium py-4`}>
               Cena bez slev
             </td>
+            {showFixace && <td />}
+            {showIndividualDiscount && <td />}
             <td /> {/* Empty spacer cell */}
-            {bundleTotals.map(({ bundle, totals }, index) => (
-              <td 
-                key={bundle.id}
-                className={`${styles.packageBodyCell} text-right ${styles.columnWidths.bundle} ${styles.getBundleBorderClasses(index)} px-4 py-3`}
-              >
-                <div className={styles.centerWrapper}>
-                  <div className="flex flex-col items-center">
-                    <div className="text-sm text-gray-700">
-                      {formatPrice(totals.withoutDiscount, currency)}
+
+            {bundleTotals.map(({ bundle, totals }, index) => {
+              const isActive = isBundleActive(bundle, index, amounts.amounts, bundles);
+              const isDisabled = isBundleDisabled(bundle, index, amounts.amounts);
+              return (
+                <React.Fragment key={bundle.id}>
+                  <td className="!w-[20px] min-w-[20px]" /> {/* Separator cell */}
+                  <td 
+                    className={`
+                      ${styles.packageBodyCell} 
+                      text-right 
+                      ${styles.getBundleBorderClasses(index)} 
+                      ${isDisabled ? styles.inactiveBundle.cell : ''}
+                      py-4
+                    `}
+                  >
+                    <div className={styles.centerWrapper}>
+                      <div className="flex flex-col items-center">
+                        <div className="text-sm text-gray-700">
+                          {formatPrice(totals.withoutDiscount, currency)}
+                        </div>
+                      </div>
                     </div>
-                  </div>
-                </div>
-              </td>
-            ))}
+                  </td>
+                </React.Fragment>
+              );
+            })}
           </tr>
+
+          {/* Total discounted amount */}
           <tr>
-            <td className={`${styles.bodyCell} ${styles.itemName.item} px-4 py-3`}>
-              Po globální slevě ({amounts.globalDiscount}%)
+            <td className={`${styles.bodyCell} ${styles.itemName.item} font-medium py-4`}>
+              Celková sleva
             </td>
+            {showFixace && <td />}
+            {showIndividualDiscount && <td />}
             <td /> {/* Empty spacer cell */}
-            {bundleTotals.map(({ bundle, totals }, index) => (
-              <td 
-                key={bundle.id}
-                className={`${styles.packageBodyCell} text-right ${styles.columnWidths.bundle} ${styles.getBundleBorderClasses(index)} px-4 py-3`}
-              >
-                <div className={styles.centerWrapper}>
-                  <div className="flex flex-col items-center">
-                    <div className="text-sm text-gray-700">
-                      {formatPrice(totals.withGlobalDiscount, currency)}
+
+            {bundleTotals.map(({ bundle, totals }, index) => {
+              const isActive = isBundleActive(bundle, index, amounts.amounts, bundles);
+              const isDisabled = isBundleDisabled(bundle, index, amounts.amounts);
+              return (
+                <React.Fragment key={bundle.id}>
+                  <td className="!w-[20px] min-w-[20px]" /> {/* Separator cell */}
+                  <td 
+                    className={`
+                      ${styles.packageBodyCell} 
+                      text-right 
+                      ${styles.getBundleBorderClasses(index)} 
+                      ${isDisabled ? styles.inactiveBundle.cell : ''}
+                      py-4
+                    `}
+                  >
+                    <div className={styles.centerWrapper}>
+                      <div className="flex flex-col items-center">
+                        <div className="text-sm">
+                          {totals.totalDiscount > 0 ? `-${formatPrice(totals.totalDiscount, currency)}` : formatPrice(0, currency)}
+                        </div>
+                      </div>
                     </div>
-                    <div className={styles.priceNote}>
-                      (-{formatPrice(totals.withoutDiscount - totals.withGlobalDiscount, currency)})
-                    </div>
-                  </div>
-                </div>
-              </td>
-            ))}
+                  </td>
+                </React.Fragment>
+              );
+            })}
           </tr>
+
+          {/* Final price after all discounts */}
           <tr>
-            <td className={`${styles.bodyCell} ${styles.itemName.item} px-4 py-3`}>
-              Po slevách na položkách
+            <td className={`${styles.bodyCell} ${styles.itemName.item} py-4`}>
+              Konečná cena po slevách
             </td>
+            {showFixace && <td />}
+            {showIndividualDiscount && <td />}
             <td /> {/* Empty spacer cell */}
-            {bundleTotals.map(({ bundle, totals }, index) => (
-              <td 
-                key={bundle.id}
-                className={`${styles.packageBodyCell} text-right ${styles.columnWidths.bundle} ${styles.getBundleBorderClasses(index)} px-4 py-3`}
-              >
-                <div className={styles.centerWrapper}>
-                  <div className="flex flex-col items-center">
-                    <div className="text-sm text-gray-700">
-                      {formatPrice(totals.withItemDiscount, currency)}
+
+            {bundleTotals.map(({ bundle, totals }, index) => {
+              const isActive = isBundleActive(bundle, index, amounts.amounts, bundles);
+              const isDisabled = isBundleDisabled(bundle, index, amounts.amounts);
+              return (
+                <React.Fragment key={bundle.id}>
+                  <td className="!w-[20px] min-w-[20px]" /> {/* Separator cell */}
+                  <td 
+                    className={`
+                      ${styles.packageBodyCell} 
+                      text-right 
+                      ${styles.getBundleBorderClasses(index)} 
+                      ${isDisabled ? styles.inactiveBundle.cell : ''}
+                      ${isActive ? `bg-${abraColors[index]} ${styles.activeBundle}` : ''}
+                      py-4
+                    `}
+                  >
+                    <div className={styles.centerWrapper}>
+                      <div className="flex flex-col items-center">
+                        <div className={`text-sm ${isActive ? `` : 'font-medium'} ${isDisabled ? styles.inactiveBundle.price : ''} `}>
+                          {formatPrice(totals.final, currency)}
+                        </div>
+                      </div>
                     </div>
-                    <div className={styles.priceNote}>
-                      (-{formatPrice(totals.withGlobalDiscount - totals.withItemDiscount, currency)})
-                    </div>
-                  </div>
-                </div>
-              </td>
-            ))}
-          </tr>
-          <tr className="bg-gray-50">
-            <td className={`${styles.bodyCell} ${styles.itemName.category} px-4 py-3`}>
-              Celková cena
-            </td>
-            <td /> {/* Empty spacer cell */}
-            {bundleTotals.map(({ bundle, totals }, index) => (
-              <td 
-                key={bundle.id}
-                className={`${styles.packageBodyCell} text-right ${styles.columnWidths.bundle} ${styles.getBundleBorderClasses(index)} px-4 py-3`}
-              >
-                <div className={styles.centerWrapper}>
-                  <div className="flex flex-col items-center">
-                    <div className="text-sm font-medium text-gray-900">
-                      {formatPrice(totals.final, currency)}
-                    </div>
-                    <div className={styles.priceNote}>
-                      (-{formatPrice(totals.withoutDiscount - totals.final, currency)})
-                    </div>
-                  </div>
-                </div>
-              </td>
-            ))}
+                  </td>
+                </React.Fragment>
+              );
+            })}
           </tr>
         </tbody>
       </table>

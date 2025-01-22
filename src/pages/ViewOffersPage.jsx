@@ -313,69 +313,6 @@ const ConfigurationsPicker = ({
   );
 };
 
-// Visitor View Component
-const VisitorView = ({ configuration, processedItems, packages }) => {
-  const [amounts, setAmounts] = useState({});
-
-  useEffect(() => {
-    if (configuration?.items) {
-      const configAmounts = {
-        amounts: {},
-        discount: {},
-        fixace: {}
-      };
-      Object.entries(configuration.items).forEach(([itemId, itemData]) => {
-        configAmounts.amounts[itemId] = itemData.amount || 0;
-        configAmounts.fixace[itemId] = itemData.fixace || 0;
-        if (itemData.discount) configAmounts.discount[itemId] = itemData.discount;
-        if (itemData.subItemDiscounts) {
-          if (itemData.subItemDiscounts.fixace) {
-            configAmounts.discount[`${itemId}_fixed_items`] = itemData.subItemDiscounts.fixace;
-          }
-          if (itemData.subItemDiscounts.over) {
-            configAmounts.discount[`${itemId}_over_fixation_items`] = itemData.subItemDiscounts.over;
-          }
-        }
-      });
-      setAmounts(configAmounts);
-    }
-  }, [configuration]);
-
-  if (!configuration) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="text-center">
-          <h1 className="text-2xl font-bold text-gray-900 mb-4">Konfigurace nenalezena</h1>
-          <p className="text-gray-600">Požadovaná konfigurace neexistuje nebo k ní nemáte přístup.</p>
-        </div>
-      </div>
-    );
-  }
-
-  return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="max-w-7xl mx-auto px-4 py-8">
-        <div className="bg-white rounded-lg shadow p-6">
-          <h1 className="text-2xl font-bold text-gray-900 mb-6">{configuration.name}</h1>
-          <div className="overflow-x-auto">
-            <BundleTable
-              bundles={packages}
-              items={processedItems}
-              amounts={amounts}
-              readonly={true}
-              showFixace={false}
-              showIndividualDiscount={false}
-              selectedConfiguration={configuration}
-              enableRowSelection={false}
-              selectedRows={{}}
-            />
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-};
-
 // Main Component
 function ViewOffersPage() {
   const { id } = useParams();
@@ -414,7 +351,7 @@ function ViewOffersPage() {
     selectedBundles: {},
     selectedCategories: {}
   });
-  const [showSummaryTable, setShowSummaryTable] = usePersistedSettings('showSummaryTable', false);
+  const [showSummaryTable, setShowSummaryTable] = usePersistedSettings('showSummaryTable', true);
 
   // Filter configurations based on current user
   const filteredConfigurations = useMemo(() => {
@@ -577,16 +514,6 @@ function ViewOffersPage() {
     );
   }
 
-  // Show visitor view if there's an ID and no user
-  if (id && !user) {
-    return (
-      <VisitorView 
-        configuration={selectedConfiguration}
-        processedItems={processedItems}
-        packages={packages}
-      />
-    );
-  }
 
   // Handle amount changes in the table
   const handleAmountChange = (itemId, amount, field = 'amounts') => {
@@ -964,16 +891,14 @@ function ViewOffersPage() {
           <div className="p-6">
             <div className="flex justify-between items-center">
               <h1 className="text-2xl font-bold text-gray-900">
-                {selectedConfiguration ? (
+                
                   <div className="flex flex-col">
-                    <span>Náhled konfigurací</span>
-                    <span className="text-lg font-normal text-gray-600 mt-1">
-                      {selectedConfiguration.name}
-                    </span>
-                  </div>
-                ) : (
-                  'Náhled konfigurací'
-                )}
+                    <span>Náhled konfigurací {selectedConfiguration ? (
+                      " – " + selectedConfiguration.name
+                    ) : (
+                      ''
+                    )}</span>
+                </div>
               </h1>
               <div className="flex justify-between items-center space-x-4">
                 <button
@@ -1087,6 +1012,13 @@ function ViewOffersPage() {
                   />
 
                   {showSummaryTable && (
+                    console.log('Rendering summary table with:', {
+                      showSummaryTable,
+                      items: processedItems,
+                      amounts,
+                      currency: currentCurrency,
+                      bundles: packages
+                    }),
                     <SummaryTable
                       items={processedItems}
                       amounts={{
@@ -1095,6 +1027,9 @@ function ViewOffersPage() {
                       }}
                       currency={currentCurrency}
                       bundles={packages}
+                      exporting={exporting}
+                      showIndividualDiscount={showIndividualDiscount}
+                      showFixace={showFixace}
                     />
                   )}
                 </div>

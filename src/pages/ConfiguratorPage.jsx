@@ -3,6 +3,7 @@ import { useParams } from 'react-router-dom';
 import Sidebar from '../components/Sidebar';
 import { useConfigData } from '../hooks/useConfigData';
 import { BundleTable } from '../components/Table/BundleTable';
+import { SummaryTable } from '../components/Table/SummaryTable';
 import Modal from '../components/Modal';
 import SettingsModal from '../components/SettingsModal';
 import { usePersistedSettings } from '../hooks/usePersistedSettings';
@@ -11,7 +12,7 @@ import { db } from '../firebase';
 import { getDefaultItemsForCurrency } from '../data/items';
 import { CURRENCIES } from '../hooks/useConfigData';
 import { useTableStyles } from '../components/Table/useTableStyles';
-
+import { useCurrentUser } from '../api/users';
 
 // // Available currencies
 // const CURRENCIES = [
@@ -37,12 +38,15 @@ function ConfiguratorPage() {
   const [amounts, setAmounts] = useState({
     amounts: {},
     discount: {},
-    fixace: {}
+    fixace: {},
+    individualDiscounts: {}
   });
+  const { user } = useCurrentUser();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [configName, setConfigName] = useState('');
   const [selectedCustomer, setSelectedCustomer] = useState('');
   const [showIndividualDiscount, setShowIndividualDiscount] = usePersistedSettings('showIndividualDiscount', false);
+  const [showSummaryTable, setShowSummaryTable] = usePersistedSettings('showSummaryTable', true);
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
   const [showFixace, setShowFixace] = usePersistedSettings('showFixace', false);
   const [globalDiscount, setGlobalDiscount] = useState(0);
@@ -77,11 +81,28 @@ function ConfiguratorPage() {
         return acc;
       }, {});
 
-      setAmounts({
+      const newAmounts = {
         amounts: convertedAmounts,
         discount: {},
-        fixace: {}
+        fixace: {},
+        individualDiscounts: {}
+      };
+
+      // Restore individual discounts state
+      Object.entries(bundleData.amounts).forEach(([itemId, itemData]) => {
+        if (itemData.individualDiscounts) {
+          if (itemData.individualDiscounts.fixed) {
+            newAmounts.individualDiscounts[`${itemId}_fixed_items`] = true;
+            newAmounts.discount[`${itemId}_fixed_items`] = itemData.subItemDiscounts?.fixed || 0;
+          }
+          if (itemData.individualDiscounts.over) {
+            newAmounts.individualDiscounts[`${itemId}_over_fixation_items`] = true;
+            newAmounts.discount[`${itemId}_over_fixation_items`] = itemData.subItemDiscounts?.over || 0;
+          }
+        }
       });
+
+      setAmounts(newAmounts);
 
       // Load global discount if present
       if (bundleData.globalDiscount !== undefined) {
@@ -99,18 +120,15 @@ function ConfiguratorPage() {
         if (!newAmounts[field]) {
           newAmounts[field] = {};
         }
-        // Don't set discount for fixed items as they use global discount
-        if (!(field === 'discount' && subItemId.endsWith('fixed_items'))) {
-          newAmounts[field][subItemId] = Number(value);
+        newAmounts[field][subItemId] = Number(value);
+        
+        // Store flag for individually set discounts
+        if (field === 'discount') {
+          if (!newAmounts.individualDiscounts) {
+            newAmounts.individualDiscounts = {};
+          }
+          newAmounts.individualDiscounts[subItemId] = true;
         }
-
-        // // If parent discount changes, reset subitem discounts
-        // if (field === 'discount' && !subItemId) {
-        //   const subitems = ['Fixované položky', 'Položky nad rámec fixace'];
-        //   subitems.forEach(subitem => {
-        //     delete newAmounts[field][subitem];
-        //   });
-        // }
       } else {
         // Handle regular amount changes
         if (!newAmounts[field]) {
@@ -119,6 +137,14 @@ function ConfiguratorPage() {
         // Convert itemId to string to ensure consistent key type
         const key = itemId.toString();
         newAmounts[field][key] = Number(value);
+        
+        // Store flag for individually set discounts
+        if (field === 'discount') {
+          if (!newAmounts.individualDiscounts) {
+            newAmounts.individualDiscounts = {};
+          }
+          newAmounts.individualDiscounts[key] = true;
+        }
       }
       return newAmounts;
     });
@@ -133,7 +159,6 @@ function ConfiguratorPage() {
     try {
       const bundleId = `bundle_${Date.now()}_${Math.random().toString(36)}`;
       
-      // Ensure we have valid amounts data
       const validItems = {};
       console.log('amounts', amounts);
       // Only include items that have actual values
@@ -144,7 +169,12 @@ function ConfiguratorPage() {
             discount: Number(amounts.discount?.[itemId]) || 0,
             fixace: Number(amounts.fixace?.[itemId]) || 0,
             subItemDiscounts: {
-              'over': Number(amounts.discount?.[`${itemId}_over_fixation_items`]) || 0
+              'over': Number(amounts.discount?.[`${itemId}_over_fixation_items`]) || 0,
+              'fixed': Number(amounts.discount?.[`${itemId}_fixed_items`]) || 0
+            },
+            individualDiscounts: {
+              'over': amounts.individualDiscounts?.[`${itemId}_over_fixation_items`] || false,
+              'fixed': amounts.individualDiscounts?.[`${itemId}_fixed_items`] || false
             }
           };
         }
@@ -180,6 +210,8 @@ function ConfiguratorPage() {
       setShowIndividualDiscount(value);
     } else if (setting === 'showFixace') {
       setShowFixace(value);
+    } else if (setting === 'showSummaryTable') {
+      setShowSummaryTable(value);
     }
   };
 
@@ -221,7 +253,33 @@ function ConfiguratorPage() {
                     min="0"
                     max="100"
                     value={globalDiscount}
-                    onChange={(e) => setGlobalDiscount(Math.min(100, Math.max(0, Number(e.target.value))))}
+                    onChange={(e) => {
+                      const newGlobalDiscount = Math.min(100, Math.max(0, Number(e.target.value)));
+                      setGlobalDiscount(newGlobalDiscount);
+                      
+                      // Update all fixed items' individual discounts to match global discount
+                      setAmounts(prev => {
+                        const newAmounts = { ...prev };
+                        
+                        // Reset individual discounts for fixed items
+                        if (!newAmounts.individualDiscounts) {
+                          newAmounts.individualDiscounts = {};
+                        }
+                        if (!newAmounts.discount) {
+                          newAmounts.discount = {};
+                        }
+                        
+                        // For each item that has amounts
+                        Object.keys(newAmounts.amounts || {}).forEach(itemId => {
+                          const fixedItemKey = `${itemId}_fixed_items`;
+                          // Reset the individual discount flag and value
+                          newAmounts.individualDiscounts[fixedItemKey] = false;
+                          newAmounts.discount[fixedItemKey] = newGlobalDiscount;
+                        });
+                        
+                        return newAmounts;
+                      });
+                    }}
                     className="w-20 px-2 py-2 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
                   />
                 </div>
@@ -280,8 +338,20 @@ function ConfiguratorPage() {
                 showFixace={showFixace}
                 currency={selectedCurrency}
                 globalDiscount={globalDiscount}
+                userRole={user?.role ?? 'customer'}
               />
               
+              {showSummaryTable && (
+                <SummaryTable
+                  items={processedItems || []}
+                  amounts={amounts}
+                  currency={selectedCurrency}
+                  bundles={packages}
+                  globalDiscount={globalDiscount}
+                  showIndividualDiscount={showIndividualDiscount}
+                  showFixace={showFixace}
+                />
+              )}
             </div>
           )}
         </main>
@@ -289,24 +359,37 @@ function ConfiguratorPage() {
         {/* Add Modal */}
         {isModalOpen && (
           <Modal onClose={() => setIsModalOpen(false)}>
-            <div className="p-6">
+            <div className="p-6 w-[600px] max-w-full">
               <h2 className="text-xl font-bold mb-4">Uložit konfiguraci</h2>
               <div className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700">Název konfigurace</label>
+                  <label className="block text-sm font-medium text-gray-700">
+                    Název konfigurace <span className="text-red-500">*</span>
+                  </label>
                   <input
                     type="text"
                     value={configName}
                     onChange={(e) => setConfigName(e.target.value)}
-                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                    className={`mt-1 block w-full rounded-md shadow-sm focus:ring-blue-500 ${
+                      !configName ? 'border-red-300' : 'border-gray-300'
+                    } focus:border-blue-500`}
+                    required
                   />
+                  {!configName && (
+                    <p className="mt-1 text-sm text-red-500">Toto pole je povinné</p>
+                  )}
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700">Zákazník</label>
+                  <label className="block text-sm font-medium text-gray-700">
+                    Zákazník <span className="text-red-500">*</span>
+                  </label>
                   <select
                     value={selectedCustomer}
                     onChange={(e) => setSelectedCustomer(e.target.value)}
-                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                    className={`mt-1 block w-full rounded-md shadow-sm focus:ring-blue-500 ${
+                      !selectedCustomer ? 'border-red-300' : 'border-gray-300'
+                    } focus:border-blue-500`}
+                    required
                   >
                     <option value="">Vyber zákazníka</option>
                     {customers.map(customer => (
@@ -315,6 +398,9 @@ function ConfiguratorPage() {
                       </option>
                     ))}
                   </select>
+                  {!selectedCustomer && (
+                    <p className="mt-1 text-sm text-red-500">Toto pole je povinné</p>
+                  )}
                 </div>
                 <div className="flex items-center">
                   <input
@@ -337,8 +423,8 @@ function ConfiguratorPage() {
                   </button>
                   <button
                     onClick={handleSaveConfig}
-                    disabled={loading}
-                    className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50"
+                    disabled={loading || !configName || !selectedCustomer}
+                    className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     {loading ? 'Saving...' : 'Save'}
                   </button>
@@ -354,7 +440,8 @@ function ConfiguratorPage() {
           onClose={() => setIsSettingsModalOpen(false)}
           settings={{ 
             showIndividualDiscount,
-            showFixace
+            showFixace,
+            showSummaryTable
           }}
           onSettingChange={handleSettingChange}
           page="configurator"

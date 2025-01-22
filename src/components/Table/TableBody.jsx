@@ -3,7 +3,7 @@ import { TableColgroup } from './TableColgroup';
 import { TableRow } from './TableRow';
 
 
-export function TableBody({ 
+export const TableBody = ({ 
   bundles, 
   items, 
   amounts, 
@@ -12,14 +12,15 @@ export function TableBody({
   readonly = false, 
   showIndividualDiscount = false, 
   showFixace = false,
-  currency = 'CZK',
   enableRowSelection = false,
   selectedRows = {},
-  onRowSelect
-}) {
+  onRowSelect,
+  currency = 'CZK',
+  userRole = 'customer'
+}) => {
   return (
     <div className={tableStyles.tableWrapper}>
-      <table className="w-full table-fixed">
+      <table className={tableStyles.table}>
         <TableColgroup 
           bundles={bundles} 
           tableStyles={tableStyles} 
@@ -44,10 +45,11 @@ export function TableBody({
               selectedRows={selectedRows}
               onRowSelect={onRowSelect}
               currency={currency}
+              userRole={userRole}
             />
           ))}
         </tbody>
       </table>
     </div>
   );
-}
+};

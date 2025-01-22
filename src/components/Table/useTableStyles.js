@@ -39,6 +39,7 @@ export const useTableStyles = (exporting = false) => ({
     // New styles
     container: "min-w-[800px] inline-block w-full",
     tableWrapper: "bg-white scrollbar-hide",
+    table: "w-full table-fixed",
     categoryRow: "border-b-2 border-b-abraMagenta",
     itemName: {
       category: "font-medium text-abraMagenta text-sm break-words",

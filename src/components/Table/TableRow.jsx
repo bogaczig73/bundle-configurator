@@ -6,7 +6,7 @@ import { Item } from '../../types/Item';
 import { roundPrice, formatPrice } from '../../utils/priceUtils';
 import { isBundleDisabled } from '../../utils/bundleUtils';
 
-export const TableRow = ({ item, bundles, amounts, onAmountChange, readonly = false, showIndividualDiscount = false, showFixace = false, enableRowSelection = false, selectedRows = {}, onRowSelect, currency = 'CZK' }) => {
+export const TableRow = ({ item, bundles, amounts, onAmountChange, readonly = false, showIndividualDiscount = false, showFixace = false, enableRowSelection = false, selectedRows = {}, onRowSelect, currency = 'CZK', userRole = 'customer' }) => {
   const tableStyles = useTableStyles();
   const [isExpanded, setIsExpanded] = React.useState(false);
   // Convert plain item object to Item instance if it isn't already
@@ -402,10 +402,14 @@ export const TableRow = ({ item, bundles, amounts, onAmountChange, readonly = fa
                   <span className="text-xs font-medium">
                     {showFixace ? (
                       (() => {
-                        // Calculate price for fixed items with global discount
+                        // Calculate price for fixed items with individual or global discount
                         const fixedAmount = amounts.fixace[itemInstance.id] || 0;
                         const baseFixedPrice = itemInstance.getPrice(bundle.id);
-                        const fixedPrice = roundPrice(baseFixedPrice * fixedAmount * (1 - (amounts.globalDiscount ?? 0) / 100));
+                        const fixedDiscountKey = `${itemInstance.id}_fixed_items`;
+                        const fixedDiscount = amounts.individualDiscounts?.[fixedDiscountKey] ? 
+                          amounts.discount?.[fixedDiscountKey] : 
+                          amounts.globalDiscount ?? 0;
+                        const fixedPrice = roundPrice(baseFixedPrice * fixedAmount * (1 - fixedDiscount / 100));
 
                         // Calculate price for items over fixace with its own discount
                         const overFixaceDiscount = amounts.discount?.[`${itemInstance.id}_over_fixation_items`] ?? 0;
@@ -477,6 +481,7 @@ export const TableRow = ({ item, bundles, amounts, onAmountChange, readonly = fa
             readonly={readonly}
             enableRowSelection={enableRowSelection}
             currency={currency}
+            userRole={userRole}
           />
           <SubItemRow 
             key={`${itemInstance.id}-over-fixation-items`}
@@ -494,6 +499,7 @@ export const TableRow = ({ item, bundles, amounts, onAmountChange, readonly = fa
             readonly={readonly}
             enableRowSelection={enableRowSelection}
             currency={currency}
+            userRole={userRole}
           />
         </>
       )}

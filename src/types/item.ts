@@ -146,6 +146,14 @@ export class Item implements ItemData {
     return totalPrice;
   }
 
+  calculateTotalDiscount(bundleId: number): number {
+    const basePrice = this.getPrice(bundleId);
+    const totalAmount = this._fixaceAmount + this._overAmount;
+    const priceBeforeDiscounts = basePrice * totalAmount;
+    const finalPrice = this.calculateTotalPrice(bundleId);
+    return Math.max(0, priceBeforeDiscounts - finalPrice);
+  }
+
   hasIndividualDiscounts(amounts: { discount: Record<string, number> }): boolean {
     return amounts.discount?.[`${this.id}_fixed_items`] !== undefined || 
            amounts.discount?.[`${this.id}_over_fixation_items`] !== undefined;
