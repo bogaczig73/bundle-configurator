@@ -14,7 +14,6 @@ import { auth } from "./firebase";
 import { onAuthStateChanged } from "firebase/auth";
 import ProtectedRoute from "./components/ProtectedRoute";
 import UnauthorizedPage from "./pages/UnauthorizedPage";
-import PrintPage from "./pages/PrintPage";
 
 function App() {
   const [user, setUser] = useState(null);
@@ -49,7 +48,6 @@ function App() {
                 </ProtectedRoute>
               } />
 
-
               <Route path="/configurator" element={
                 <ProtectedRoute allowedRoles={['admin', 'account']}>
                   <ConfiguratorPage />
@@ -73,12 +71,6 @@ function App() {
               <Route path="/viewoffers" element={
                 <ProtectedRoute allowedRoles={['admin', 'account', 'customer']}>
                   <ViewOffersPage />
-                </ProtectedRoute>
-              } />
-              
-              <Route path="/print" element={
-                <ProtectedRoute allowedRoles={['admin', 'account']}>
-                  <PrintPage />
                 </ProtectedRoute>
               } />
               
