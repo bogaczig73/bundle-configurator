@@ -167,38 +167,6 @@ function BundleSettingsPage() {
     }
   };
 
-  const handleLoadDefaults = async () => {
-    setLoading(true);
-    setError('');
-    
-    try {
-      const defaultItemsForCurrency = getDefaultItemsForCurrency(selectedCurrency);
-      
-      // Upload default items for the selected currency
-      await setDoc(doc(db, 'default', `items_${selectedCurrency.toLowerCase()}`), { 
-        items: defaultItemsForCurrency,
-        currency: selectedCurrency
-      });
-      
-      // Upload default categories
-      await setDoc(doc(db, 'default', 'categories'), { categories: defaultCategories });
-      
-      // Upload default packages
-      await setDoc(doc(db, 'default', 'packages'), { packages: defaultPackages });
-      
-      console.log('Default data loaded successfully for currency:', selectedCurrency);
-      
-      // Load items with categories using the hook's function
-      const items = await loadItemsForCurrency(selectedCurrency);
-      setProcessedItems(items);
-    } catch (err) {
-      console.error('Error loading defaults:', err);
-      setError('Failed to load default data. Please try again.');
-    } finally {
-      setLoading(false);
-    }
-  };
-
   // Update the handleItemSubmit function
   const handleItemSubmit = useCallback(async (formData) => {
     setIsItemSaving(true);

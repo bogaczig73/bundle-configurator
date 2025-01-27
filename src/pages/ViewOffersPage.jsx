@@ -15,9 +15,6 @@ import { db } from '../firebase';
 import { SummaryTable } from '../components/Table/SummaryTable';
 import { 
   getExportFilename,
-  handleExportSetup,
-  handleExportCleanup,
-  exportToA4PDF,
   exportToPDFV2
 } from '../utils/pdfExport';
 
