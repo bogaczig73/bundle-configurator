@@ -35,6 +35,7 @@ export const BundleTable = forwardRef(({
         showFixace={showFixace}
         enableRowSelection={enableRowSelection}
         currency={currency}
+        settings={settings}
       />
       <TableBody 
         bundles={bundles}

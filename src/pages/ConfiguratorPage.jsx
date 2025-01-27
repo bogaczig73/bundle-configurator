@@ -143,6 +143,14 @@ function ConfiguratorPage() {
           }
           newAmounts.individualDiscounts[key] = true;
         }
+
+        // If showCopyToFixationButton is enabled and we're changing an amount, automatically copy to fixace
+        if (field === 'amounts' && showCopyToFixationButton && showFixace) {
+          if (!newAmounts.fixace) {
+            newAmounts.fixace = {};
+          }
+          newAmounts.fixace[key] = Number(value);
+        }
       }
       return newAmounts;
     });

@@ -18,8 +18,8 @@ export const TableRow = ({ item, bundles, amounts, onAmountChange, readonly = fa
       <tr className={`
         ${itemInstance.depth > 0 ? `pl-${itemInstance.depth * 4}` : ''}
       `}
-      data-category-row="true"
-      data-category-id={itemInstance.id}
+        data-category-row="true"
+        data-category-id={itemInstance.id}
       >
         {enableRowSelection && (
           <td className={`${tableStyles.bodyCell} w-10`} data-selector-column>
@@ -89,7 +89,7 @@ export const TableRow = ({ item, bundles, amounts, onAmountChange, readonly = fa
 
   return (
     <>
-      <tr 
+      <tr
         className={`
           ${tableStyles.itemRow}
           ${itemInstance.depth > 0 ? `pl-${itemInstance.depth * 4}` : ''}
@@ -116,9 +116,8 @@ export const TableRow = ({ item, bundles, amounts, onAmountChange, readonly = fa
           <div className={tableStyles.accordionWrapper}>
             {showFixace && (
               <svg
-                className={`${tableStyles.accordionIcon} ${
-                  isExpanded ? tableStyles.accordionIconExpanded : ''
-                }`}
+                className={`${tableStyles.accordionIcon} ${isExpanded ? tableStyles.accordionIconExpanded : ''
+                  }`}
                 fill="none"
                 viewBox="0 0 24 24"
                 stroke="currentColor"
@@ -134,9 +133,9 @@ export const TableRow = ({ item, bundles, amounts, onAmountChange, readonly = fa
             <div className={tableStyles.accordionContent}>
               <div className={tableStyles.accordionName}>
               </div>
-                <span className={tableStyles.itemName.item}>
-                  {itemInstance.name}
-                </span>
+              <span className={tableStyles.itemName.item}>
+                {itemInstance.name}
+              </span>
               {itemInstance.note && (
                 <span className={tableStyles.itemNote}>
                   {itemInstance.note}
@@ -175,10 +174,10 @@ export const TableRow = ({ item, bundles, amounts, onAmountChange, readonly = fa
                   className={tableStyles.inputCounterButton + " rounded-s-md"}
                 >
                   <svg className={tableStyles.counterButtonSymbols} aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 18 2">
-                    <path stroke="currentColor" strokeLinejoin="round" strokeWidth="2" d="M1 1h16"/>
+                    <path stroke="currentColor" strokeLinejoin="round" strokeWidth="2" d="M1 1h16" />
                   </svg>
                 </button>
-                
+
                 <input
                   type="text"
                   min={0}
@@ -198,10 +197,10 @@ export const TableRow = ({ item, bundles, amounts, onAmountChange, readonly = fa
                   className={tableStyles.inputCounterButton + " rounded-e-md"}
                 >
                   <svg className={tableStyles.counterButtonSymbols} aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 18 18">
-                    <path stroke="currentColor" strokeLinejoin="round" strokeWidth="2" d="M9 1v16M1 9h16"/>
+                    <path stroke="currentColor" strokeLinejoin="round" strokeWidth="2" d="M9 1v16M1 9h16" />
                   </svg>
                 </button>
-                {showFixace && !readonly && settings.showCopyToFixationButton && (
+                {/* {showFixace && !readonly && settings.showCopyToFixationButton && (
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
@@ -211,10 +210,10 @@ export const TableRow = ({ item, bundles, amounts, onAmountChange, readonly = fa
                     title="Kopírovat do fixace"
                   >
                     <svg className={tableStyles.counterButtonSymbols} aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 14 10">
-                      <path stroke="#e1007b" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M1 5h12m0 0L9 1m4 4L9 9"/>
+                      <path stroke="#e1007b" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M1 5h12m0 0L9 1m4 4L9 9" />
                     </svg>
                   </button>
-                )}
+                )} */}
               </div>
             )}
           </div>
@@ -236,6 +235,7 @@ export const TableRow = ({ item, bundles, amounts, onAmountChange, readonly = fa
                   disabled={readonly}
                   className={tableStyles.checkbox}
                 />
+
               ) : readonly ? (
                 <span className={tableStyles.itemAmount}>
                   {amounts.fixace[itemInstance.id] || 0}
@@ -251,10 +251,10 @@ export const TableRow = ({ item, bundles, amounts, onAmountChange, readonly = fa
                     className={tableStyles.inputCounterButton + " rounded-s-md"}
                   >
                     <svg className={tableStyles.counterButtonSymbols} aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 18 2">
-                      <path stroke="currentColor" strokeLinejoin="round" strokeWidth="2" d="M1 1h16"/>
+                      <path stroke="currentColor" strokeLinejoin="round" strokeWidth="2" d="M1 1h16" />
                     </svg>
                   </button>
-                  
+
                   <input
                     type="text"
                     min={0}
@@ -265,6 +265,7 @@ export const TableRow = ({ item, bundles, amounts, onAmountChange, readonly = fa
                     }}
                     onClick={(e) => e.stopPropagation()}
                     className={tableStyles.numberInput}
+                    data-tooltip-target="tooltip-default"
                   />
                   <button
                     onClick={(e) => {
@@ -274,9 +275,11 @@ export const TableRow = ({ item, bundles, amounts, onAmountChange, readonly = fa
                     className={tableStyles.inputCounterButton + " rounded-e-md"}
                   >
                     <svg className={tableStyles.counterButtonSymbols} aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 18 18">
-                      <path stroke="currentColor" strokeLinejoin="round" strokeWidth="2" d="M9 1v16M1 9h16"/>
+                      <path stroke="currentColor" strokeLinejoin="round" strokeWidth="2" d="M9 1v16M1 9h16" />
                     </svg>
                   </button>
+                  
+                  
                 </div>
               )}
             </div>
@@ -303,10 +306,10 @@ export const TableRow = ({ item, bundles, amounts, onAmountChange, readonly = fa
                         className={tableStyles.inputCounterButton + " rounded-s-md"}
                       >
                         <svg className={tableStyles.counterButtonSymbols} aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 18 2">
-                          <path stroke="currentColor" strokeLinejoin="round" strokeWidth="2" d="M1 1h16"/>
+                          <path stroke="currentColor" strokeLinejoin="round" strokeWidth="2" d="M1 1h16" />
                         </svg>
                       </button>
-                      
+
                       <input
                         type="text"
                         min={0}
@@ -320,7 +323,7 @@ export const TableRow = ({ item, bundles, amounts, onAmountChange, readonly = fa
                         onClick={(e) => e.stopPropagation()}
                         className={tableStyles.numberInput}
                       />
-                      
+
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
@@ -329,7 +332,7 @@ export const TableRow = ({ item, bundles, amounts, onAmountChange, readonly = fa
                         className={tableStyles.inputCounterButton + " rounded-e-md"}
                       >
                         <svg className={tableStyles.counterButtonSymbols} aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 18 18">
-                          <path stroke="currentColor" strokeLinejoin="round" strokeWidth="2" d="M9 1v16M1 9h16"/>
+                          <path stroke="currentColor" strokeLinejoin="round" strokeWidth="2" d="M9 1v16M1 9h16" />
                         </svg>
                       </button>
                     </>
@@ -355,10 +358,10 @@ export const TableRow = ({ item, bundles, amounts, onAmountChange, readonly = fa
                     className={tableStyles.inputCounterButton + " rounded-s-md"}
                   >
                     <svg className={tableStyles.counterButtonSymbols} aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 18 2">
-                      <path stroke="currentColor" strokeLinejoin="round" strokeWidth="2" d="M1 1h16"/>
+                      <path stroke="currentColor" strokeLinejoin="round" strokeWidth="2" d="M1 1h16" />
                     </svg>
                   </button>
-                  
+
                   <input
                     type="text"
                     min={0}
@@ -372,7 +375,7 @@ export const TableRow = ({ item, bundles, amounts, onAmountChange, readonly = fa
                     onClick={(e) => e.stopPropagation()}
                     className={tableStyles.numberInput}
                   />
-                  
+
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
@@ -381,7 +384,7 @@ export const TableRow = ({ item, bundles, amounts, onAmountChange, readonly = fa
                     className={tableStyles.inputCounterButton + " rounded-e-md"}
                   >
                     <svg className={tableStyles.counterButtonSymbols} aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 18 18">
-                      <path stroke="currentColor" strokeLinejoin="round" strokeWidth="2" d="M9 1v16M1 9h16"/>
+                      <path stroke="currentColor" strokeLinejoin="round" strokeWidth="2" d="M9 1v16M1 9h16" />
                     </svg>
                   </button>
                 </div>
@@ -408,11 +411,11 @@ export const TableRow = ({ item, bundles, amounts, onAmountChange, readonly = fa
                   <span className="">
                     {itemInstance.isSelected(bundle.id) ? (
                       <svg id="Vrstva_1" data-name="Vrstva 1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 80" className={`w-12 h-12 scale-150`}>
-                         <path fill={getColorHex(index)} d="m47.54,32.21l.31.44c-1.25.94-2.65,2.4-4.18,4.36s-2.71,3.8-3.52,5.5l-.65.44c-.54.38-.91.65-1.1.83-.08-.28-.24-.73-.5-1.35l-.25-.57c-.35-.82-.68-1.43-.98-1.82-.3-.39-.64-.65-1.02-.78.63-.67,1.21-1,1.74-1,.45,0,.95.61,1.5,1.84l.27.62c.99-1.67,2.26-3.29,3.81-4.87s3.07-2.79,4.55-3.63Z"/>
+                        <path fill={getColorHex(index)} d="m47.54,32.21l.31.44c-1.25.94-2.65,2.4-4.18,4.36s-2.71,3.8-3.52,5.5l-.65.44c-.54.38-.91.65-1.1.83-.08-.28-.24-.73-.5-1.35l-.25-.57c-.35-.82-.68-1.43-.98-1.82-.3-.39-.64-.65-1.02-.78.63-.67,1.21-1,1.74-1,.45,0,.95.61,1.5,1.84l.27.62c.99-1.67,2.26-3.29,3.81-4.87s3.07-2.79,4.55-3.63Z" />
                       </svg>
                     ) : (
                       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 80" className={`w-12 h-12 scale-150`}>
-                        <path fill="#7c7b7b" d="m33.76,38.05h8.46v.88h-8.46v-.88Z"/>
+                        <path fill="#7c7b7b" d="m33.76,38.05h8.46v.88h-8.46v-.88Z" />
                       </svg>
                     )}
                   </span>
@@ -424,8 +427,8 @@ export const TableRow = ({ item, bundles, amounts, onAmountChange, readonly = fa
                         const fixedAmount = amounts.fixace[itemInstance.id] || 0;
                         const baseFixedPrice = itemInstance.getPrice(bundle.id);
                         const fixedDiscountKey = `${itemInstance.id}_fixed_items`;
-                        const fixedDiscount = amounts.individualDiscounts?.[fixedDiscountKey] ? 
-                          amounts.discount?.[fixedDiscountKey] : 
+                        const fixedDiscount = amounts.individualDiscounts?.[fixedDiscountKey] ?
+                          amounts.discount?.[fixedDiscountKey] :
                           amounts.globalDiscount ?? 0;
                         const fixedPrice = roundPrice(baseFixedPrice * fixedAmount * (1 - fixedDiscount / 100));
 
@@ -453,7 +456,7 @@ export const TableRow = ({ item, bundles, amounts, onAmountChange, readonly = fa
                   </span>
                 )}
                 <span className="text-xs text-gray-500 italic">
-                  {itemInstance.getPrice(bundle.id) === 0 ? '' : 
+                  {itemInstance.getPrice(bundle.id) === 0 ? '' :
                     itemInstance.individual ? 'individuální paušál' : (
                       <>
                         {/* {`${formatPrice(itemInstance.getPrice(bundle.id))} za kus`} */}
@@ -483,7 +486,7 @@ export const TableRow = ({ item, bundles, amounts, onAmountChange, readonly = fa
       {/* Accordion subitems */}
       {showFixace && isExpanded && (
         <>
-          <SubItemRow 
+          <SubItemRow
             key={`${itemInstance.id}-fixed-items`}
             content="Fixované položky"
             bundles={bundles}
@@ -501,7 +504,7 @@ export const TableRow = ({ item, bundles, amounts, onAmountChange, readonly = fa
             currency={currency}
             userRole={userRole}
           />
-          <SubItemRow 
+          <SubItemRow
             key={`${itemInstance.id}-over-fixation-items`}
             content="Položky nad rámec fixace"
             bundles={bundles}

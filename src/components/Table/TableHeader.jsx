@@ -12,7 +12,8 @@ function TableHeader({
   showIndividualDiscount = false, 
   showFixace = false,
   enableRowSelection = false,
-  currency = 'CZK'
+  currency = 'CZK',
+  settings = {}
 }) {
   const bundleTotals = useMemo(() => {
     return bundles.map(bundle => ({
@@ -59,7 +60,14 @@ function TableHeader({
             {showFixace && (
               <th className={tableStyles.headerCell}>
                 <div className={tableStyles.centerWrapper}>
-                  Fixace
+                  <div className="flex flex-col items-center">
+                    <span>Fixace</span>
+                    {settings.showCopyToFixationButton && (
+                      <span className="text-[10px] text-abraMagenta font-normal mt-0.5">
+                        (Automatické kopírování)
+                      </span>
+                    )}
+                  </div>
                 </div>
               </th>
             )}

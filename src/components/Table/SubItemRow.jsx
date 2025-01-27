@@ -100,14 +100,6 @@ export const SubItemRow = ({
 
       <td className={`${tableStyles.columnWidths.amount} ${tableStyles.bodyCell}`}>
         <div className={tableStyles.centerWrapper}>
-          {parentItem.checkbox ? (
-            <input
-              type="checkbox"
-              checked={false}
-              disabled={true}
-              className={tableStyles.checkbox}
-            />
-          ) : (
             <div className="flex flex-col items-center">
               <span className="text-gray-700 text-xs">
                 {getDisplayedAmount()}
@@ -118,7 +110,6 @@ export const SubItemRow = ({
                 </span>
               )}
             </div>
-          )}
         </div>
       </td>
 

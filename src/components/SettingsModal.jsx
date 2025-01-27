@@ -196,7 +196,7 @@ function SettingsModal({ show, onClose, settings, onSettingChange, page = 'confi
               <div className="ml-6 border-l-2 border-gray-200 pl-4">
                 <div className="flex items-center justify-between bg-white p-3 rounded-lg border border-gray-200">
                   <label className="text-sm font-semibold text-gray-900">
-                    Zobrazit tlačítko pro kopírování do fixace
+                    Zapnout automatické kopírování do fixace
                   </label>
                   <div className="relative inline-flex items-center">
                     <button
