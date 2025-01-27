@@ -2,15 +2,13 @@ import { useState, useEffect, useCallback, useMemo } from 'react';
 import { db } from '../firebase';
 import { doc, getDoc, getDocs, collection, addDoc, serverTimestamp, setDoc, updateDoc, arrayUnion } from 'firebase/firestore';
 import { auth } from '../firebase';
-import { Item, Category, Configuration, ItemPrice, ItemData } from '../types/Item';
+import { Item, Category, ItemPrice, ItemData } from '../types/Item';
+import { Configuration, SaveConfigurationData } from '../types/Configuration';
+import { Package } from '../types/Package';
+import { ConfigService } from '../services/firebase/config.service';
+import { ItemsService } from '../services/firebase/items.service';
 import { DocumentSnapshot, DocumentData } from 'firebase/firestore';
 import { defaultItems } from '../data/items';
-
-interface Package {
-  id: string | number;
-  name: string;
-  userLimit: number;
-}
 
 interface User {
   id: string;
@@ -52,26 +50,6 @@ interface UseConfigDataReturn {
   loadItemsForCurrency: (currency: string) => Promise<(Item | Category)[]>;
 }
 
-interface SaveConfigurationData {
-  bundleId: string;
-  name: string;
-  customerId: string;
-  items: Record<string, {
-    amount: number;
-    discount: number;
-    fixace: number;
-    individual: boolean;
-    checkbox: boolean;
-    price: number;
-    selected: boolean;
-  }>;
-  status: string;
-  createdBy: string | null;
-  currency: string;
-  globalDiscount?: number;
-  isPrivate?: boolean;
-}
-
 interface NewItemFormData {
   id?: number;
   name: string;
@@ -90,7 +68,6 @@ interface NewItemFormData {
   note?: string;
   order?: number;
 }
-
 
 export const CURRENCIES = [
   { code: 'CZK', symbol: 'Kč', name: 'Český' },
@@ -142,6 +119,16 @@ export function useConfigData(bundleId: string | null = null, configId: string |
   const [configurations, setConfigurations] = useState<Configuration[]>([]);
   const [currentConfig, setCurrentConfig] = useState<Configuration | null>(null);
 
+  // Use the service functions
+  const loadItemsForCurrency = useCallback(async (currency: string) => {
+    const itemsData = await ItemsService.getItemsForCurrency(currency);
+    return itemsData.map(item => Item.create(item));
+  }, []);
+
+  const getConfigurationById = useCallback(async (configId: string) => {
+    return await ConfigService.getConfigurationById(configId);
+  }, []);
+
   // Memoized function to process categories and items into a tree structure
   const processCategories = useCallback((categories: Category[], items: Item[]): (Category | Item)[] => {
     const buildCategoryTree = (parentId: number | null = null): (Category | Item)[] => {
@@ -171,60 +158,6 @@ export function useConfigData(bundleId: string | null = null, configId: string |
     };
     
     return buildCategoryTree(null);
-  }, []);
-
-  const loadItemsForCurrency = useCallback(async (currency: string): Promise<(Item | Category)[]> => {
-    try {
-      const itemsRef = doc(db, 'default', `items_${currency.toLowerCase()}`);
-      const categoriesRef = doc(db, 'default', "categories");
-      
-      const [itemsSnap, categoriesSnap] = await Promise.all([
-        getDoc(itemsRef),
-        getDoc(categoriesRef)
-      ]);
-      
-      const categoriesData = categoriesSnap.exists() ? categoriesSnap.data().categories || [] : [];
-      let itemsData;
-      
-      if (itemsSnap.exists()) {
-        itemsData = itemsSnap.data().items;
-      } else {
-        // If no currency-specific items exist, load default items
-        itemsData = defaultItems;
-      }
-
-      // Convert raw items to Item instances
-      const itemInstances = itemsData.map((item: ItemData) => Item.create(item));
-      
-      // Process items with categories
-      return processCategories(categoriesData, itemInstances);
-    } catch (err) {
-      console.error('Error loading items for currency:', err);
-      throw new Error('Failed to load items for selected currency');
-    }
-  }, [processCategories]);
-
-  const getConfigurationById = useCallback(async (configId: string): Promise<Configuration> => {
-    try {
-      if (!configId) {
-        throw new Error('Configuration ID is required');
-      }
-
-      const docRef = doc(db, 'configurations', configId);
-      const docSnap = await getDoc(docRef);
-      
-      if (!docSnap.exists()) {
-        throw new Error('Configuration not found');
-      }
-
-      return {
-        id: docSnap.id,
-        ...docSnap.data()
-      } as Configuration;
-    } catch (error) {
-      console.error('Error in getConfigurationById:', error);
-      throw error;
-    }
   }, []);
 
   // Memoize the fetch function to prevent unnecessary recreations

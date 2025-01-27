@@ -1,54 +1,36 @@
 import React from 'react';
-import { roundPrice, formatPrice } from '../../utils/priceUtils';
+import { useTable } from './TableContext';
+import { formatPrice, roundPrice } from '../../utils/priceUtils';
 import { isBundleDisabled } from '../../utils/bundleUtils';
-import { getColorHex } from './useTableStyles';
 
 export const SubItemRow = ({ 
   content, 
-  bundles, 
-  amounts, 
-  tableStyles, 
   parentItem, 
   type,
-  showIndividualDiscount = false, 
-  showFixace = false,
-  onDiscountChange,
-  readonly = false,
-  enableRowSelection = false,
-  currency = 'CZK',
-  userRole = 'customer'
+  tableStyles,
+  onDiscountChange
 }) => {
+  const { 
+    bundles,
+    amounts,
+    onAmountChange,
+    readonly,
+    showIndividualDiscount,
+    showFixace,
+    enableRowSelection,
+    currency,
+    userRole
+  } = useTable();
 
-  // Calculate displayed amount based on type
   const getDisplayedAmount = () => {
     if (type === 'fixace') {
-      return '-';
-    } else if (type === 'over') {
-      const parentAmount = amounts.amounts[parentItem.id] || 0;
-      const parentFixace = amounts.fixace[parentItem.id] || 0;
-      // For over-fixation row, just show the difference without subtracting discounted amount
-      return Math.max(0, parentAmount - parentFixace);
+      return "-";
+    } else {
+      const totalAmount = amounts.amounts[parentItem.id] || 0;
+      const fixedAmount = amounts.fixace[parentItem.id] || 0;
+      const discountedAmount = parentItem.getDiscount(bundles[0]?.id);
+      return Math.max(0, totalAmount - fixedAmount - discountedAmount);
     }
-    return parentItem.amount;
-  };
-
-  // Add helper function to get discount note
-  const getDiscountNote = () => {
-    if (type === 'over') {
-      // Don't show the discount note for over-fixation row
-      return '';
-    }
-    return '';
-  };
-
-  // Calculate displayed fixace based on type
-  const getDisplayedFixace = () => {
-    if (type === 'fixace') {
-      return amounts.fixace[parentItem.id] || 0;
-    } else if (type === 'over') {
-      return '-';
-    }
-    return parentItem.fixace;
   };
 
   const calculateFinalPrice = (basePrice, type, amounts, parentItem, bundle) => {
@@ -83,6 +65,27 @@ export const SubItemRow = ({
     };
   };
 
+  const getDisplayedFixace = () => {
+    if (type === 'fixace') {
+      return amounts.fixace[parentItem.id] || 0;
+    }
+    return '-';
+  };
+
+  const getDiscountNote = () => {
+    if (type === 'fixace') {
+      const discountKey = `${parentItem.id}_fixed_items`;
+      if (amounts.individualDiscounts?.[discountKey]) {
+        return `Individuální sleva: ${amounts.discount?.[discountKey] ?? 0}%`;
+      }
+      return `Globální sleva: ${amounts.globalDiscount ?? 0}%`;
+    } else {
+      const discountKey = `${parentItem.id}_over_fixation_items`;
+      const discount = amounts.discount?.[discountKey] ?? 0;
+      return discount > 0 ? `Sleva: ${discount}%` : '';
+    }
+  };
+
   return (
     <tr className={`${tableStyles.itemRow} bg-gray-50`}>
       {enableRowSelection && (
@@ -104,11 +107,6 @@ export const SubItemRow = ({
               <span className="text-gray-700 text-xs">
                 {getDisplayedAmount()}
               </span>
-              {getDiscountNote() && (
-                <span className="text-xs text-gray-500">
-                  {getDiscountNote()}
-                </span>
-              )}
             </div>
         </div>
       </td>

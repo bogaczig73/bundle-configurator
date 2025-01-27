@@ -208,17 +208,4 @@ export interface ItemPrice {
   individual: boolean;
   fixace: number;
   discount: number;
-}
-
-export interface Configuration {
-  id: string;
-  name: string;
-  createdAt: any;
-  createdBy: string | null;
-  customer: string;
-  bundleId: string | null;
-  status: string;
-  items: Record<string, any>;
-  currency: string;
-  globalDiscount?: number;
 } 

@@ -1,15 +1,16 @@
 export interface Configuration {
   id: string;
-  bundleId: string;
   name: string;
-  customerId: string;
-  items: Record<string, ConfigurationItem>;
-  status: string;
+  createdAt: any;
   createdBy: string | null;
+  customer: string;
+  customerId?: string;
+  bundleId: string | null;
+  status: string;
+  items: Record<string, ConfigurationItem>;
   currency: string;
   globalDiscount?: number;
   isPrivate?: boolean;
-  createdAt?: Date;
 }
 
 export interface ConfigurationItem {

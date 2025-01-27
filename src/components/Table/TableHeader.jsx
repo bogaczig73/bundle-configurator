@@ -1,20 +1,22 @@
 import React, { useMemo } from 'react';
 import { TableColgroup } from './TableColgroup';
-import { formatPrice } from '../../utils/priceUtils';
 import { calculateBundleTotal, isBundleActive, isBundleDisabled } from '../../utils/bundleUtils';
-import { abraColors as ABRA_COLORS} from './useTableStyles';
+import { formatPrice } from '../../utils/priceUtils';
+import { abraColors } from './useTableStyles';
+import { useTable } from './TableContext';
 
-function TableHeader({ 
-  bundles, 
-  amounts, 
-  tableStyles, 
-  flattenedItems, 
-  showIndividualDiscount = false, 
-  showFixace = false,
-  enableRowSelection = false,
-  currency = 'CZK',
-  settings = {}
-}) {
+function TableHeader({ tableStyles }) {
+  const { 
+    bundles, 
+    items: flattenedItems, 
+    amounts, 
+    showIndividualDiscount, 
+    showFixace,
+    enableRowSelection,
+    currency,
+    settings 
+  } = useTable();
+
   const bundleTotals = useMemo(() => {
     return bundles.map(bundle => ({
       id: bundle.id,
@@ -33,13 +35,7 @@ function TableHeader({
   return (
     <div className="sticky top-0 z-10 bg-white">
       <table className="w-full table-fixed">
-        <TableColgroup 
-          bundles={bundles} 
-          tableStyles={tableStyles} 
-          showIndividualDiscount={showIndividualDiscount} 
-          showFixace={showFixace}
-          enableRowSelection={enableRowSelection}
-        />
+        <TableColgroup tableStyles={tableStyles} />
         <thead>
           <tr>
             {enableRowSelection && (
@@ -88,7 +84,7 @@ function TableHeader({
                   <th className={`
                     ${tableStyles.packageHeaderCell} 
                     ${tableStyles.getBundleHeaderBorderClasses(index)}
-                    ${isActive ? `bg-${ABRA_COLORS[index]} ${tableStyles.activeBundle}` : ''}
+                    ${isActive ? `bg-${abraColors[index]} ${tableStyles.activeBundle}` : ''}
                     ${isDisabled ? tableStyles.inactiveBundle.header : ''}
                   `}>
                     <div className="flex flex-col items-center">

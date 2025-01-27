@@ -1,12 +1,14 @@
 import React from 'react';
-import { useTableStyles } from './useTableStyles';
-export function TableColgroup({ 
-  bundles, 
-  tableStyles, 
-  showIndividualDiscount = false,
-  showFixace = false,
-  enableRowSelection = false
-}) {
+import { useTable } from './TableContext';
+
+export function TableColgroup({ tableStyles }) {
+  const { 
+    bundles, 
+    showIndividualDiscount, 
+    showFixace, 
+    enableRowSelection 
+  } = useTable();
+
   return (
     <colgroup>
       {enableRowSelection && (
