@@ -21,7 +21,6 @@ export const SubItemRow = ({
     currency,
     userRole
   } = useTable();
-
   const getDisplayedAmount = () => {
     if (type === 'fixace') {
       return "-";

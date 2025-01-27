@@ -5,6 +5,7 @@ import { abraColors, getColorHex, useTableStyles } from './useTableStyles';
 import { TableColgroup } from './TableColgroup';
 import { isBundleActive, isBundleDisabled } from '../../utils/bundleUtils';
 import { TableProvider } from './TableContext';
+import { useTable } from './TableContext';
 
 const processItems = (items) => {
   const result = [];
@@ -64,8 +65,7 @@ const calculateBundleTotals = (flatItems, amounts = {}, bundle) => {
 
   return totals;
 };
-
-export const SummaryTable = ({ items = [], amounts = {}, currency = 'CZK', bundles = [], exporting = false, globalDiscount = 0, showIndividualDiscount = false, showFixace = false }) => {
+export const SummaryTable = ({ items = [], exporting = false, amounts = {}, bundles = [], globalDiscount = 0, showIndividualDiscount = false, showFixace = false, currency = 'CZK' }) => {
   const styles = useTableStyles(exporting);
   const flatItems = processItems(items);
 
@@ -77,13 +77,13 @@ export const SummaryTable = ({ items = [], amounts = {}, currency = 'CZK', bundl
   return (
     <TableProvider
       bundles={bundles}
-      items={flatItems}
       amounts={amounts}
       readonly={true}
       showIndividualDiscount={showIndividualDiscount}
       showFixace={showFixace}
       currency={currency}
       settings={{}}
+      
     >
       <div className="mt-8">
         <table className={styles.table}>
@@ -199,12 +199,12 @@ export const SummaryTable = ({ items = [], amounts = {}, currency = 'CZK', bundl
 
             {/* Final price after all discounts */}
             <tr>
-              <td className={`${styles.bodyCell} ${styles.itemName.item} py-4`}>
+              <td className={`${styles.bodyCell} ${styles.itemName.item} py-4 !text-nowrap`}>
               Celková cena po slevě za měsíc bez DPH
               </td>
               {showFixace && <td />}
               {showIndividualDiscount && <td />}
-              <td /> {/* Empty spacer cell */}
+              <td/> {/* Empty spacer cell */}
 
               {bundleTotals.map(({ bundle, totals }, index) => {
                 const isActive = isBundleActive(bundle, index, amounts.amounts, bundles);

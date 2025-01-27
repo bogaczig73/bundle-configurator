@@ -405,7 +405,8 @@ function ViewOffersPage() {
       const configAmounts = {
         amounts: {},
         discount: {},
-        fixace: {}
+        fixace: {},
+        individualDiscounts: {}
       };
 
       // Process configuration items and check for fixations
@@ -418,14 +419,15 @@ function ViewOffersPage() {
             hasFixations = true;
           }
           if (itemData.discount) configAmounts.discount[itemId] = itemData.discount;
-          if (itemData.subItemDiscounts) {
             if (itemData.subItemDiscounts.fixace) {
+              configAmounts.individualDiscounts[`${itemId}_fixed_items`] = true;
               configAmounts.discount[`${itemId}_fixed_items`] = itemData.subItemDiscounts.fixace;
             }
             if (itemData.subItemDiscounts.over) {
+              configAmounts.individualDiscounts[`${itemId}_over_fixation_items`] = true;
               configAmounts.discount[`${itemId}_over_fixation_items`] = itemData.subItemDiscounts.over;
             }
-          }
+          
         });
       }
 
@@ -453,6 +455,7 @@ function ViewOffersPage() {
       const configAmounts = {
         amounts: {},
         discount: {},
+        individualDiscounts: {},
         fixace: {}
       };
       
@@ -478,14 +481,15 @@ function ViewOffersPage() {
         // Handle subitem discounts
         if (itemData.subItemDiscounts) {
           if (itemData.subItemDiscounts.fixace) {
+            configAmounts.individualDiscounts[`${itemId}_fixed_items`] = true;
             configAmounts.discount[`${itemId}_fixed_items`] = itemData.subItemDiscounts.fixace;
           }
           if (itemData.subItemDiscounts.over) {
+            configAmounts.individualDiscounts[`${itemId}_over_fixation_items`] = true;
             configAmounts.discount[`${itemId}_over_fixation_items`] = itemData.subItemDiscounts.over;
           }
         }
       });
-
       // If configuration has fixations, automatically enable showFixace
       if (hasFixations) {
         setShowFixace(true);
@@ -496,6 +500,7 @@ function ViewOffersPage() {
       setAmounts({
         amounts: {},
         discount: {},
+        individualDiscounts: {},
         fixace: {}
       });
     }
@@ -524,26 +529,6 @@ function ViewOffersPage() {
     }));
   };
 
-  // Handle print button click
-  const handlePrintClick = () => {
-    console.log('Debugging navigation state:', {
-      packages,
-      processedItems,
-      amounts,
-      selectedConfiguration
-    });
-    
-    navigate('/print', {
-      state: {
-        packages,
-        processedItems,
-        amounts,
-        selectedConfiguration,
-        showFixace,
-        showIndividualDiscount
-      }
-    });
-  };
 
   // Handle row selection
   const handleRowSelect = (itemId, selected) => {
@@ -615,7 +600,6 @@ function ViewOffersPage() {
       
     } else if (setting === 'preselectFreeItems') {
       const { bundleId, checked } = value;
-      console.log('Bundle selection changed:', { bundleId, checked });
       
       // Update preselect settings
       const newPreselectSettings = {
@@ -625,7 +609,6 @@ function ViewOffersPage() {
           [bundleId]: checked
         }
       };
-      console.log('New preselect settings:', newPreselectSettings);
       setPreselectSettings(newPreselectSettings);
 
       // Create a new selection state starting from current selections
@@ -1026,24 +1009,16 @@ function ViewOffersPage() {
                   />
 
                   {showSummaryTable && (
-                    console.log('Rendering summary table with:', {
-                      showSummaryTable,
-                      items: processedItems,
-                      amounts,
-                      currency: currentCurrency,
-                      bundles: packages
-                    }),
+                    
                     <SummaryTable
                       items={processedItems}
-                      amounts={{
-                        ...amounts,
-                        globalDiscount
-                      }}
+                      amounts={amounts}
                       currency={currentCurrency}
                       bundles={packages}
                       exporting={exporting}
                       showIndividualDiscount={showIndividualDiscount}
                       showFixace={showFixace}
+                      globalDiscount={globalDiscount}
                     />
                   )}
                 </div>

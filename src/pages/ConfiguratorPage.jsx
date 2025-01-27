@@ -89,9 +89,9 @@ function ConfiguratorPage() {
       // Restore individual discounts state
       Object.entries(bundleData.amounts).forEach(([itemId, itemData]) => {
         if (itemData.individualDiscounts) {
-          if (itemData.individualDiscounts.fixed) {
+          if (itemData.individualDiscounts.fixace) {
             newAmounts.individualDiscounts[`${itemId}_fixed_items`] = true;
-            newAmounts.discount[`${itemId}_fixed_items`] = itemData.subItemDiscounts?.fixed || 0;
+            newAmounts.discount[`${itemId}_fixed_items`] = itemData.subItemDiscounts?.fixace || 0;
           }
           if (itemData.individualDiscounts.over) {
             newAmounts.individualDiscounts[`${itemId}_over_fixation_items`] = true;
@@ -166,7 +166,6 @@ function ConfiguratorPage() {
       const bundleId = `bundle_${Date.now()}_${Math.random().toString(36)}`;
       
       const validItems = {};
-      console.log('amounts', amounts);
       // Only include items that have actual values
       Object.entries(amounts.amounts || {}).forEach(([itemId, amount]) => {
         if (amount !== undefined && amount !== null) {
@@ -176,15 +175,16 @@ function ConfiguratorPage() {
             fixace: Number(amounts.fixace?.[itemId]) || 0,
             subItemDiscounts: {
               'over': Number(amounts.discount?.[`${itemId}_over_fixation_items`]) || 0,
-              'fixed': Number(amounts.discount?.[`${itemId}_fixed_items`]) || 0
+              'fixace': Number(amounts.discount?.[`${itemId}_fixed_items`]) || 0
             },
             individualDiscounts: {
               'over': amounts.individualDiscounts?.[`${itemId}_over_fixation_items`] || false,
-              'fixed': amounts.individualDiscounts?.[`${itemId}_fixed_items`] || false
+              'fixace': amounts.individualDiscounts?.[`${itemId}_fixed_items`] || false
             }
           };
         }
       });
+      console.log('validItems', validItems);
 
       // Ensure we have at least one valid item
       if (Object.keys(validItems).length === 0) {
@@ -284,7 +284,7 @@ function ConfiguratorPage() {
                           newAmounts.individualDiscounts[fixedItemKey] = false;
                           newAmounts.discount[fixedItemKey] = newGlobalDiscount;
                         });
-                        
+                        console.log('newAmounts', newAmounts);
                         return newAmounts;
                       });
                     }}
