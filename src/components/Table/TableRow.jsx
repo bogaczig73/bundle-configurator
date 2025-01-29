@@ -5,6 +5,7 @@ import { useTableStyles } from './useTableStyles';
 import { Item } from '../../types/Item';
 import { roundPrice, formatPrice } from '../../utils/priceUtils';
 import { useTable } from './TableContext';
+import { findCategoryById, applyCategoryDiscount } from '../../utils/categoryUtils';
 
 export const TableRow = ({ item, tableStyles }) => {
   const { 
@@ -21,7 +22,8 @@ export const TableRow = ({ item, tableStyles }) => {
     userRole,
     settings,
     isBundleActive,
-    isBundleInactive
+    isBundleInactive,
+    processedItems
   } = useTable();
 
   const [isExpanded, setIsExpanded] = React.useState(false);
@@ -83,7 +85,70 @@ export const TableRow = ({ item, tableStyles }) => {
             ${tableStyles.bodyCell}
             ${tableStyles.categoryRow}
           `}>
-            <div className={tableStyles.centerWrapper}></div>
+            <div className={tableStyles.centerWrapper}>
+              <div className="flex items-center">
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    const category = findCategoryById(processedItems, itemInstance.id);
+                    const currentValue = amounts.categoryDiscount?.[itemInstance.id] || 0;
+                    applyCategoryDiscount({
+                      category,
+                      value: Math.max(0, currentValue - 5),
+                      showFixace,
+                      onAmountChange,
+                      amounts
+                    });
+                  }}
+                  className={tableStyles.inputCounterButton + " rounded-s-md"}
+                >
+                  <svg className={tableStyles.counterButtonSymbols} aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 18 2">
+                    <path stroke="currentColor" strokeLinejoin="round" strokeWidth="2" d="M1 1h16" />
+                  </svg>
+                </button>
+
+                <input
+                  type="text"
+                  min={0}
+                  max={100}
+                  value={amounts.categoryDiscount?.[itemInstance.id] || 0}
+                  onChange={(e) => {
+                    e.stopPropagation();
+                    const value = Math.min(100, Math.max(0, Number(e.target.value)));
+                    const category = findCategoryById(processedItems, itemInstance.id);
+                    applyCategoryDiscount({
+                      category,
+                      value,
+                      showFixace,
+                      onAmountChange,
+                      amounts
+                    });
+                  }}
+                  onClick={(e) => e.stopPropagation()}
+                  className={tableStyles.numberInput}
+                />
+
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    const category = findCategoryById(processedItems, itemInstance.id);
+                    const currentValue = amounts.categoryDiscount?.[itemInstance.id] || 0;
+                    applyCategoryDiscount({
+                      category,
+                      value: Math.min(100, currentValue + 5),
+                      showFixace,
+                      onAmountChange,
+                      amounts
+                    });
+                  }}
+                  className={tableStyles.inputCounterButton + " rounded-e-md"}
+                >
+                  <svg className={tableStyles.counterButtonSymbols} aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 18 18">
+                    <path stroke="currentColor" strokeLinejoin="round" strokeWidth="2" d="M9 1v16M1 9h16" />
+                  </svg>
+                </button>
+              </div>
+            </div>
           </td>
         )}
 
@@ -185,7 +250,7 @@ export const TableRow = ({ item, tableStyles }) => {
             ) : readonly ? (
               <span className={tableStyles.itemAmount}>
                 {amounts.amounts[itemInstance.id] || 0}
-              </span>
+                </span>
             ) : (
               <div className="flex items-center" onClick={(e) => e.stopPropagation()}>
                 <button
@@ -405,9 +470,7 @@ export const TableRow = ({ item, tableStyles }) => {
 
         {bundles.map((bundle, index) => (
           <React.Fragment key={`${itemInstance.id}-${bundle.id}-group`}>
-            {
-            console.log("item", itemInstance, itemInstance.isSelected(bundle.id))
-            }
+            
             <td className="!w-[20px] min-w-[20px]" />
             <td className={`
               ${tableStyles.columnWidths.bundle} 

@@ -29,6 +29,7 @@ export const BundleTable = forwardRef(({
     <TableProvider
       bundles={bundles}
       items={flattenedItems}
+      processedItems={items}
       amounts={{...amounts, globalDiscount}}
       onAmountChange={onAmountChange}
       readonly={readonly}

@@ -330,11 +330,11 @@ function ConfiguratorPage() {
                       // Update all fixed items' individual discounts to match global discount
                       setAmounts(prev => {
                         const newAmounts = { ...prev };
-                        
                         // Reset individual discounts for fixed items
                         if (!newAmounts.individualDiscounts) {
                           newAmounts.individualDiscounts = {};
                         }
+                        console.log(newAmounts.discount)
                         if (!newAmounts.discount) {
                           newAmounts.discount = {};
                         }
@@ -346,7 +346,6 @@ function ConfiguratorPage() {
                           newAmounts.individualDiscounts[fixedItemKey] = false;
                           newAmounts.discount[fixedItemKey] = newGlobalDiscount;
                         });
-                        console.log('newAmounts', newAmounts);
                         return newAmounts;
                       });
                     }}

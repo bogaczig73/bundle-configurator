@@ -303,28 +303,32 @@ function BundleSettingsPage() {
         </header>
 
         {/* Main Content */}
-        <main className="flex-1 overflow-auto bg-white">
+        <main className="flex-1 overflow-x-auto bg-white">
           {loading ? (
             <div className="flex items-center justify-center h-full">
               <div className="text-gray-600">Loading...</div>
             </div>
           ) : (
-            <div className="p-2 md:p-6">
-              <BundleTable
-                bundles={bundlesState}
-                items={processedItems}
-                onItemToggle={handleItemToggle}
-                onItemPriceChange={handleItemPriceChange}
-                onItemDiscountChange={handleItemDiscountChange}
-                onUserLimitChange={handleUserLimitChange}
-                onEditItem={handleEditItem}
-                onCheckboxChange={handleCheckboxChange}
-                onIndividualChange={handleIndividualChange}
-                itemPrices={itemPrices}
-                onAddNewItem={handleAddNewItem}
-                onNoteChange={handleNoteChange}
-                onItemNoteChange={handleItemNoteChange}
-              />
+            <div className="p-2 md:p-6 min-w-full">
+              <div className="overflow-x-auto">
+                <div className="inline-block min-w-full align-middle">
+                  <BundleTable
+                    bundles={bundlesState}
+                    items={processedItems}
+                    onItemToggle={handleItemToggle}
+                    onItemPriceChange={handleItemPriceChange}
+                    onItemDiscountChange={handleItemDiscountChange}
+                    onUserLimitChange={handleUserLimitChange}
+                    onEditItem={handleEditItem}
+                    onCheckboxChange={handleCheckboxChange}
+                    onIndividualChange={handleIndividualChange}
+                    itemPrices={itemPrices}
+                    onAddNewItem={handleAddNewItem}
+                    onNoteChange={handleNoteChange}
+                    onItemNoteChange={handleItemNoteChange}
+                  />
+                </div>
+              </div>
             </div>
           )}
         </main>
@@ -436,164 +440,162 @@ function BundleTable({
           Přidat novou položku
         </button>
       </div>
-      <div className="border border-gray-200 rounded-lg shadow-sm">
-        <div className="min-w-[800px]">
-          <table className="w-full table-fixed">
-            <TableColgroup />
-            <thead className="bg-gray-50 sticky top-0 z-10 border-b border-gray-200">
-              <tr>
-                <th className={`${tableStyles.columnWidths.details} text-left ${tableStyles.headerCell}`}>
-                  Detail položky
-                </th>
-                <th className={tableStyles.headerCell}>
-                  <div className={tableStyles.centerWrapper}>
-                    Ano/Ne
-                  </div>
-                </th>
-                <th className={tableStyles.headerCell}>
-                  <div className={tableStyles.centerWrapper}>
-                    Individuální
-                  </div>
-                </th>
-                {bundles.map((bundle, index) => (
-                  <React.Fragment key={`${bundle.id}-header`}>
-                    <th className="w-[20px]" />
-                    <th className={`${tableStyles.packageHeaderCell} ${getBundleHeaderBorderClasses(index)}`}>
-                      <div className="flex flex-col items-center">
-                        <div>{bundle.name}</div>
-                        <div className="flex gap-4 text-[10px] mt-1">
-                          <span>Cena</span>
-                          <span>Sleva</span>
-                        </div>
+      <div className="border border-gray-200 rounded-lg shadow-sm overflow-hidden">
+        <table className="w-full">
+          <TableColgroup />
+          <thead className="bg-gray-50 sticky top-0 z-10 border-b border-gray-200">
+            <tr>
+              <th className={`${tableStyles.columnWidths.details} text-left ${tableStyles.headerCell}`}>
+                Detail položky
+              </th>
+              <th className={tableStyles.headerCell}>
+                <div className={tableStyles.centerWrapper}>
+                  Ano/Ne
+                </div>
+              </th>
+              <th className={tableStyles.headerCell}>
+                <div className={tableStyles.centerWrapper}>
+                  Individuální
+                </div>
+              </th>
+              {bundles.map((bundle, index) => (
+                <React.Fragment key={`${bundle.id}-header`}>
+                  <th className="w-[20px]" />
+                  <th className={`${tableStyles.packageHeaderCell} ${getBundleHeaderBorderClasses(index)}`}>
+                    <div className="flex flex-col items-center">
+                      <div>{bundle.name}</div>
+                      <div className="flex gap-4 text-[10px] mt-1">
+                        <span>Cena</span>
+                        <span>Sleva</span>
                       </div>
-                    </th>
-                  </React.Fragment>
-                ))}
-              </tr>
-            </thead>
-            <tbody className="divide-y-0">
-              {/* Add user limit row */}
-              <tr className="">
+                    </div>
+                  </th>
+                </React.Fragment>
+              ))}
+            </tr>
+          </thead>
+          <tbody className="divide-y-0">
+            {/* Add user limit row */}
+            <tr className="">
+              <td className={`${tableStyles.columnWidths.details} ${tableStyles.bodyCell}`}>
+                <span className="font-small text-gray-700 text-sm">
+                  Limit uživatelů v balíčku
+                </span>
+              </td>
+              <td className={tableStyles.bodyCell} />
+              <td className={tableStyles.bodyCell} />
+              {bundles.map((bundle, index) => (
+                <React.Fragment key={`${bundle.id}-limit`}>
+                  <td className="w-[20px]" />
+                  <td className={`${tableStyles.columnWidths.bundle} ${tableStyles.packageBodyCell} ${getBundleBorderClasses(index)}`}>
+                    <div className={tableStyles.centerWrapper}>
+                      <input
+                        type="number"
+                        min={0}
+                        value={bundle.userLimit || 0}
+                        onChange={(e) => onUserLimitChange(bundle.id, e.target.value)}
+                        className={tableStyles.numberInput}
+                      />
+                    </div>
+                  </td>
+                </React.Fragment>
+              ))}
+            </tr>
+            {flattenedItems.map((item) => (
+              <tr 
+                key={item.uniqueId}
+                className={`
+                  ${item.type === 'category' ? 'bg-gray-50' : 'hover:bg-gray-50/70 transition-colors duration-150'}
+                  ${item.depth > 0 ? `pl-${item.depth * 4}` : ''}
+                `}
+              >
                 <td className={`${tableStyles.columnWidths.details} ${tableStyles.bodyCell}`}>
-                  <span className="font-small text-gray-700 text-sm">
-                    Limit uživatelů v balíčku
-                  </span>
+                  <div className="flex items-center gap-2">
+                    <div className="flex-1">
+                      <span className="text-sm">{item.name}</span>
+                      {item.note && (
+                        <span className="text-xs text-gray-500 block break-words">
+                          {item.note}
+                        </span>
+                      )}
+                    </div>
+                    <button
+                      onClick={() => onEditItem(item)}
+                      className={`p-1 ${item.type === 'category' ? 'text-blue-500 hover:text-blue-700' : 'text-gray-500 hover:text-gray-700'}`}
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0 1 15.75 21H5.25A2.25 2.25 0 0 1 3 18.75V8.25A2.25 2.25 0 0 1 5.25 6H10" />
+                      </svg>
+                    </button>
+                  </div>
                 </td>
-                <td className={tableStyles.bodyCell} />
-                <td className={tableStyles.bodyCell} />
+                <td className={`${tableStyles.columnWidths.checkbox} ${tableStyles.bodyCell}`}>
+                  <div className={tableStyles.centerWrapper}>
+                    {item.type === 'item' && (
+                      <input
+                        type="checkbox"
+                        checked={item.checkbox ?? false}
+                        className={tableStyles.checkbox}
+                        disabled
+                      />
+                    )}
+                  </div>
+                </td>
+                <td className={`${tableStyles.columnWidths.individual} ${tableStyles.bodyCell}`}>
+                  <div className={tableStyles.centerWrapper}>
+                    {item.type === 'item' && (
+                      <input
+                        type="checkbox"
+                        checked={item.individual ?? false}
+                        onChange={() => onIndividualChange(item.id)}
+                        className={tableStyles.checkbox}
+                        disabled
+                      />
+                    )}
+                  </div>
+                </td>
                 {bundles.map((bundle, index) => (
-                  <React.Fragment key={`${bundle.id}-limit`}>
+                  <React.Fragment key={`${item.id}-${bundle.id}-group`}>
                     <td className="w-[20px]" />
                     <td className={`${tableStyles.columnWidths.bundle} ${tableStyles.packageBodyCell} ${getBundleBorderClasses(index)}`}>
-                      <div className={tableStyles.centerWrapper}>
-                        <input
-                          type="number"
-                          min={0}
-                          value={bundle.userLimit || 0}
-                          onChange={(e) => onUserLimitChange(bundle.id, e.target.value)}
-                          className={tableStyles.numberInput}
-                        />
-                      </div>
+                      {item.type === 'item' && (
+                        <div className={tableStyles.centerWrapper + " gap-2 flex-col"}>
+                          <div className="flex items-center gap-2">
+                            <input
+                              type="checkbox"
+                              checked={getItemSelected(item, bundle.id)}
+                              onChange={() => onItemToggle(bundle.id, item.id)}
+                              className={tableStyles.checkbox}
+                            />
+                            <div className="flex flex-wrap gap-2 justify-center">
+                              <input
+                                type="number"
+                                value={getItemPrice(item, bundle.id)}
+                                onChange={(e) => onItemPriceChange(bundle.id, item.id, e.target.value)}
+                                className={tableStyles.numberInput}
+                              />
+                              <input
+                                type="number"
+                                value={getItemDiscountedAmount(item, bundle.id)}
+                                onChange={(e) => onItemDiscountChange(bundle.id, item.id, e.target.value)}
+                                className={tableStyles.numberInput}
+                              />
+                            </div>
+                          </div>
+                          {item.packages?.find(p => p.packageId === bundle.id)?.note && (
+                            <div className="text-xs text-gray-500 mt-1 max-w-[200px] truncate">
+                              {item.packages?.find(p => p.packageId === bundle.id)?.note}
+                            </div>
+                          )}
+                        </div>
+                      )}
                     </td>
                   </React.Fragment>
                 ))}
               </tr>
-              {flattenedItems.map((item) => (
-                <tr 
-                  key={item.uniqueId}
-                  className={`
-                    ${item.type === 'category' ? 'bg-gray-50' : 'hover:bg-gray-50/70 transition-colors duration-150'}
-                    ${item.depth > 0 ? `pl-${item.depth * 4}` : ''}
-                  `}
-                >
-                  <td className={`${tableStyles.columnWidths.details} ${tableStyles.bodyCell}`}>
-                    <div className="flex items-center gap-2">
-                      <div className="flex-1">
-                        <span className="text-sm">{item.name}</span>
-                        {item.note && (
-                          <span className="text-xs text-gray-500 block break-words">
-                            {item.note}
-                          </span>
-                        )}
-                      </div>
-                      <button
-                        onClick={() => onEditItem(item)}
-                        className={`p-1 ${item.type === 'category' ? 'text-blue-500 hover:text-blue-700' : 'text-gray-500 hover:text-gray-700'}`}
-                      >
-                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4">
-                          <path strokeLinecap="round" strokeLinejoin="round" d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0 1 15.75 21H5.25A2.25 2.25 0 0 1 3 18.75V8.25A2.25 2.25 0 0 1 5.25 6H10" />
-                        </svg>
-                      </button>
-                    </div>
-                  </td>
-                  <td className={`${tableStyles.columnWidths.checkbox} ${tableStyles.bodyCell}`}>
-                    <div className={tableStyles.centerWrapper}>
-                      {item.type === 'item' && (
-                        <input
-                          type="checkbox"
-                          checked={item.checkbox ?? false}
-                          className={tableStyles.checkbox}
-                          disabled
-                        />
-                      )}
-                    </div>
-                  </td>
-                  <td className={`${tableStyles.columnWidths.individual} ${tableStyles.bodyCell}`}>
-                    <div className={tableStyles.centerWrapper}>
-                      {item.type === 'item' && (
-                        <input
-                          type="checkbox"
-                          checked={item.individual ?? false}
-                          onChange={() => onIndividualChange(item.id)}
-                          className={tableStyles.checkbox}
-                          disabled
-                        />
-                      )}
-                    </div>
-                  </td>
-                  {bundles.map((bundle, index) => (
-                    <React.Fragment key={`${item.id}-${bundle.id}-group`}>
-                      <td className="w-[20px]" />
-                      <td className={`${tableStyles.columnWidths.bundle} ${tableStyles.packageBodyCell} ${getBundleBorderClasses(index)}`}>
-                        {item.type === 'item' && (
-                          <div className={tableStyles.centerWrapper + " gap-2 flex-col"}>
-                            <div className="flex items-center gap-2">
-                              <input
-                                type="checkbox"
-                                checked={getItemSelected(item, bundle.id)}
-                                onChange={() => onItemToggle(bundle.id, item.id)}
-                                className={tableStyles.checkbox}
-                              />
-                              <div className="flex gap-2">
-                                <input
-                                  type="number"
-                                  value={getItemPrice(item, bundle.id)}
-                                  onChange={(e) => onItemPriceChange(bundle.id, item.id, e.target.value)}
-                                  className={tableStyles.numberInput}
-                                />
-                                <input
-                                  type="number"
-                                  value={getItemDiscountedAmount(item, bundle.id)}
-                                  onChange={(e) => onItemDiscountChange(bundle.id, item.id, e.target.value)}
-                                  className={tableStyles.numberInput}
-                                />
-                              </div>
-                            </div>
-                            {item.packages?.find(p => p.packageId === bundle.id)?.note && (
-                              <div className="text-xs text-gray-500 mt-1 max-w-[200px] truncate">
-                                {item.packages?.find(p => p.packageId === bundle.id)?.note}
-                              </div>
-                            )}
-                          </div>
-                        )}
-                      </td>
-                    </React.Fragment>
-                  ))}
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+            ))}
+          </tbody>
+        </table>
       </div>
     </>
   );

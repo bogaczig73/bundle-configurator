@@ -58,10 +58,24 @@ function Sidebar({ children }) {
 
   return (
     <div className="flex">
+      {/* Mobile Toggle Button - Only visible on mobile */}
+      <button
+        onClick={toggleSidebar}
+        className={`md:hidden fixed top-4 left-4 z-50 p-2 rounded-lg bg-[#e1007b] text-white hover:bg-[#c4006b] transition-colors duration-200 ${
+          isOpen ? 'left-[240px]' : 'left-4'
+        }`}
+      >
+        {isOpen ? '←' : '→'}
+      </button>
+
+      {/* Sidebar */}
       <div 
-        className={`fixed top-0 left-0 h-screen p-4 transition-all duration-300 flex flex-col border-r ${
-          isOpen ? 'w-64' : 'w-16'
-        } bg-gradient-to-br from-[#e1007b] via-[#e96b46] to-[#f6b200]`}
+        className={`fixed top-0 left-0 h-screen p-4 transition-all duration-300 flex flex-col border-r
+          ${isOpen ? 'translate-x-0' : '-translate-x-full'} 
+          md:translate-x-0
+          ${isOpen ? 'w-64' : 'w-16'} 
+          bg-gradient-to-br from-[#e1007b] via-[#e96b46] to-[#f6b200]
+          z-40`}
       >
         <div className={`flex items-center ${!isOpen && 'justify-center'}`}>
           <img 
@@ -71,9 +85,10 @@ function Sidebar({ children }) {
           />
         </div>
 
+        {/* Desktop Toggle Button - Only visible on desktop */}
         <button
           onClick={toggleSidebar}
-          className="absolute top-4 right-4 p-2 rounded-lg bg-white/20 text-white hover:bg-white/30"
+          className="absolute top-4 right-4 p-2 rounded-lg bg-white/20 text-white hover:bg-white/30 hidden md:block"
         >
           {isOpen ? '←' : '→'}
         </button>
@@ -122,9 +137,17 @@ function Sidebar({ children }) {
         </div>
       </div>
 
+      {/* Overlay for mobile - only shows when sidebar is open */}
+      {isOpen && (
+        <div 
+          className="fixed inset-0 bg-black bg-opacity-50 z-30 md:hidden"
+          onClick={toggleSidebar}
+        />
+      )}
+
       <div 
         className={`flex-1 transition-all duration-300 ${
-          isOpen ? 'ml-64' : 'ml-16'
+          isOpen ? 'md:ml-64' : 'md:ml-16'
         }`}
       >
         {children}

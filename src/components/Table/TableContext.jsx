@@ -18,11 +18,13 @@ export const TableProvider = ({
   userRole = 'customer',
   settings = {},
   children,
-  isBundleDisabled
+  isBundleDisabled,
+  processedItems = []
 }) => {
   const value = {
     bundles,
     items,
+    processedItems,
     amounts,
     onAmountChange,
     readonly,

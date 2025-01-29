@@ -37,7 +37,6 @@ export const getBundleState = (bundle, index, amounts, items, packages) => {
   for (const [itemId, amount] of Object.entries(amounts?.amounts || {})) {
     if (amount > 0) {
       const item = findItemInCategories(itemId, items);
-      console.log(item);
       if (item?.packages?.[index] && !item.packages[index].selected) {
         nonSelectedItems.push({
           name: item.name,
@@ -46,7 +45,6 @@ export const getBundleState = (bundle, index, amounts, items, packages) => {
       }
     }
   }
-  console.log(nonSelectedItems);
   if (nonSelectedItems.length > 0) {
     return { 
       state: 'inactive',
@@ -74,7 +72,6 @@ export const getBundleState = (bundle, index, amounts, items, packages) => {
       }
     }
   }
-  console.log(selectedItems);
   if (selectedItems.length > 0) {
     return { 
       state: 'active',
