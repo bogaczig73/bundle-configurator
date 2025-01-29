@@ -69,8 +69,29 @@ function ConfiguratorPage() {
 
   // Calculate which bundles should be active based on amounts
   const updateActiveBundles = useCallback((newAmounts) => {
+    let foundActive = false;
     const bundleStates = packages.map((pkg, index) => {
       const stateInfo = getBundleState(pkg, index, newAmounts, processedItems, packages);
+      
+      // If this bundle would be active but we already found an active one,
+      // force it to default state
+      if (stateInfo.state === 'active' && foundActive) {
+        return {
+          ...pkg,
+          userLimit: pkg.userLimit,
+          isActive: 'default',
+          state: 'default',
+          stateReason: 'Another bundle is already active',
+          stateDetails: stateInfo.details,
+          nonSelectedItems: stateInfo.items
+        };
+      }
+
+      // If this bundle is active, mark that we found one
+      if (stateInfo.state === 'active') {
+        foundActive = true;
+      }
+
       return {
         ...pkg,
         userLimit: stateInfo.state !== 'inactive' ? pkg.userLimit : 0,
