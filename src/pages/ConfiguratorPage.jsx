@@ -393,6 +393,7 @@ function ConfiguratorPage() {
                 bundles={activeBundles}
                 items={processedItems || []}
                 onAmountChange={handleAmountChange}
+                onDiscountChange={(itemId, value) => handleAmountChange(itemId, value, 'discount')}
                 amounts={amounts}
                 showIndividualDiscount={showIndividualDiscount}
                 showFixace={showFixace}

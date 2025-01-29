@@ -499,7 +499,11 @@ export const TableRow = ({ item, tableStyles }) => {
             parentItem={itemInstance}
             type="fixace"
             tableStyles={tableStyles}
-            onDiscountChange={onAmountChange}
+            onDiscountChange={(discountKey, value) => {
+              // Set individual discount flag
+              onAmountChange(discountKey, value, 'discount');
+              onAmountChange(discountKey, true, 'individualDiscounts');
+            }}
           />
           <SubItemRow
             key={`${itemInstance.id}-over-fixation-items`}
@@ -507,7 +511,9 @@ export const TableRow = ({ item, tableStyles }) => {
             parentItem={itemInstance}
             type="over"
             tableStyles={tableStyles}
-            onDiscountChange={onAmountChange}
+            onDiscountChange={(discountKey, value) => {
+              onAmountChange(discountKey, value, 'discount');
+            }}
           />
         </>
       )}
