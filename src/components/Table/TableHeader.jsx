@@ -140,7 +140,7 @@ function TableHeader({ tableStyles }) {
                       <div className="flex flex-col items-center relative">
                         <div className="flex items-center gap-2">
                           {bundle.name}
-                          {bundle.nonSelectedItems && bundle.nonSelectedItems.length > 0 && index < bundles.length - 1 && (
+                          {bundle.nonSelectedItems && bundle.nonSelectedItems.length > 0 && index < bundles.length - 1 && isInactive && (
                             <div 
                               onMouseEnter={() => setActiveTooltip(bundle.id)}
                               onMouseLeave={() => setActiveTooltip(null)}
@@ -148,9 +148,7 @@ function TableHeader({ tableStyles }) {
                             >
                               <FontAwesomeIcon 
                                 icon={faCircleInfo} 
-                                className={`h-5 w-5 transition-colors duration-150 ${
-                                  isInactive ? 'text-gray-600 hover:text-gray-500' : 'text-white hover:text-white/80'
-                                }`}
+                                className="h-5 w-5 transition-colors duration-150 text-gray-600 hover:text-gray-500"
                               />
                             </div>
                           )}
