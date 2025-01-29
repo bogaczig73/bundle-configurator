@@ -401,13 +401,22 @@ function ViewOffersPage() {
         newItems = await loadItemsForCurrency(currency);
       }
 
-      // Prepare amounts data
+      // Initialize empty amounts data with all items reset to default values
       const configAmounts = {
         amounts: {},
         discount: {},
         fixace: {},
         individualDiscounts: {}
       };
+
+      // First, set all items to have zero values to ensure clean state
+      newItems.forEach(item => {
+        if (item.type === 'item') {
+          configAmounts.amounts[item.id] = 0;
+          configAmounts.discount[item.id] = 0;
+          configAmounts.fixace[item.id] = 0;
+        }
+      });
 
       // Process configuration items and check for fixations
       let hasFixations = false;
@@ -418,16 +427,17 @@ function ViewOffersPage() {
           if (itemData.fixace > 0) {
             hasFixations = true;
           }
-          if (itemData.discount) configAmounts.discount[itemId] = itemData.discount;
-            if (itemData.subItemDiscounts.fixace) {
-              configAmounts.individualDiscounts[`${itemId}_fixed_items`] = true;
-              configAmounts.discount[`${itemId}_fixed_items`] = itemData.subItemDiscounts.fixace;
-            }
-            if (itemData.subItemDiscounts.over) {
-              configAmounts.individualDiscounts[`${itemId}_over_fixation_items`] = true;
-              configAmounts.discount[`${itemId}_over_fixation_items`] = itemData.subItemDiscounts.over;
-            }
-          
+          if (itemData.discount !== undefined) {
+            configAmounts.discount[itemId] = itemData.discount;
+          }
+          if (itemData.subItemDiscounts?.fixace !== undefined) {
+            configAmounts.individualDiscounts[`${itemId}_fixed_items`] = true;
+            configAmounts.discount[`${itemId}_fixed_items`] = itemData.subItemDiscounts.fixace;
+          }
+          if (itemData.subItemDiscounts?.over !== undefined) {
+            configAmounts.individualDiscounts[`${itemId}_over_fixation_items`] = true;
+            configAmounts.discount[`${itemId}_over_fixation_items`] = itemData.subItemDiscounts.over;
+          }
         });
       }
 

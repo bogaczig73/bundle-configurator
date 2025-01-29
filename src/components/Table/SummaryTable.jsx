@@ -3,10 +3,9 @@ import { roundPrice, formatPrice } from '../../utils/priceUtils';
 import { Item } from '../../types/Item';
 import { abraColors, getColorHex, useTableStyles } from './useTableStyles';
 import { TableColgroup } from './TableColgroup';
-import { isBundleActive, isBundleDisabled } from '../../utils/bundleUtils';
 import { TableProvider } from './TableContext';
 import { useTable } from './TableContext';
-
+import { isBundleActive, isBundleInactive } from '../../utils/bundleUtils';
 const processItems = (items) => {
   const result = [];
   items.forEach(item => {
@@ -33,6 +32,9 @@ const calculateBundleTotals = (flatItems, amounts = {}, bundle) => {
     const basePrice = itemInstance.getPrice(bundle.id);
     const fixedAmount = amounts.fixace?.[itemInstance.id] || 0;
     const totalAmount = amounts.amounts?.[itemInstance.id] || 0;
+    if (itemInstance._fixaceAmount > 0) {
+      console.log('itemInstance', itemInstance);
+    }
     
     if (basePrice === 0 || totalAmount === 0) return;
 
@@ -58,6 +60,7 @@ const calculateBundleTotals = (flatItems, amounts = {}, bundle) => {
     const finalPrice = itemInstance.calculateTotalPrice(bundle.id);
     const itemDiscount = itemInstance.calculateTotalDiscount(bundle.id);
 
+
     totals.withoutDiscount += priceBeforeDiscount;
     totals.totalDiscount += itemDiscount;
     totals.final += finalPrice;
@@ -65,7 +68,7 @@ const calculateBundleTotals = (flatItems, amounts = {}, bundle) => {
 
   return totals;
 };
-export const SummaryTable = ({ items = [], exporting = false, amounts = {}, bundles = [], globalDiscount = 0, showIndividualDiscount = false, showFixace = false, currency = 'CZK' }) => {
+export const SummaryTable = ({ items = [], exporting = false, amounts = {}, bundles = [], globalDiscount = 0, showIndividualDiscount = false, showFixace = false, currency = 'CZK', activeBundles = [] }) => {
   const styles = useTableStyles(exporting);
   const flatItems = processItems(items);
 
@@ -83,7 +86,6 @@ export const SummaryTable = ({ items = [], exporting = false, amounts = {}, bund
       showFixace={showFixace}
       currency={currency}
       settings={{}}
-      
     >
       <div className="mt-8">
         <table className={styles.table}>
@@ -100,8 +102,6 @@ export const SummaryTable = ({ items = [], exporting = false, amounts = {}, bund
               <th className={`${styles.headerCell}`}></th> {/* Empty spacer cell */}
 
               {bundleTotals.map(({ bundle }, index) => {
-                const isActive = isBundleActive(bundle, index, amounts.amounts, bundles);
-                const isDisabled = isBundleDisabled(bundle, index, amounts.amounts);
                 return (
                   <React.Fragment key={bundle.id}>
                     <th className="!w-[20px] min-w-[20px]" /> {/* Separator header */}
@@ -109,8 +109,8 @@ export const SummaryTable = ({ items = [], exporting = false, amounts = {}, bund
                       className={`
                         ${styles.packageHeaderCell} 
                         ${styles.getBundleHeaderBorderClasses(index)}
-                        ${isActive ? `bg-${abraColors[index]} ${styles.activeBundle}` : ''}
-                        ${isDisabled ? styles.inactiveBundle.header : ''}
+                        ${isBundleActive(bundle) ? `bg-${abraColors[index]} ${styles.activeBundle}` : ''}
+                        ${isBundleInactive(bundle) ? styles.inactiveBundle.header : ''}
                       `}
                     >
                       <div className={styles.centerWrapper}>
@@ -133,8 +133,6 @@ export const SummaryTable = ({ items = [], exporting = false, amounts = {}, bund
               <td /> {/* Empty spacer cell */}
 
               {bundleTotals.map(({ bundle, totals }, index) => {
-                const isActive = isBundleActive(bundle, index, amounts.amounts, bundles);
-                const isDisabled = isBundleDisabled(bundle, index, amounts.amounts);
                 return (
                   <React.Fragment key={bundle.id}>
                     <td className="!w-[20px] min-w-[20px]" /> {/* Separator cell */}
@@ -143,7 +141,7 @@ export const SummaryTable = ({ items = [], exporting = false, amounts = {}, bund
                         ${styles.packageBodyCell} 
                         text-right 
                         ${styles.getBundleBorderClasses(index)} 
-                        ${isDisabled ? styles.inactiveBundle.cell : ''}
+                        ${isBundleInactive(bundle) ? styles.inactiveBundle.cell : ''}
                         py-4
                       `}
                     >
@@ -170,8 +168,6 @@ export const SummaryTable = ({ items = [], exporting = false, amounts = {}, bund
               <td /> {/* Empty spacer cell */}
 
               {bundleTotals.map(({ bundle, totals }, index) => {
-                const isActive = isBundleActive(bundle, index, amounts.amounts, bundles);
-                const isDisabled = isBundleDisabled(bundle, index, amounts.amounts);
                 return (
                   <React.Fragment key={bundle.id}>
                     <td className="!w-[20px] min-w-[20px]" /> {/* Separator cell */}
@@ -180,7 +176,7 @@ export const SummaryTable = ({ items = [], exporting = false, amounts = {}, bund
                         ${styles.packageBodyCell} 
                         text-right 
                         ${styles.getBundleBorderClasses(index)} 
-                        ${isDisabled ? styles.inactiveBundle.cell : ''}
+                        ${isBundleInactive(bundle) ? styles.inactiveBundle.cell : ''}
                         py-4
                       `}
                     >
@@ -207,8 +203,6 @@ export const SummaryTable = ({ items = [], exporting = false, amounts = {}, bund
               <td/> {/* Empty spacer cell */}
 
               {bundleTotals.map(({ bundle, totals }, index) => {
-                const isActive = isBundleActive(bundle, index, amounts.amounts, bundles);
-                const isDisabled = isBundleDisabled(bundle, index, amounts.amounts);
                 return (
                   <React.Fragment key={bundle.id}>
                     <td className="!w-[20px] min-w-[20px]" /> {/* Separator cell */}
@@ -217,14 +211,14 @@ export const SummaryTable = ({ items = [], exporting = false, amounts = {}, bund
                         ${styles.packageBodyCell} 
                         text-right 
                         ${styles.getBundleBorderClasses(index)} 
-                        ${isDisabled ? styles.inactiveBundle.cell : ''}
-                        ${isActive ? `bg-${abraColors[index]} ${styles.activeBundle}` : ''}
+                        ${isBundleInactive(bundle) ? styles.inactiveBundle.cell : ''}
+                        ${isBundleActive(bundle) ? `bg-${abraColors[index]} ${styles.activeBundle}` : ''}
                         py-4
                       `}
                     >
                       <div className={styles.centerWrapper}>
                         <div className="flex flex-col items-center">
-                          <div className={`text-sm ${isActive ? `` : 'font-medium'} ${isDisabled ? styles.inactiveBundle.price : ''} `}>
+                          <div className={`text-sm ${bundle.isActive ? `` : 'font-medium'} ${!bundle.isActive ? styles.inactiveBundle.price : ''} `}>
                             {formatPrice(totals.final, currency)}
                           </div>
                         </div>

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { useParams } from 'react-router-dom';
 import Sidebar from '../components/Sidebar';
 import { useConfigData } from '../hooks/useConfigData';
@@ -10,6 +10,7 @@ import { usePersistedSettings } from '../hooks/usePersistedSettings';
 import { CURRENCIES } from '../hooks/useConfigData';
 import { useTableStyles } from '../components/Table/useTableStyles';
 import { useCurrentUser } from '../api/users';
+import { getBundleState } from '../utils/bundleUtils';
 
 // // Available currencies
 // const CURRENCIES = [
@@ -50,6 +51,38 @@ function ConfiguratorPage() {
   const [globalDiscount, setGlobalDiscount] = useState(0);
   const [selectedCurrency, setSelectedCurrency] = useState('CZK');
   const [isPrivate, setIsPrivate] = useState(false);
+  const [activeBundles, setActiveBundles] = useState(packages.map(() => 'default'));
+
+  // Helper function to find an item in the nested structure
+  const findItemInCategories = useCallback((itemId, categories) => {
+    for (const category of categories) {
+      if (category.type === 'category' && category.children) {
+        const item = category.children.find(i => i.id.toString() === itemId);
+        if (item) return item;
+        
+        const foundInSubcategory = findItemInCategories(itemId, category.children.filter(child => child.type === 'category'));
+        if (foundInSubcategory) return foundInSubcategory;
+      }
+    }
+    return null;
+  }, []);
+
+  // Calculate which bundles should be active based on amounts
+  const updateActiveBundles = useCallback((newAmounts) => {
+    const bundleStates = packages.map((pkg, index) => {
+      const stateInfo = getBundleState(pkg, index, newAmounts, processedItems, packages);
+      return {
+        ...pkg,
+        userLimit: stateInfo.state !== 'inactive' ? pkg.userLimit : 0,
+        isActive: stateInfo.state,
+        state: stateInfo.state,
+        stateReason: stateInfo.reason,
+        stateDetails: stateInfo.details,
+        nonSelectedItems: stateInfo.items
+      };
+    });
+    setActiveBundles(bundleStates);
+  }, [packages, processedItems]);
 
   const customers = useMemo(() => {
     return users.filter(user => user.role === 'customer');
@@ -109,6 +142,11 @@ function ConfiguratorPage() {
     }
   }, [bundleData]);
 
+  // Initial bundle states calculation
+  useEffect(() => {
+    updateActiveBundles(amounts);
+  }, [updateActiveBundles, amounts]);
+
   const handleAmountChange = (itemId, value, field = 'amounts', subItemId = null) => {
     setAmounts(prev => {
       const newAmounts = { ...prev };
@@ -152,6 +190,9 @@ function ConfiguratorPage() {
           newAmounts.fixace[key] = Number(value);
         }
       }
+
+      // Update active bundles whenever amounts change
+      updateActiveBundles(newAmounts);
       return newAmounts;
     });
   };
@@ -328,17 +369,7 @@ function ConfiguratorPage() {
           ) : (
             <div className="px-6">
               <BundleTable
-                bundles={packages.map((pkg, index) => {
-                  const userCount = amounts?.amounts?.[1] || 0;
-                  
-                  // Bundle is active if the user count (item ID 1) is less than or equal to its userLimit
-                  const isActive = userCount <= pkg.userLimit;
-                  
-                  return {
-                    ...pkg,
-                    userLimit: isActive ? pkg.userLimit : 0
-                  };
-                })}
+                bundles={activeBundles}
                 items={processedItems || []}
                 onAmountChange={handleAmountChange}
                 amounts={amounts}
@@ -357,7 +388,7 @@ function ConfiguratorPage() {
                   items={processedItems || []}
                   amounts={amounts}
                   currency={selectedCurrency}
-                  bundles={packages}
+                  bundles={activeBundles}
                   globalDiscount={globalDiscount}
                   showIndividualDiscount={showIndividualDiscount}
                   showFixace={showFixace}

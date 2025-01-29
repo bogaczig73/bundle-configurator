@@ -4,7 +4,6 @@ import { SubItemRow } from './SubItemRow';
 import { useTableStyles } from './useTableStyles';
 import { Item } from '../../types/Item';
 import { roundPrice, formatPrice } from '../../utils/priceUtils';
-import { isBundleDisabled } from '../../utils/bundleUtils';
 import { useTable } from './TableContext';
 
 export const TableRow = ({ item, tableStyles }) => {
@@ -20,7 +19,9 @@ export const TableRow = ({ item, tableStyles }) => {
     onRowSelect,
     currency,
     userRole,
-    settings
+    settings,
+    isBundleActive,
+    isBundleInactive
   } = useTable();
 
   const [isExpanded, setIsExpanded] = React.useState(false);
@@ -86,18 +87,24 @@ export const TableRow = ({ item, tableStyles }) => {
           </td>
         )}
 
-        {bundles.map((bundle, index) => (
-          <React.Fragment key={`${itemInstance.id}-${bundle.id}-group`}>
-            <td className="!w-[20px] min-w-[20px]" />
-            <td className={`
-              ${tableStyles.columnWidths.bundle} 
-              ${tableStyles.packageBodyCell} 
-              ${tableStyles.getBundleBorderClasses(index)} 
-              ${isBundleDisabled(bundle, index, amounts.amounts) ? tableStyles.inactiveBundle.cell : ''}
-            `}>
-            </td>
-          </React.Fragment>
-        ))}
+        {bundles.map((bundle, index) => {
+          const isActive = isBundleActive(bundle);
+          const isInactive = isBundleInactive(bundle);
+
+          return (
+            <React.Fragment key={`${itemInstance.id}-${bundle.id}-group`}>
+              <td className="!w-[20px] min-w-[20px]" />
+              <td className={`
+                ${tableStyles.columnWidths.bundle} 
+                ${tableStyles.packageBodyCell} 
+                ${tableStyles.getBundleBorderClasses(index)} 
+                ${isActive ? tableStyles.activeBundle.cell : ''}
+                ${isInactive ? tableStyles.inactiveBundle.cell : ''}
+              `}>
+              </td>
+            </React.Fragment>
+          );
+        })}
       </tr>
     );
   }
@@ -403,7 +410,8 @@ export const TableRow = ({ item, tableStyles }) => {
               ${tableStyles.columnWidths.bundle} 
               ${tableStyles.packageBodyCell} 
               ${tableStyles.getBundleBorderClasses(index)}
-              ${isBundleDisabled(bundle, index, amounts.amounts) ? tableStyles.inactiveBundle.cell : ''}
+              ${isBundleActive(bundle) ? tableStyles.activeBundle.cell : ''}
+              ${isBundleInactive(bundle) ? tableStyles.inactiveBundle.cell : ''}
             `}>
               <div className="flex flex-col items-center">
                 {itemInstance.getPrice(bundle.id) === 0 ? (
@@ -491,9 +499,7 @@ export const TableRow = ({ item, tableStyles }) => {
             parentItem={itemInstance}
             type="fixace"
             tableStyles={tableStyles}
-            onDiscountChange={(subItemId, value) => {
-              onAmountChange(itemInstance.id, value, 'discount', subItemId);
-            }}
+            onDiscountChange={onAmountChange}
           />
           <SubItemRow
             key={`${itemInstance.id}-over-fixation-items`}
@@ -501,9 +507,7 @@ export const TableRow = ({ item, tableStyles }) => {
             parentItem={itemInstance}
             type="over"
             tableStyles={tableStyles}
-            onDiscountChange={(subItemId, value) => {
-              onAmountChange(itemInstance.id, value, 'discount', subItemId);
-            }}
+            onDiscountChange={onAmountChange}
           />
         </>
       )}

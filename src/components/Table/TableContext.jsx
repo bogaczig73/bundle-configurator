@@ -1,4 +1,5 @@
 import React, { createContext, useContext } from 'react';
+import { isBundleActive, isBundleInactive } from '../../utils/bundleUtils';
 
 const TableContext = createContext(null);
 
@@ -33,7 +34,9 @@ export const TableProvider = ({
     currency,
     userRole,
     settings,
-    isBundleDisabled
+    isBundleDisabled,
+    isBundleActive: (bundle) => isBundleActive(bundle),
+    isBundleInactive: (bundle) => isBundleInactive(bundle)
   };
 
   return (
