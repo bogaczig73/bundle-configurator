@@ -405,6 +405,9 @@ export const TableRow = ({ item, tableStyles }) => {
 
         {bundles.map((bundle, index) => (
           <React.Fragment key={`${itemInstance.id}-${bundle.id}-group`}>
+            {
+            console.log("item", itemInstance, itemInstance.isSelected(bundle.id))
+            }
             <td className="!w-[20px] min-w-[20px]" />
             <td className={`
               ${tableStyles.columnWidths.bundle} 
@@ -414,7 +417,7 @@ export const TableRow = ({ item, tableStyles }) => {
               ${isBundleInactive(bundle) ? tableStyles.inactiveBundle.cell : ''}
             `}>
               <div className="flex flex-col items-center">
-                {itemInstance.getPrice(bundle.id) === 0 ? (
+                {itemInstance.getPrice(bundle.id) === 0 || !itemInstance.isSelected(bundle.id) ? (
                   <span className="">
                     {itemInstance.isSelected(bundle.id) ? (
                       <svg id="Vrstva_1" data-name="Vrstva 1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 80" className={`w-12 h-12 scale-150`}>
@@ -464,7 +467,7 @@ export const TableRow = ({ item, tableStyles }) => {
                 )}
                 <span className="text-xs text-gray-500 italic">
                   {itemInstance.getPrice(bundle.id) === 0 ? '' :
-                    itemInstance.individual ? 'individuální paušál' : (
+                    itemInstance.individual && itemInstance.isSelected(bundle.id) ? 'individuální paušál' : (
                       <>
                         {/* {`${formatPrice(itemInstance.getPrice(bundle.id))} za kus`} */}
                       </>

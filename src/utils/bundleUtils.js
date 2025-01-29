@@ -37,6 +37,7 @@ export const getBundleState = (bundle, index, amounts, items, packages) => {
   for (const [itemId, amount] of Object.entries(amounts?.amounts || {})) {
     if (amount > 0) {
       const item = findItemInCategories(itemId, items);
+      console.log(item);
       if (item?.packages?.[index] && !item.packages[index].selected) {
         nonSelectedItems.push({
           name: item.name,

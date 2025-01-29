@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useRef } from "react";
+import React, { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import Sidebar from '../components/Sidebar';
 import { useConfigData } from '../hooks/useConfigData';
 import { BundleTable } from '../components/Table/BundleTable';
@@ -13,6 +13,7 @@ import { useCurrentUser } from '../api/users';
 import { deleteDoc, doc, updateDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '../firebase';
 import { SummaryTable } from '../components/Table/SummaryTable';
+import { getBundleState } from '../utils/bundleUtils';
 import { 
   getExportFilename,
   exportToPDFV2
@@ -345,11 +346,50 @@ function ViewOffersPage() {
   const [selectedRows, setSelectedRows] = useState({});
   const pdfExportComponent = useRef(null);
   const [deleteError, setDeleteError] = useState(null);
+  const [activeBundles, setActiveBundles] = useState([]);
   const [preselectSettings, setPreselectSettings] = useState({
     preselectNonZeroPrices: false,
     selectedBundles: {},
     selectedCategories: {}
   });
+
+  // Calculate which bundles should be active based on amounts
+  const updateActiveBundles = useCallback((newAmounts) => {
+    let foundActive = false;
+    const bundleStates = packages.map((pkg, index) => {
+      const stateInfo = getBundleState(pkg, index, newAmounts, processedItems, packages);
+      
+      // If this bundle would be active but we already found an active one,
+      // force it to default state
+      if (stateInfo.state === 'active' && foundActive) {
+        return {
+          ...pkg,
+          userLimit: pkg.userLimit,
+          isActive: 'default',
+          state: 'default',
+          stateReason: 'Another bundle is already active',
+          stateDetails: stateInfo.details,
+          nonSelectedItems: stateInfo.items
+        };
+      }
+
+      // If this bundle is active, mark that we found one
+      if (stateInfo.state === 'active') {
+        foundActive = true;
+      }
+
+      return {
+        ...pkg,
+        userLimit: stateInfo.state !== 'inactive' ? pkg.userLimit : 0,
+        isActive: stateInfo.state,
+        state: stateInfo.state,
+        stateReason: stateInfo.reason,
+        stateDetails: stateInfo.details,
+        nonSelectedItems: stateInfo.items
+      };
+    });
+    setActiveBundles(bundleStates);
+  }, [packages, processedItems]);
 
   // Filter configurations based on current user
   const filteredConfigurations = useMemo(() => {
@@ -454,6 +494,8 @@ function ViewOffersPage() {
       setSelectedConfiguration(config);
       setGlobalDiscount(config.globalDiscount ?? 0);
       setAmounts(configAmounts);
+      // Update active bundles with the loaded configuration
+      updateActiveBundles(configAmounts);
     } catch (err) {
       setError(err.message);
     }
@@ -506,6 +548,8 @@ function ViewOffersPage() {
       }
 
       setAmounts(configAmounts);
+      // Update active bundles with the loaded configuration
+      updateActiveBundles(configAmounts);
     } else {
       setAmounts({
         amounts: {},
@@ -513,32 +557,30 @@ function ViewOffersPage() {
         individualDiscounts: {},
         fixace: {}
       });
+      // Reset active bundles when no configuration is selected
+      setActiveBundles(packages.map(pkg => ({
+        ...pkg,
+        isActive: 'default',
+        state: 'default'
+      })));
     }
-  }, [selectedConfiguration]);
-
-  // Show loading state
-  if (configLoading || userLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="text-center">
-          <div className="text-gray-600">Loading...</div>
-        </div>
-      </div>
-    );
-  }
-
+  }, [selectedConfiguration, updateActiveBundles, packages]);
 
   // Handle amount changes in the table
   const handleAmountChange = (itemId, amount, field = 'amounts') => {
-    setAmounts(prev => ({
-      ...prev,
-      [field]: {
-        ...prev[field],
-        [itemId]: amount
-      }
-    }));
+    setAmounts(prev => {
+      const newAmounts = {
+        ...prev,
+        [field]: {
+          ...prev[field],
+          [itemId]: amount
+        }
+      };
+      // Update active bundles whenever amounts change
+      updateActiveBundles(newAmounts);
+      return newAmounts;
+    });
   };
-
 
   // Handle row selection
   const handleRowSelect = (itemId, selected) => {
@@ -888,6 +930,17 @@ function ViewOffersPage() {
     bundles: packages
   };
 
+  // Show loading state
+  if (configLoading || userLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="text-center">
+          <div className="text-gray-600">Loading...</div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="flex h-screen overflow-hidden">
       <Sidebar />
@@ -952,7 +1005,7 @@ function ViewOffersPage() {
         
         <div className="flex-1 flex flex-col min-h-0">
           <ConfigurationsPicker 
-            configurations={filteredConfigurations}
+            configurations={configurations}
             users={users}
             selectedConfiguration={selectedConfiguration}
             onConfigurationSelect={handleConfigurationSelect}
@@ -998,7 +1051,7 @@ function ViewOffersPage() {
                 
                 <div>
                   <BundleTable
-                    bundles={packages}
+                    bundles={activeBundles.length > 0 ? activeBundles : packages}
                     items={processedItems}
                     onAmountChange={handleAmountChange}
                     amounts={amounts}
@@ -1019,12 +1072,11 @@ function ViewOffersPage() {
                   />
 
                   {showSummaryTable && (
-                    
                     <SummaryTable
                       items={processedItems}
                       amounts={amounts}
                       currency={currentCurrency}
-                      bundles={packages}
+                      bundles={activeBundles.length > 0 ? activeBundles : packages}
                       exporting={exporting}
                       showIndividualDiscount={showIndividualDiscount}
                       showFixace={showFixace}
