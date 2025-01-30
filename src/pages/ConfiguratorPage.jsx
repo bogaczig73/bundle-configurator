@@ -11,6 +11,7 @@ import { CURRENCIES } from '../hooks/useConfigData';
 import { useTableStyles } from '../components/Table/useTableStyles';
 import { useCurrentUser } from '../api/users';
 import { getBundleState } from '../utils/bundleUtils';
+import FlyingImage from '../components/FlyingImage';
 
 // // Available currencies
 // const CURRENCIES = [
@@ -52,6 +53,7 @@ function ConfiguratorPage() {
   const [selectedCurrency, setSelectedCurrency] = useState('CZK');
   const [isPrivate, setIsPrivate] = useState(false);
   const [activeBundles, setActiveBundles] = useState(packages.map(() => 'default'));
+  const [showBubu, setShowBubu] = useState(false);
 
   // Helper function to find an item in the nested structure
   const findItemInCategories = useCallback((itemId, categories) => {
@@ -169,11 +171,22 @@ function ConfiguratorPage() {
   }, [updateActiveBundles, amounts]);
 
   const handleAmountChange = (itemId, value, field = 'amounts', subItemId = null) => {
+    if (itemId.toString() === '1' && value.toString() === '666') {
+      setShowBubu(false); // Reset first
+      setTimeout(() => {
+        setShowBubu(true);
+        // Hide after animation
+        setTimeout(() => {
+          setShowBubu(false);
+        }, 3000);
+      }, 0);
+    }
+
     setAmounts(prev => {
       const newAmounts = { ...prev };
       
       if (subItemId) {
-        // Handle subitem discounts
+
         if (!newAmounts[field]) {
           newAmounts[field] = {};
         }
@@ -287,6 +300,11 @@ function ConfiguratorPage() {
 
   return (
     <div className="flex h-screen bg-gray-50">
+      {showBubu && (
+        <div style={{ position: 'fixed', inset: 0, pointerEvents: 'none', zIndex: 9999 }}>
+          <FlyingImage />
+        </div>
+      )}
       <Sidebar />
       <div className="flex-1 flex flex-col overflow-hidden">
         <header className="bg-white shadow-sm">
