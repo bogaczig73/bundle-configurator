@@ -86,68 +86,74 @@ export const TableRow = ({ item, tableStyles }) => {
             ${tableStyles.categoryRow}
           `}>
             <div className={tableStyles.centerWrapper}>
-              <div className="flex items-center">
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    const category = findCategoryById(processedItems, itemInstance.id);
-                    const currentValue = amounts.categoryDiscount?.[itemInstance.id] || 0;
-                    applyCategoryDiscount({
-                      category,
-                      value: Math.max(0, currentValue - 5),
-                      showFixace,
-                      onAmountChange,
-                      amounts
-                    });
-                  }}
-                  className={tableStyles.inputCounterButton + " rounded-s-md"}
-                >
-                  <svg className={tableStyles.counterButtonSymbols} aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 18 2">
-                    <path stroke="currentColor" strokeLinejoin="round" strokeWidth="2" d="M1 1h16" />
-                  </svg>
-                </button>
+              {readonly ? (
+                <span className={tableStyles.itemAmount}>
+                  {amounts.categoryDiscount?.[itemInstance.id] ? `${amounts.categoryDiscount?.[itemInstance.id]}%` : '-'}
+                </span>
+              ) : (
+                <div className="flex items-center">
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      const category = findCategoryById(processedItems, itemInstance.id);
+                      const currentValue = amounts.categoryDiscount?.[itemInstance.id] || 0;
+                      applyCategoryDiscount({
+                        category,
+                        value: Math.max(0, currentValue - 5),
+                        showFixace,
+                        onAmountChange,
+                        amounts
+                      });
+                    }}
+                    className={tableStyles.inputCounterButton + " rounded-s-md"}
+                  >
+                    <svg className={tableStyles.counterButtonSymbols} aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 18 2">
+                      <path stroke="currentColor" strokeLinejoin="round" strokeWidth="2" d="M1 1h16" />
+                    </svg>
+                  </button>
 
-                <input
-                  type="text"
-                  min={0}
-                  max={100}
-                  value={amounts.categoryDiscount?.[itemInstance.id] || 0}
-                  onChange={(e) => {
-                    e.stopPropagation();
-                    const value = Math.min(100, Math.max(0, Number(e.target.value)));
-                    const category = findCategoryById(processedItems, itemInstance.id);
-                    applyCategoryDiscount({
-                      category,
-                      value,
-                      showFixace,
-                      onAmountChange,
-                      amounts
-                    });
-                  }}
-                  onClick={(e) => e.stopPropagation()}
-                  className={tableStyles.numberInput}
-                />
+                  <input
+                    type="text"
+                    min={0}
+                    max={100}
+                    value={amounts.categoryDiscount?.[itemInstance.id] || 0}
+                    onChange={(e) => {
+                      e.stopPropagation();
+                      const value = Math.min(100, Math.max(0, Number(e.target.value)));
+                      const category = findCategoryById(processedItems, itemInstance.id);
+                      applyCategoryDiscount({
+                        category,
+                        value,
+                        showFixace,
+                        onAmountChange,
+                        amounts
+                      });
+                    }}
+                    onClick={(e) => e.stopPropagation()}
+                    className={tableStyles.numberInput}
+                  />
 
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    const category = findCategoryById(processedItems, itemInstance.id);
-                    const currentValue = amounts.categoryDiscount?.[itemInstance.id] || 0;
-                    applyCategoryDiscount({
-                      category,
-                      value: Math.min(100, currentValue + 5),
-                      showFixace,
-                      onAmountChange,
-                      amounts
-                    });
-                  }}
-                  className={tableStyles.inputCounterButton + " rounded-e-md"}
-                >
-                  <svg className={tableStyles.counterButtonSymbols} aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 18 18">
-                    <path stroke="currentColor" strokeLinejoin="round" strokeWidth="2" d="M9 1v16M1 9h16" />
-                  </svg>
-                </button>
-              </div>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      const category = findCategoryById(processedItems, itemInstance.id);
+                      const currentValue = amounts.categoryDiscount?.[itemInstance.id] || 0;
+                      applyCategoryDiscount({
+                        category,
+                        value: Math.min(100, currentValue + 5),
+                        showFixace,
+                        onAmountChange,
+                        amounts
+                      });
+                    }}
+                    className={tableStyles.inputCounterButton + " rounded-e-md"}
+                  >
+                    <svg className={tableStyles.counterButtonSymbols} aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 18 18">
+                      <path stroke="currentColor" strokeLinejoin="round" strokeWidth="2" d="M9 1v16M1 9h16" />
+                    </svg>
+                  </button>
+                </div>
+              )}
             </div>
           </td>
         )}

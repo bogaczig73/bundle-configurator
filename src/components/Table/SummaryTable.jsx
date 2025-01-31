@@ -32,9 +32,6 @@ const calculateBundleTotals = (flatItems, amounts = {}, bundle) => {
     const basePrice = itemInstance.getPrice(bundle.id);
     const fixedAmount = amounts.fixace?.[itemInstance.id] || 0;
     const totalAmount = amounts.amounts?.[itemInstance.id] || 0;
-    if (itemInstance._fixaceAmount > 0) {
-      console.log('itemInstance', itemInstance);
-    }
     
     if (basePrice === 0 || totalAmount === 0) return;
 
@@ -228,6 +225,7 @@ export const SummaryTable = ({ items = [], exporting = false, amounts = {}, bund
                 );
               })}
             </tr>
+
           </tbody>
         </table>
       </div>

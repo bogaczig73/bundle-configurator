@@ -83,13 +83,14 @@ function ItemFormModal({ show, onClose, onSubmit, onDelete, items, packages, edi
           name: editingItem.name,
           type: 'category',
           categoryId: editingItem.parentId || '',
-          order: editingItem.order || 1,
+          order: editingItem.order || getNextOrderNumber(editingItem.parentId || ''),
         });
       } else {
         setFormData({
           ...editingItem,
           id: editingItem.id,
-          order: editingItem.order || 1,
+          categoryId: editingItem.categoryId || '',
+          order: editingItem.order || getNextOrderNumber(editingItem.categoryId || ''),
           packages: packages.map(pkg => {
             const existingPackage = editingItem.packages?.find(p => p.packageId === pkg.id);
             return existingPackage || {
@@ -305,8 +306,8 @@ function ItemFormModal({ show, onClose, onSubmit, onDelete, items, packages, edi
                       return itemOrder > max ? itemOrder : max;
                     }, 0);
 
-                    // Generate array of numbers from 1 to maxOrder + 1
-                    const orderNumbers = Array.from({ length: maxOrder + 1 }, (_, i) => i + 1);
+                    // Generate array of numbers from 1 to maxOrder + 1 (for new items)
+                    const orderNumbers = Array.from({ length: Math.max(maxOrder, itemsInCategory.length) }, (_, i) => i + 1);
 
                     // If editing, include current position if it's higher than maxOrder
                     if (editingItem && editingItem.order > maxOrder) {

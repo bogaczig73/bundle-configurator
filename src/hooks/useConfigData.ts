@@ -44,10 +44,12 @@ interface UseConfigDataReturn {
   getConfigurationById: (configId: string) => Promise<Configuration>;
   saveItems: (items: (ItemData | Category)[], currency: string) => Promise<void>;
   handleNewItem: (formData: NewItemFormData, currency: string) => Promise<ItemData>;
-  handleDeleteItem: (itemId: number) => Promise<void>;
+  handleDeleteItem: (itemId: number, currency: string) => Promise<void>;
   updateItemPrice: (bundleId: string | number, itemId: number, updates: { price?: number; discountedAmount?: number }) => void;
   handleItemToggle: (bundleId: string | number, itemId: number) => void;
   loadItemsForCurrency: (currency: string) => Promise<(Item | Category)[]>;
+  loadCategoriesForCurrency: (currency: string) => Promise<Category[]>;
+  processCategories: (categories: Category[], items: Item[]) => (Category | Item)[];
 }
 
 interface NewItemFormData {
@@ -125,6 +127,37 @@ export function useConfigData(bundleId: string | null = null, configId: string |
     return itemsData.map(item => Item.create(item));
   }, []);
 
+  const loadCategoriesForCurrency = useCallback(async (currency: string) => {
+    try {
+      const categoriesRef = doc(db, 'default', `categories_${currency.toLowerCase()}`);
+      const categoriesSnap = await getDoc(categoriesRef);
+      
+      if (categoriesSnap.exists()) {
+        return categoriesSnap.data().categories || [];
+      }
+      
+      // If no categories exist for this currency, try to get default categories
+      const defaultCategoriesRef = doc(db, 'default', 'categories');
+      const defaultCategoriesSnap = await getDoc(defaultCategoriesRef);
+      
+      if (defaultCategoriesSnap.exists()) {
+        // Save the default categories to the currency-specific collection
+        const defaultCategories = defaultCategoriesSnap.data().categories || [];
+        await setDoc(categoriesRef, { 
+          categories: defaultCategories,
+          currency: currency,
+          updatedAt: serverTimestamp()
+        });
+        return defaultCategories;
+      }
+      
+      return [];
+    } catch (error) {
+      console.error('Error loading categories for currency:', error);
+      throw new Error('Failed to load categories for selected currency');
+    }
+  }, []);
+
   const getConfigurationById = useCallback(async (configId: string) => {
     return await ConfigService.getConfigurationById(configId);
   }, []);
@@ -168,20 +201,22 @@ export function useConfigData(bundleId: string | null = null, configId: string |
       if (configId) {
         const configData = await getConfigurationById(configId);
         setCurrentConfig(configData);
-        // If configuration has a currency, use it to load the correct items
+        // If configuration has a currency, use it to load the correct items and categories
         if (configData.currency) {
-          const itemsRef = doc(db, 'default', `items_${configData.currency.toLowerCase()}`);
-          const itemsSnap = await getDoc(itemsRef);
-          const itemsData = itemsSnap.exists() ? itemsSnap.data().items || [] : [];
-          const itemInstances = itemsData.map((item: ItemData) => Item.create(item));
-          setItems(itemInstances);
+          const [itemsData, categoriesData] = await Promise.all([
+            loadItemsForCurrency(configData.currency),
+            loadCategoriesForCurrency(configData.currency)
+          ]);
+          setItems(itemsData);
+          setCategories(categoriesData);
+          const processedTree = processCategories(categoriesData, itemsData);
+          setProcessedItems(processedTree);
         }
       }
 
       // Fetch default data
-      const [packagesSnap, categoriesSnap, usersSnap, configurationsSnap] = await Promise.all([
+      const [packagesSnap, usersSnap, configurationsSnap] = await Promise.all([
         getDoc(doc(db, 'default', "packages")),
-        getDoc(doc(db, 'default', "categories")),
         getDocs(collection(db, 'users')),
         getDocs(collection(db, 'configurations'))
       ]);
@@ -197,8 +232,6 @@ export function useConfigData(bundleId: string | null = null, configId: string |
       }
 
       const packagesData = packagesSnap.exists() ? packagesSnap.data().packages || [] : [];
-      const categoriesData = categoriesSnap.exists() ? categoriesSnap.data().categories || [] : [];
-
       const usersData = usersSnap.docs.map(doc => ({
         id: doc.id,
         email: doc.data().email || '',
@@ -213,16 +246,16 @@ export function useConfigData(bundleId: string | null = null, configId: string |
 
       // Only process items if we haven't already loaded them from a configuration
       if (!configId) {
-        const defaultItemsRef = doc(db, 'default', 'items_czk');
-        const defaultItemsSnap = await getDoc(defaultItemsRef);
-        const itemsData = defaultItemsSnap.exists() ? defaultItemsSnap.data().items || [] : [];
-        const itemInstances = itemsData.map((item: ItemData) => Item.create(item));
-        setItems(itemInstances);
-        const processedTree = processCategories(categoriesData, itemInstances);
+        const [defaultItemsData, defaultCategoriesData] = await Promise.all([
+          loadItemsForCurrency('CZK'),
+          loadCategoriesForCurrency('CZK')
+        ]);
+        setItems(defaultItemsData);
+        setCategories(defaultCategoriesData);
+        const processedTree = processCategories(defaultCategoriesData, defaultItemsData);
         setProcessedItems(processedTree);
       }
 
-      setCategories(categoriesData);
       setPackages(packagesData);
       setUsers(usersData);
       setConfigurations(configurationsData as Configuration[]);
@@ -233,7 +266,7 @@ export function useConfigData(bundleId: string | null = null, configId: string |
     } finally {
       setLoading(false);
     }
-  }, [configId, bundleId, processCategories, getConfigurationById]);
+  }, [configId, bundleId, processCategories, getConfigurationById, loadItemsForCurrency, loadCategoriesForCurrency]);
 
   useEffect(() => {
     fetchData();
@@ -294,8 +327,8 @@ export function useConfigData(bundleId: string | null = null, configId: string |
   const handleNewItem = useCallback(async (formData: NewItemFormData, currency: string = 'CZK') => {
     try {
       if (formData.type === 'category') {
-        // Handle category
-        const categoriesRef = doc(db, 'default', 'categories');
+        // Handle category with currency
+        const categoriesRef = doc(db, 'default', `categories_${currency.toLowerCase()}`);
         const categoriesSnap = await getDoc(categoriesRef);
         const currentCategories = categoriesSnap.data()?.categories || [];
 
@@ -344,7 +377,11 @@ export function useConfigData(bundleId: string | null = null, configId: string |
           updatedCategories.push(newCategoryData);
         }
 
-        await setDoc(categoriesRef, { categories: updatedCategories });
+        await setDoc(categoriesRef, { 
+          categories: updatedCategories,
+          currency: currency.toUpperCase(),
+          updatedAt: serverTimestamp()
+        });
         await fetchData();
         return newCategoryData;
       } else {
@@ -429,10 +466,10 @@ export function useConfigData(bundleId: string | null = null, configId: string |
     }
   }, [fetchData]);
 
-  const handleDeleteItem = useCallback(async (itemId: number) => {
+  const handleDeleteItem = useCallback(async (itemId: number, currency: string = 'CZK') => {
     try {
       // First check if it's a category
-      const categoriesRef = doc(db, 'default', 'categories');
+      const categoriesRef = doc(db, 'default', `categories_${currency.toLowerCase()}`);
       const categoriesSnap = await getDoc(categoriesRef);
       const currentCategories = categoriesSnap.data()?.categories || [];
       
@@ -441,42 +478,39 @@ export function useConfigData(bundleId: string | null = null, configId: string |
       if (isCategory) {
         // Delete category
         const updatedCategories = currentCategories.filter((cat: Category) => cat.id !== itemId);
-        await setDoc(categoriesRef, { categories: updatedCategories });
+        await setDoc(categoriesRef, { 
+          categories: updatedCategories,
+          currency: currency.toUpperCase(),
+          updatedAt: serverTimestamp()
+        });
         
         // Also update items that were in this category to have no category
-        // We need to update items in all currency collections
-        const currencies = ['czk', 'eur', 'usd'];
-        await Promise.all(currencies.map(async (currency) => {
-          const itemsRef = doc(db, 'default', `items_${currency}`);
-          const itemsSnap = await getDoc(itemsRef);
-          if (itemsSnap.exists()) {
-            const currentItems = itemsSnap.data()?.items || [];
-            const updatedItems = currentItems.map((item: ItemData) => 
-              item.categoryId === itemId ? { ...item, categoryId: null } : item
-            );
-            await setDoc(itemsRef, { 
-              items: updatedItems,
-              currency: currency.toUpperCase(),
-              updatedAt: serverTimestamp()
-            });
-          }
-        }));
+        const itemsRef = doc(db, 'default', `items_${currency.toLowerCase()}`);
+        const itemsSnap = await getDoc(itemsRef);
+        if (itemsSnap.exists()) {
+          const currentItems = itemsSnap.data()?.items || [];
+          const updatedItems = currentItems.map((item: ItemData) => 
+            item.categoryId === itemId ? { ...item, categoryId: null } : item
+          );
+          await setDoc(itemsRef, { 
+            items: updatedItems,
+            currency: currency.toUpperCase(),
+            updatedAt: serverTimestamp()
+          });
+        }
       } else {
-        // Delete item from all currency collections
-        const currencies = ['czk', 'eur', 'usd'];
-        await Promise.all(currencies.map(async (currency) => {
-          const itemsRef = doc(db, 'default', `items_${currency}`);
-          const itemsSnap = await getDoc(itemsRef);
-          if (itemsSnap.exists()) {
-            const currentItems = itemsSnap.data()?.items || [];
-            const updatedItems = currentItems.filter((item: ItemData) => item.id !== itemId);
-            await setDoc(itemsRef, { 
-              items: updatedItems,
-              currency: currency.toUpperCase(),
-              updatedAt: serverTimestamp()
-            });
-          }
-        }));
+        // Delete item from currency collection
+        const itemsRef = doc(db, 'default', `items_${currency.toLowerCase()}`);
+        const itemsSnap = await getDoc(itemsRef);
+        if (itemsSnap.exists()) {
+          const currentItems = itemsSnap.data()?.items || [];
+          const updatedItems = currentItems.filter((item: ItemData) => item.id !== itemId);
+          await setDoc(itemsRef, { 
+            items: updatedItems,
+            currency: currency.toUpperCase(),
+            updatedAt: serverTimestamp()
+          });
+        }
       }
 
       await fetchData();
@@ -640,6 +674,8 @@ export function useConfigData(bundleId: string | null = null, configId: string |
     handleDeleteItem,
     updateItemPrice,
     handleItemToggle,
-    loadItemsForCurrency
+    loadItemsForCurrency,
+    loadCategoriesForCurrency,
+    processCategories
   };
 } 

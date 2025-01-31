@@ -5,9 +5,6 @@ import Sidebar from '../components/Sidebar';
 import { db } from '../firebase';
 import { doc, updateDoc, setDoc, arrayUnion, getDoc } from 'firebase/firestore';  
 import { useConfigData } from '../hooks/useConfigData';
-import { getDefaultItemsForCurrency } from '../data/items';
-import { defaultCategories } from '../data/categories';
-import { defaultPackages } from '../data/packages';
 import ItemFormModal from '../components/ItemFormModal';
 import { CURRENCIES } from '../hooks/useConfigData';
 import { useTableStyles } from '../components/Table/useTableStyles';
@@ -27,10 +24,11 @@ function BundleSettingsPage() {
     updateItemPrice,
     saveItems,
     updateItemInTree,
-    getAllItems,
     handleNewItem,
     handleDeleteItem,
-    loadItemsForCurrency
+    loadItemsForCurrency,
+    loadCategoriesForCurrency,
+    processCategories
   } = useConfigData();
 
   const [bundlesState, setBundlesState] = useState([]);
@@ -59,11 +57,15 @@ function BundleSettingsPage() {
 
   // Load items based on selected currency
   useEffect(() => {
-    const loadItems = async () => {
+    const loadData = async () => {
       setLoading(true);
       try {
-        const items = await loadItemsForCurrency(selectedCurrency);
-        setProcessedItems(items);
+        const [items, categories] = await Promise.all([
+          loadItemsForCurrency(selectedCurrency),
+          loadCategoriesForCurrency(selectedCurrency)
+        ]);
+        const processedTree = processCategories(categories, items);
+        setProcessedItems(processedTree);
       } catch (err) {
         setError(err.message);
       } finally {
@@ -71,8 +73,8 @@ function BundleSettingsPage() {
       }
     };
 
-    loadItems();
-  }, [selectedCurrency, setLoading, setError, setProcessedItems, loadItemsForCurrency]);
+    loadData();
+  }, [selectedCurrency, setLoading, setError, setProcessedItems, loadItemsForCurrency, loadCategoriesForCurrency]);
 
   // 2. Simplify the handlers using the shared function
   const handleItemDiscountChange = useCallback((bundleId, itemId, discountedAmount) => {
@@ -172,9 +174,13 @@ function BundleSettingsPage() {
     setIsItemSaving(true);
     try {
       await handleNewItem(formData, selectedCurrency);
-      // Reload items after saving
-      const updatedItems = await loadItemsForCurrency(selectedCurrency);
-      setProcessedItems(updatedItems);
+      // Reload both items and categories after saving
+      const [updatedItems, updatedCategories] = await Promise.all([
+        loadItemsForCurrency(selectedCurrency),
+        loadCategoriesForCurrency(selectedCurrency)
+      ]);
+      const processedTree = processCategories(updatedCategories, updatedItems);
+      setProcessedItems(processedTree);
       setShowItemModal(false);
       setEditingItem(null);
     } catch (err) {
@@ -182,7 +188,7 @@ function BundleSettingsPage() {
     } finally {
       setIsItemSaving(false);
     }
-  }, [handleNewItem, setError, selectedCurrency, loadItemsForCurrency, setProcessedItems]);
+  }, [handleNewItem, setError, selectedCurrency, loadItemsForCurrency, loadCategoriesForCurrency, processCategories, setProcessedItems]);
 
   // Add missing handlers
   const handleEditItem = useCallback((item) => {
@@ -213,14 +219,18 @@ function BundleSettingsPage() {
     );
   });
 
-  // Update handleItemDelete function
+  // Update handleItemDelete function to include currency
   const handleItemDelete = useCallback(async (itemId) => {
     setIsItemSaving(true);
     try {
-      await handleDeleteItem(itemId);
-      // Reload items for current currency after deletion
-      const updatedItems = await loadItemsForCurrency(selectedCurrency);
-      setProcessedItems(updatedItems);
+      await handleDeleteItem(itemId, selectedCurrency);
+      // Reload items and categories for current currency after deletion
+      const [updatedItems, updatedCategories] = await Promise.all([
+        loadItemsForCurrency(selectedCurrency),
+        loadCategoriesForCurrency(selectedCurrency)
+      ]);
+      const processedTree = processCategories(updatedCategories, updatedItems);
+      setProcessedItems(processedTree);
       setShowItemModal(false);
       setEditingItem(null);
     } catch (err) {
@@ -229,7 +239,7 @@ function BundleSettingsPage() {
     } finally {
       setIsItemSaving(false);
     }
-  }, [handleDeleteItem, setError, loadItemsForCurrency, selectedCurrency, setProcessedItems]);
+  }, [handleDeleteItem, setError, loadItemsForCurrency, loadCategoriesForCurrency, selectedCurrency, setProcessedItems]);
 
   // Add handler for note changes
   const handleItemNoteChange = useCallback((bundleId, itemId, note) => {
@@ -371,6 +381,7 @@ function BundleTable({
     'abraOrange',
     'abraMagenta',
   ];
+  
 
   const getBundleBorderClasses = (index) => `
     border-l-2 border-r-2
