@@ -31,7 +31,6 @@ export const getBundleState = (bundle, index, amounts, items, packages) => {
       isUserLimitState = 'active';
     } 
   }
-
   // Collect items that are not selected in this bundle
 
   for (const [itemId, amount] of Object.entries(amounts?.amounts || {})) {
