@@ -38,7 +38,9 @@ export const SubItemRow = ({
     const discountKey = `${parentItem.id}_${type === 'fixace' ? 'fixed_items' : 'over_fixation_items'}`;
     const discountedAmount = parentItem.getDiscount(bundle.id);
     const discountPercentage = type === 'fixace' ? 
-      (amounts.individualDiscounts?.[discountKey] ? amounts.discount?.[discountKey] : amounts.globalDiscount ?? 0) : 
+      (amounts.individualDiscounts?.[discountKey] ? amounts.discount?.[discountKey] : 
+        // Only apply global discount if item is not excluded from it
+        (!parentItem.excludeFromGlobalDiscount ? amounts.globalDiscount ?? 0 : 0)) : 
       (amounts.discount?.[discountKey] ?? 0);
     
     // Calculate applicable units based on type
@@ -79,7 +81,10 @@ export const SubItemRow = ({
       if (amounts.individualDiscounts?.[discountKey]) {
         return `Individuální sleva: ${amounts.discount?.[discountKey] ?? 0}%`;
       }
-      return `Globální sleva: ${amounts.globalDiscount ?? 0}%`;
+      // Only show global discount if item is not excluded from it
+      return !parentItem.excludeFromGlobalDiscount ? 
+        `Globální sleva: ${amounts.globalDiscount ?? 0}%` : 
+        'Vyloučeno z globální slevy';
     } else {
       const discountKey = `${parentItem.id}_over_fixation_items`;
       const discount = amounts.discount?.[discountKey] ?? 0;
@@ -129,7 +134,8 @@ export const SubItemRow = ({
               <span className="text-gray-700 text-xs">
                 {type === 'fixace' ? 
                   (amounts.individualDiscounts?.[`${parentItem.id}_fixed_items`] ? 
-                    amounts.discount?.[`${parentItem.id}_fixed_items`] : amounts.globalDiscount ?? 0 ? 
+                    amounts.discount?.[`${parentItem.id}_fixed_items`] : 
+                    (!parentItem.excludeFromGlobalDiscount ? amounts.globalDiscount ?? 0 : 0) ? 
                     `${amounts.discount?.[`${parentItem.id}_fixed_items`] ?? amounts.globalDiscount}%` : '-') :
                   ((amounts.discount?.[`${parentItem.id}_over_fixation_items`]) ? 
                     `${amounts.discount?.[`${parentItem.id}_over_fixation_items`]}%` : 
@@ -169,7 +175,8 @@ export const SubItemRow = ({
                       max={100}
                       value={type === 'fixace' ? 
                         (amounts.individualDiscounts?.[`${parentItem.id}_fixed_items`] ? 
-                          amounts.discount?.[`${parentItem.id}_fixed_items`] : amounts.globalDiscount ?? 0) :
+                          amounts.discount?.[`${parentItem.id}_fixed_items`] : 
+                          (!parentItem.excludeFromGlobalDiscount ? amounts.globalDiscount ?? 0 : 0)) :
                         (amounts.discount?.[`${parentItem.id}_over_fixation_items`] ?? 0)
                       }
                       onChange={(e) => {
@@ -250,12 +257,12 @@ export const SubItemRow = ({
                     <span className="text-[10px] text-gray-500 italic">
                       {(parentItem.getDiscount(bundle.id) > 0 && type === 'over') ? ` První ${parentItem.getDiscount(bundle.id)} v ceně` : ''}
                     </span>
-                    {((amounts.discount?.[`${parentItem.id}_${type === 'fixace' ? 'fixed_items' : 'over_fixation_items'}`] ?? 0) > 0 || (type === 'fixace' && amounts.globalDiscount > 0)) && (
+                    {((amounts.discount?.[`${parentItem.id}_${type === 'fixace' ? 'fixed_items' : 'over_fixation_items'}`] ?? 0) > 0 || (type === 'fixace' && !parentItem.excludeFromGlobalDiscount && amounts.globalDiscount > 0)) && (
                       <span className="text-[10px] text-gray-500 italic">
                         {`Sleva: ${type === 'fixace' ? 
                           (amounts.individualDiscounts?.[`${parentItem.id}_fixed_items`] ? 
                             `${amounts.discount?.[`${parentItem.id}_fixed_items`]}% (individuální)` : 
-                            `${amounts.globalDiscount}% (globální)`) : 
+                            (!parentItem.excludeFromGlobalDiscount ? `${amounts.globalDiscount}% (globální)` : '0%')) : 
                           `${amounts.discount?.[`${parentItem.id}_over_fixation_items`]}%`}`}
                       </span>
                     )}

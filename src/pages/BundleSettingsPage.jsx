@@ -173,22 +173,109 @@ function BundleSettingsPage() {
   const handleItemSubmit = useCallback(async (formData) => {
     setIsItemSaving(true);
     try {
-      await handleNewItem(formData, selectedCurrency);
+      // Validate required fields
+      if (!formData.name) {
+        throw new Error('Name is required');
+      }
+
+      // Validate packages if it's an item
+      if (formData.type === 'item') {
+        const hasValidPackage = formData.packages.some(pkg => pkg.selected);
+        if (!hasValidPackage) {
+          throw new Error('At least one package must be selected');
+        }
+      }
+
+      // Prepare category data if it's a category
+      if (formData.type === 'category') {
+        const categoryData = {
+          ...formData,
+          id: formData.id || Date.now(),
+          name: formData.name,
+          type: 'category',
+          parentId: formData.categoryId ? Number(formData.categoryId) : null,
+          order: formData.order || 1,
+          excludeFromGlobalDiscount: formData.excludeFromGlobalDiscount || false,
+          children: []
+        };
+        formData = categoryData;
+      }
+
+      const result = await handleNewItem(formData, selectedCurrency);
+      if (!result) {
+        throw new Error('Failed to save item - no result returned');
+      }
+      
       // Reload both items and categories after saving
       const [updatedItems, updatedCategories] = await Promise.all([
         loadItemsForCurrency(selectedCurrency),
         loadCategoriesForCurrency(selectedCurrency)
       ]);
+      
       const processedTree = processCategories(updatedCategories, updatedItems);
+      if (!processedTree || processedTree.length === 0) {
+        throw new Error('Failed to process updated items');
+      }
+
       setProcessedItems(processedTree);
       setShowItemModal(false);
       setEditingItem(null);
     } catch (err) {
-      setError('Failed to save item. Please try again.');
+      console.error('Error saving item:', err);
+      setError(err instanceof Error ? err.message : 'Failed to save item. Please try again.');
     } finally {
       setIsItemSaving(false);
     }
   }, [handleNewItem, setError, selectedCurrency, loadItemsForCurrency, loadCategoriesForCurrency, processCategories, setProcessedItems]);
+
+  // Add handler for excluding category from global discount
+  const handleCategoryGlobalDiscountExclusion = useCallback(async (categoryId, exclude) => {
+    setLoading(true);
+    try {
+      // Update all items in the category recursively
+      const updateItemsInCategory = (items, targetCategoryId) => {
+        return items.map(item => {
+          if (item.type === 'category') {
+            if (item.id === targetCategoryId) {
+              // If this is our target category, update all its children
+              return {
+                ...item,
+                excludeFromGlobalDiscount: exclude,
+                children: item.children?.map(child => ({
+                  ...child,
+                  excludeFromGlobalDiscount: exclude
+                }))
+              };
+            }
+            // If not our target, recursively check children
+            return {
+              ...item,
+              children: updateItemsInCategory(item.children || [], targetCategoryId)
+            };
+          }
+          // For items directly in the target category
+          if (item.categoryId === targetCategoryId) {
+            return {
+              ...item,
+              excludeFromGlobalDiscount: exclude
+            };
+          }
+          return item;
+        });
+      };
+
+      const updatedItems = updateItemsInCategory(processedItems, categoryId);
+      setProcessedItems(updatedItems);
+      
+      // Save the updated items
+      await saveItems(updatedItems, selectedCurrency);
+    } catch (err) {
+      console.error('Error updating category global discount exclusion:', err);
+      setError('Failed to update category global discount settings. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  }, [processedItems, saveItems, selectedCurrency]);
 
   // Add missing handlers
   const handleEditItem = useCallback((item) => {
@@ -266,6 +353,11 @@ function BundleSettingsPage() {
       })
     );
   }, [updateItemInTree]);
+
+  // Add handler for category global discount exclusion
+  const handleCategoryGlobalDiscountChange = (categoryId, exclude) => {
+    handleCategoryGlobalDiscountExclusion(categoryId, exclude);
+  };
 
   return (
     <div className="flex flex-col md:flex-row min-h-screen bg-gray-50">
@@ -402,13 +494,14 @@ function BundleTable({
     bodyCell: "px-0.5 py-1",
     packageBodyCell: "px-0.5 py-1",
     checkbox: "checkbox h-4 w-4 rounded border-gray-300 focus:ring-offset-0",
-    numberInput: "input w-20 md:w-24 rounded-sm text-xs text-center appearance-auto block rounded-md border-0 py-1",
+    numberInput: "input w-16 md:w-20 rounded-sm text-xs text-center appearance-auto block rounded-md border-0 py-1",
     centerWrapper: "flex justify-center items-center h-full",
     columnWidths: {
       details: "w-40 min-w-[100px]",
       checkbox: "w-10",
       individual: "w-10",
-      bundle: "w-24",
+      globalDiscount: "w-10",
+      bundle: "w-10",
     }
   };
 
@@ -432,6 +525,7 @@ function BundleTable({
       <col className={tableStyles.columnWidths.details} />
       <col className={tableStyles.columnWidths.checkbox} />
       <col className={tableStyles.columnWidths.individual} />
+      <col className={tableStyles.columnWidths.globalDiscount} />
       {bundles.map((bundle, index) => (
         <React.Fragment key={`${bundle.id}-group`}>
           <col className="w-[10px]" />
@@ -469,13 +563,18 @@ function BundleTable({
                   Individuální
                 </div>
               </th>
+              <th className={tableStyles.headerCell}>
+                <div className={tableStyles.centerWrapper}>
+                  Bez glob. slevy
+                </div>
+              </th>
               {bundles.map((bundle, index) => (
                 <React.Fragment key={`${bundle.id}-header`}>
-                  <th className="w-[20px]" />
+                  <th className="w-[10px]" />
                   <th className={`${tableStyles.packageHeaderCell} ${getBundleHeaderBorderClasses(index)}`}>
                     <div className="flex flex-col items-center">
-                      <div>{bundle.name}</div>
-                      <div className="flex gap-4 text-[10px] mt-1">
+                      <div className="text-xs truncate max-w-[80px]">{bundle.name}</div>
+                      <div className="flex gap-2 text-[9px] mt-1">
                         <span>Cena</span>
                         <span>Sleva</span>
                       </div>
@@ -495,9 +594,10 @@ function BundleTable({
               </td>
               <td className={tableStyles.bodyCell} />
               <td className={tableStyles.bodyCell} />
+              <td className={tableStyles.bodyCell} />
               {bundles.map((bundle, index) => (
                 <React.Fragment key={`${bundle.id}-limit`}>
-                  <td className="w-[20px]" />
+                  <td className="w-[10px]" />
                   <td className={`${tableStyles.columnWidths.bundle} ${tableStyles.packageBodyCell} ${getBundleBorderClasses(index)}`}>
                     <div className={tableStyles.centerWrapper}>
                       <input
@@ -506,6 +606,7 @@ function BundleTable({
                         value={bundle.userLimit || 0}
                         onChange={(e) => onUserLimitChange(bundle.id, e.target.value)}
                         className={tableStyles.numberInput}
+                        readOnly
                       />
                     </div>
                   </td>
@@ -516,28 +617,32 @@ function BundleTable({
               <tr 
                 key={item.uniqueId}
                 className={`
-                  ${item.type === 'category' ? 'bg-gray-50' : 'hover:bg-gray-50/70 transition-colors duration-150'}
+                  ${item.type === 'category' ? 'bg-gray-50 font-semibold' : 'hover:bg-gray-50/70 transition-colors duration-150'}
                   ${item.depth > 0 ? `pl-${item.depth * 4}` : ''}
                 `}
               >
                 <td className={`${tableStyles.columnWidths.details} ${tableStyles.bodyCell}`}>
                   <div className="flex items-center gap-2">
                     <div className="flex-1">
-                      <span className="text-sm">{item.name}</span>
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm">{item.name}</span>
+                      </div>
                       {item.note && (
                         <span className="text-xs text-gray-500 block break-words">
                           {item.note}
                         </span>
                       )}
                     </div>
-                    <button
-                      onClick={() => onEditItem(item)}
-                      className={`p-1 ${item.type === 'category' ? 'text-blue-500 hover:text-blue-700' : 'text-gray-500 hover:text-gray-700'}`}
-                    >
-                      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4">
-                        <path strokeLinecap="round" strokeLinejoin="round" d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0 1 15.75 21H5.25A2.25 2.25 0 0 1 3 18.75V8.25A2.25 2.25 0 0 1 5.25 6H10" />
-                      </svg>
-                    </button>
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => onEditItem(item)}
+                        className={`p-1 ${item.type === 'category' ? 'text-blue-500 hover:text-blue-700' : 'text-gray-500 hover:text-gray-700'}`}
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0 1 15.75 21H5.25A2.25 2.25 0 0 1 3 18.75V8.25A2.25 2.25 0 0 1 5.25 6H10" />
+                        </svg>
+                      </button>
+                    </div>
                   </div>
                 </td>
                 <td className={`${tableStyles.columnWidths.checkbox} ${tableStyles.bodyCell}`}>
@@ -565,36 +670,50 @@ function BundleTable({
                     )}
                   </div>
                 </td>
+                <td className={`${tableStyles.columnWidths.globalDiscount} ${tableStyles.bodyCell}`}>
+                  <div className={tableStyles.centerWrapper}>
+                    <input
+                      type="checkbox"
+                      checked={item.excludeFromGlobalDiscount ?? false}
+                      onChange={(e) => handleCategoryGlobalDiscountChange(item.id, e.target.checked)}
+                      className={tableStyles.checkbox}
+                      disabled
+                    />
+                  </div>
+                </td>
                 {bundles.map((bundle, index) => (
                   <React.Fragment key={`${item.id}-${bundle.id}-group`}>
-                    <td className="w-[20px]" />
+                    <td className="w-[10px]" />
                     <td className={`${tableStyles.columnWidths.bundle} ${tableStyles.packageBodyCell} ${getBundleBorderClasses(index)}`}>
                       {item.type === 'item' && (
-                        <div className={tableStyles.centerWrapper + " gap-2 flex-col"}>
-                          <div className="flex items-center gap-2">
+                        <div className={tableStyles.centerWrapper + " gap-1 flex-col"}>
+                          <div className="flex items-center gap-1">
                             <input
                               type="checkbox"
                               checked={getItemSelected(item, bundle.id)}
                               onChange={() => onItemToggle(bundle.id, item.id)}
                               className={tableStyles.checkbox}
+                              disabled
                             />
-                            <div className="flex flex-wrap gap-2 justify-center">
+                            <div className="flex flex-wrap gap-1 justify-center flex-col">
                               <input
                                 type="number"
                                 value={getItemPrice(item, bundle.id)}
                                 onChange={(e) => onItemPriceChange(bundle.id, item.id, e.target.value)}
                                 className={tableStyles.numberInput}
+                                readOnly
                               />
                               <input
                                 type="number"
                                 value={getItemDiscountedAmount(item, bundle.id)}
                                 onChange={(e) => onItemDiscountChange(bundle.id, item.id, e.target.value)}
                                 className={tableStyles.numberInput}
+                                readOnly
                               />
                             </div>
                           </div>
                           {item.packages?.find(p => p.packageId === bundle.id)?.note && (
-                            <div className="text-xs text-gray-500 mt-1 max-w-[200px] truncate">
+                            <div className="text-xs text-gray-500 mt-1 ">
                               {item.packages?.find(p => p.packageId === bundle.id)?.note}
                             </div>
                           )}

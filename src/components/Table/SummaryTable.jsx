@@ -42,9 +42,10 @@ const calculateBundleTotals = (flatItems, amounts = {}, bundle) => {
     const fixedItemsKey = `${itemInstance.id}_fixed_items`;
     const overFixationKey = `${itemInstance.id}_over_fixation_items`;
     
+    // For fixed items: use individual discount if set, otherwise use global discount unless excluded
     const fixedDiscount = amounts.individualDiscounts?.[fixedItemsKey] ? 
       amounts.discount?.[fixedItemsKey] : 
-      amounts.globalDiscount ?? 0;
+      (itemInstance.excludeFromGlobalDiscount ? 0 : amounts.globalDiscount ?? 0);
       
     itemInstance.setDiscounts(
       fixedDiscount, // fixace discount (use global if no individual)
@@ -56,7 +57,6 @@ const calculateBundleTotals = (flatItems, amounts = {}, bundle) => {
     const priceBeforeDiscount = basePrice * totalAmount;
     const finalPrice = itemInstance.calculateTotalPrice(bundle.id);
     const itemDiscount = itemInstance.calculateTotalDiscount(bundle.id);
-
 
     totals.withoutDiscount += priceBeforeDiscount;
     totals.totalDiscount += itemDiscount;

@@ -33,7 +33,7 @@ function TableHeader({ tableStyles }) {
     flattenedItems, 
     amounts.amounts, 
     amounts.fixace, 
-    amounts.discount, 
+    amounts.discount,
     amounts.globalDiscount,
     JSON.stringify(amounts)  // This ensures we catch all nested changes
   ]);

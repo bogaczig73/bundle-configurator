@@ -32,7 +32,8 @@ function ConfiguratorPage() {
     setError,
     setProcessedItems,
     setLoading,
-    loadItemsForCurrency
+    loadItemsForCurrency,
+    loadProcessedItems
   } = useConfigData(bundleId);
   const [amounts, setAmounts] = useState({
     amounts: {},
@@ -116,7 +117,7 @@ function ConfiguratorPage() {
     const loadItems = async () => {
       setLoading(true);
       try {
-        const items = await loadItemsForCurrency(selectedCurrency);
+        const items = await loadProcessedItems(selectedCurrency);
         setProcessedItems(items);
       } catch (err) {
         setError(err.message);
@@ -126,7 +127,7 @@ function ConfiguratorPage() {
     };
 
     loadItems();
-  }, [selectedCurrency, setLoading, setError, setProcessedItems, loadItemsForCurrency]);
+  }, [selectedCurrency, setLoading, setError, setProcessedItems, loadProcessedItems]);
 
   useEffect(() => {
     if (bundleData?.amounts) {

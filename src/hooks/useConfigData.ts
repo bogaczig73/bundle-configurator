@@ -9,6 +9,7 @@ import { ConfigService } from '../services/firebase/config.service';
 import { ItemsService } from '../services/firebase/items.service';
 import { DocumentSnapshot, DocumentData } from 'firebase/firestore';
 import { defaultItems } from '../data/items';
+import { usePersistedSettings } from '../hooks/usePersistedSettings';
 
 interface User {
   id: string;
@@ -39,6 +40,7 @@ interface UseConfigDataReturn {
   refetchData: () => Promise<void>;
   saveConfiguration: (configData: SaveConfigurationData) => Promise<any>;
   updateConfiguration: (configId: string, updates: Partial<SaveConfigurationData>) => Promise<void>;
+  loadProcessedItems: (currency: string) => Promise<(Item | Category)[]>;
   configurations: Configuration[];
   currentConfig: Configuration | null;
   getConfigurationById: (configId: string) => Promise<Configuration>;
@@ -67,6 +69,7 @@ interface NewItemFormData {
   amount: number;
   checkbox: boolean;
   individual: boolean;
+  excludeFromGlobalDiscount?: boolean;
   note?: string;
   order?: number;
 }
@@ -120,6 +123,7 @@ export function useConfigData(bundleId: string | null = null, configId: string |
   const [bundleData, setBundleData] = useState<any>(null);
   const [configurations, setConfigurations] = useState<Configuration[]>([]);
   const [currentConfig, setCurrentConfig] = useState<Configuration | null>(null);
+
 
   // Use the service functions
   const loadItemsForCurrency = useCallback(async (currency: string) => {
@@ -330,58 +334,79 @@ export function useConfigData(bundleId: string | null = null, configId: string |
         // Handle category with currency
         const categoriesRef = doc(db, 'default', `categories_${currency.toLowerCase()}`);
         const categoriesSnap = await getDoc(categoriesRef);
-        const currentCategories = categoriesSnap.data()?.categories || [];
+        let currentCategories = categoriesSnap.exists() ? categoriesSnap.data()?.categories || [] : [];
 
-        // Get categories at the same level and sort them by current order
-        const siblingCategories = currentCategories
-          .filter((cat: Category) => {
-            const catParentId = cat.parentId ? Number(cat.parentId) : null;
-            const formParentId = formData.categoryId ? Number(formData.categoryId) : null;
-            return catParentId === formParentId && cat.id !== formData.id;
-          })
-          .sort((a: Category, b: Category) => (a.order || 1) - (b.order || 1));
+        console.log('Current categories before update:', JSON.stringify(currentCategories, null, 2));
 
-        const newOrder = Math.max(1, formData.order || 1);
-        let currentOrder = 1;
+        // Ensure currentCategories is an array
+        if (!Array.isArray(currentCategories)) {
+          console.log('Categories was not an array, initializing empty array');
+          currentCategories = [];
+        }
 
-        // Recalculate orders for all siblings
-        siblingCategories.forEach((cat: Category) => {
-          if (currentOrder === newOrder) {
-            currentOrder++;
-          }
-          cat.order = currentOrder++;
-        });
-
+        // Create new category data
         const newCategoryData = cleanObject({
           id: formData.id || Date.now(),
           name: formData.name,
           type: 'category',
           parentId: formData.categoryId ? Number(formData.categoryId) : null,
           children: [],
-          order: newOrder
+          order: formData.order || 1,
+          excludeFromGlobalDiscount: formData.excludeFromGlobalDiscount || false
         });
 
-        // Update categories with reordered items
-        const updatedCategories = currentCategories.map((cat: Category) => {
-          const matchingSibling = siblingCategories.find((s: Category) => s.id === cat.id);
-          if (matchingSibling) {
-            return { ...cat, order: matchingSibling.order };
-          }
-          if (cat.id === formData.id) {
-            return newCategoryData;
-          }
-          return cat;
-        });
+        console.log('New category data:', JSON.stringify(newCategoryData, null, 2));
 
-        if (!formData.id) {
-          updatedCategories.push(newCategoryData);
+        // If editing, update existing category
+        if (formData.id) {
+          console.log('Editing existing category with ID:', formData.id);
+          // Check if category exists
+          const categoryExists = currentCategories.some((cat: Category) => cat.id === formData.id);
+          
+          if (categoryExists) {
+            console.log('Updating existing category');
+            currentCategories = currentCategories.map((cat: Category) => {
+              if (cat.id === formData.id) {
+                console.log('Found category to update:', JSON.stringify(cat, null, 2));
+                return newCategoryData;
+              }
+              return cat;
+            });
+          } else {
+            console.log('Category not found, adding as new');
+            currentCategories.push(newCategoryData);
+          }
+        } else {
+          // Add new category
+          console.log('Adding new category to array of length:', currentCategories.length);
+          currentCategories.push(newCategoryData);
+          console.log('Categories array after push:', JSON.stringify(currentCategories, null, 2));
         }
 
-        await setDoc(categoriesRef, { 
-          categories: updatedCategories,
+        // Sort categories by parent and order
+        currentCategories.sort((a: Category, b: Category) => {
+          if (a.parentId === b.parentId) {
+            return (a.order || 1) - (b.order || 1);
+          }
+          return (a.parentId || 0) - (b.parentId || 0);
+        });
+
+        console.log('Final categories before saving:', JSON.stringify(currentCategories, null, 2));
+        console.log('Number of categories to save:', currentCategories.length);
+        console.log('Is currentCategories an array?', Array.isArray(currentCategories));
+
+        // Save to Firestore
+        const dataToSave = { 
+          categories: currentCategories,
           currency: currency.toUpperCase(),
           updatedAt: serverTimestamp()
-        });
+        };
+        console.log('Full data object being saved:', JSON.stringify(dataToSave, null, 2));
+
+        await setDoc(categoriesRef, dataToSave);
+
+        // Add delay to ensure Firestore propagation
+        await new Promise(resolve => setTimeout(resolve, 500));
         await fetchData();
         return newCategoryData;
       } else {
@@ -390,28 +415,12 @@ export function useConfigData(bundleId: string | null = null, configId: string |
         const itemsSnap = await getDoc(itemsRef);
         const currentItems = itemsSnap.data()?.items || [];
 
-        // Get items in the same category and sort them by current order
-        const siblingItems = currentItems
-          .filter((item: ItemData) => 
-            item.categoryId === (Number(formData.categoryId) || 0) && item.id !== formData.id
-          )
-          .sort((a: ItemData, b: ItemData) => (a.order || 1) - (b.order || 1));
-
-        const newOrder = Math.max(1, formData.order || 1);
-        let currentOrder = 1;
-
-        // Recalculate orders for all siblings
-        siblingItems.forEach((item: ItemData) => {
-          if (currentOrder === newOrder) {
-            currentOrder++;
-          }
-          item.order = currentOrder++;
-        });
+        console.log('Current items before update:', JSON.stringify(currentItems, null, 2));
 
         const newItemData = cleanObject({
           id: formData.id || Date.now(),
           name: formData.name,
-          categoryId: Number(formData.categoryId) || 0,
+          categoryId: formData.categoryId ? Number(formData.categoryId) : 0,
           packages: formData.packages.map(pkg => ({
             packageId: Number(pkg.packageId),
             price: Number(pkg.price) || 0,
@@ -422,25 +431,26 @@ export function useConfigData(bundleId: string | null = null, configId: string |
           amount: Number(formData.amount) || 0,
           checkbox: formData.checkbox || false,
           individual: formData.individual || false,
+          excludeFromGlobalDiscount: formData.excludeFromGlobalDiscount || false,
           note: formData.note || "",
           type: 'item',
-          order: newOrder
+          order: formData.order || 1
         });
 
-        // Update items with reordered siblings
-        const updatedItems = currentItems.map((item: ItemData) => {
-          const matchingSibling = siblingItems.find((s: ItemData) => s.id === item.id);
-          if (matchingSibling) {
-            return { ...item, order: matchingSibling.order };
-          }
-          if (item.id === formData.id) {
-            return newItemData;
-          }
-          return item;
-        });
+        console.log('New item data:', JSON.stringify(newItemData, null, 2));
 
-        if (!formData.id) {
-          updatedItems.push(newItemData);
+        // Check if item exists
+        const itemExists = currentItems.some((item: ItemData) => item.id === formData.id);
+        let updatedItems;
+
+        if (formData.id && itemExists) {
+          console.log('Updating existing item with ID:', formData.id);
+          updatedItems = currentItems.map((item: ItemData) => 
+            item.id === formData.id ? newItemData : item
+          );
+        } else {
+          console.log('Adding new item');
+          updatedItems = [...currentItems, newItemData];
         }
 
         // Sort items by category and order
@@ -448,21 +458,30 @@ export function useConfigData(bundleId: string | null = null, configId: string |
           if (a.categoryId === b.categoryId) {
             return (a.order || 1) - (b.order || 1);
           }
-          return a.categoryId - b.categoryId;
+          return (a.categoryId || 0) - (b.categoryId || 0);
         });
 
-        await setDoc(itemsRef, { 
+        console.log('Final items before saving:', JSON.stringify(updatedItems, null, 2));
+        console.log('Number of items to save:', updatedItems.length);
+
+        // Save to Firestore
+        const dataToSave = { 
           items: updatedItems,
-          currency: currency,
+          currency: currency.toUpperCase(),
           updatedAt: serverTimestamp()
-        });
+        };
+        console.log('Full data object being saved:', JSON.stringify(dataToSave, null, 2));
 
+        await setDoc(itemsRef, dataToSave);
+
+        // Add delay to ensure Firestore propagation
+        await new Promise(resolve => setTimeout(resolve, 500));
         await fetchData();
         return Item.create(newItemData);
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error saving item:', error);
-      throw error;
+      throw new Error(`Failed to save item: ${error.message}`);
     }
   }, [fetchData]);
 
@@ -627,6 +646,13 @@ export function useConfigData(bundleId: string | null = null, configId: string |
     });
   }, [updateItemInTree]);
 
+  const loadProcessedItems = useCallback(async (currency: string) => {
+    const itemsData = await loadItemsForCurrency(currency);
+    const categoriesData = await loadCategoriesForCurrency(currency);
+    const processedTree = processCategories(categoriesData, itemsData);
+    return processedTree;
+  }, []);
+
   const updateConfiguration = useCallback(async (configId: string, updates: Partial<SaveConfigurationData>) => {
     setLoading(true);
     try {
@@ -676,6 +702,7 @@ export function useConfigData(bundleId: string | null = null, configId: string |
     handleItemToggle,
     loadItemsForCurrency,
     loadCategoriesForCurrency,
-    processCategories
+    processCategories,
+    loadProcessedItems
   };
 } 

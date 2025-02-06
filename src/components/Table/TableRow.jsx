@@ -508,7 +508,7 @@ export const TableRow = ({ item, tableStyles }) => {
                         const fixedDiscountKey = `${itemInstance.id}_fixed_items`;
                         const fixedDiscount = amounts.individualDiscounts?.[fixedDiscountKey] ?
                           amounts.discount?.[fixedDiscountKey] :
-                          amounts.globalDiscount ?? 0;
+                          (!itemInstance.excludeFromGlobalDiscount ? amounts.globalDiscount ?? 0 : 0);
                         const fixedPrice = roundPrice(baseFixedPrice * fixedAmount * (1 - fixedDiscount / 100));
 
                         // Calculate price for items over fixace with its own discount

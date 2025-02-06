@@ -147,7 +147,7 @@ export const calculateBundleTotal = (bundle, items, amounts) => {
   if (userCount > bundle.userLimit) {
     return 0;
   }
-
+      
   return items
     .filter(item => item instanceof Item && item.type !== 'category')
     .reduce((total, item) => {
@@ -155,12 +155,22 @@ export const calculateBundleTotal = (bundle, items, amounts) => {
       const fixaceAmount = amounts?.fixace?.[item.id.toString()] ?? 0;
       // Update item's internal state with amounts and discounts
       item.setAmounts(amount, fixaceAmount);
+      
+      // Get fixed items discount - respect excludeFromGlobalDiscount flag
+      const fixedItemsKey = `${item.id}_fixed_items`;
+      const overFixationKey = `${item.id}_over_fixation_items`;
+      
+      // For fixed items: use individual discount if set, otherwise use global discount unless excluded
+      const fixedDiscount = amounts.individualDiscounts?.[fixedItemsKey] ? 
+        amounts.discount?.[fixedItemsKey] : 
+        (item.excludeFromGlobalDiscount ? 0 : amounts.globalDiscount ?? 0);
+
       item.setDiscounts(
-        amounts?.discount?.[`${item.id}_fixed_items`] ?? amounts?.globalDiscount ?? 0,
-        amounts?.discount?.[`${item.id}_over_fixation_items`] ?? 0,
+        fixedDiscount,
+        amounts?.discount?.[overFixationKey] ?? 0,
         amounts?.discount?.[`${item.id}`] ?? 0
       );
 
       return total + item.calculateTotalPrice(bundle.id);
     }, 0);
-}; 
+};

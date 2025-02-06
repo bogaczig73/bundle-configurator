@@ -18,6 +18,7 @@ export interface ItemBase {
   amount: number;
   checkbox: boolean;
   individual: boolean;
+  excludeFromGlobalDiscount?: boolean;
   fixace?: number;
   discount?: number;
   price?: number;
@@ -42,6 +43,7 @@ export class Item implements ItemData {
   amount: number;
   checkbox: boolean;
   individual: boolean;
+  excludeFromGlobalDiscount: boolean;
   readonly fixace?: number;
   discount: number;
   children?: Item[];
@@ -71,6 +73,7 @@ export class Item implements ItemData {
     this.amount = data.amount ?? 0;
     this.checkbox = data.checkbox ?? false;
     this.individual = data.individual ?? false;
+    this.excludeFromGlobalDiscount = data.excludeFromGlobalDiscount ?? false;
     this.fixace = data.fixace;
     this.discount = data.discount ?? 0;
     this.children = data.children?.map(child => Item.create(child));
@@ -181,6 +184,7 @@ export class Item implements ItemData {
       amount: this.amount,
       checkbox: this.checkbox,
       individual: this.individual,
+      excludeFromGlobalDiscount: this.excludeFromGlobalDiscount,
       fixace: this.fixace,
       discount: this.discount,
       children: this.children?.map(child => child.toPlainObject()),

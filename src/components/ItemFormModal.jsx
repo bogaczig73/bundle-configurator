@@ -10,6 +10,7 @@ function ItemFormModal({ show, onClose, onSubmit, onDelete, items, packages, edi
     individual: false,
     amount: 0,
     order: 1,
+    excludeFromGlobalDiscount: false,
     packages: packages.map(pkg => ({
       packageId: pkg.id,
       price: 0,
@@ -42,37 +43,39 @@ function ItemFormModal({ show, onClose, onSubmit, onDelete, items, packages, edi
     // Convert empty string to null for root category
     const targetCategoryId = categoryId === '' ? null : Number(categoryId);
     
-    // Get all items in the selected category
-    const itemsInCategory = items.reduce((acc, item) => {
-      if (item.type === 'category') {
-        // For categories, check if it's in the same parent category
-        const itemParentId = item.parentId ? Number(item.parentId) : null;
-        if (itemParentId === targetCategoryId) {
+    // Flatten the tree structure and get all items in the category
+    const flattenItems = (items) => {
+      return items.reduce((acc, item) => {
+        if (item.type === 'category') {
+          const itemParentId = item.parentId ? Number(item.parentId) : null;
+          if (itemParentId === targetCategoryId) {
+            acc.push(item);
+          }
+          if (item.children) {
+            acc.push(...flattenItems(item.children));
+          }
+        } else if (item.categoryId === targetCategoryId) {
           acc.push(item);
         }
-        // Also check items in all categories
-        if (item.children) {
-          item.children.forEach(child => {
-            if (child.categoryId === targetCategoryId) {
-              acc.push(child);
-            }
-          });
-        }
-      } else if (item.categoryId === targetCategoryId) {
-        // For items, check if they're in the target category
-        acc.push(item);
+        return acc;
+      }, []);
+    };
+
+    const itemsInCategory = flattenItems(items);
+    
+    // Sort by order to ensure we get the correct sequence
+    const sortedItems = itemsInCategory.sort((a, b) => (a.order || 0) - (b.order || 0));
+    
+    // Find the first gap in the sequence or use the next number
+    let nextOrder = 1;
+    for (const item of sortedItems) {
+      if ((item.order || 0) !== nextOrder) {
+        break;
       }
-      return acc;
-    }, []);
-
-    // Find the highest order number
-    const maxOrder = itemsInCategory.reduce((max, item) => {
-      const itemOrder = item.order || 0;
-      return itemOrder > max ? itemOrder : max;
-    }, 0);
-
-    // Return next number (at least 1)
-    return Math.max(1, maxOrder + 1);
+      nextOrder++;
+    }
+    
+    return nextOrder;
   }, [items]);
 
   useEffect(() => {
@@ -171,18 +174,21 @@ function ItemFormModal({ show, onClose, onSubmit, onDelete, items, packages, edi
       id: formData.id,
       name: formData.name,
       type: formData.type,
-      categoryId: formData.categoryId,
+      categoryId: formData.type === 'category' ? 
+        (formData.categoryId === '' ? null : Number(formData.categoryId)) : 
+        (formData.categoryId === '' ? 0 : Number(formData.categoryId)),
       note: formData.note,
       checkbox: formData.checkbox,
       individual: formData.individual,
+      excludeFromGlobalDiscount: formData.excludeFromGlobalDiscount,
       amount: formData.amount,
       order: formData.order,
-      packages: formData.packages,
+      packages: formData.type === 'category' ? [] : formData.packages,
       userLimit: formData.userLimit,
       discountAmount: formData.discountAmount,
       discountType: formData.discountType
     };
-    
+    console.log('Submitting:', submitData);
     onSubmit(submitData);
   };
 
@@ -266,6 +272,24 @@ function ItemFormModal({ show, onClose, onSubmit, onDelete, items, packages, edi
                 </select>
               </div>
             </div>
+
+            {/* Category Settings */}
+            {formData.type === 'category' && (
+              <div className="bg-gray-50 rounded-lg p-4 space-y-4">
+                <h3 className="text-lg font-medium text-gray-900">Nastavení kategorie</h3>
+                <div className="flex gap-4">
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={formData.excludeFromGlobalDiscount}
+                      onChange={(e) => setFormData(prev => ({ ...prev, excludeFromGlobalDiscount: e.target.checked }))}
+                      className="checkbox"
+                    />
+                    <span className="text-sm text-gray-700">Vyloučit z globální slevy</span>
+                  </label>
+                </div>
+              </div>
+            )}
 
             {/* Order Field */}
             <div className="grid grid-cols-2 gap-6">
@@ -364,6 +388,16 @@ function ItemFormModal({ show, onClose, onSubmit, onDelete, items, packages, edi
                         className="checkbox"
                       />
                       <span className="text-sm text-gray-700">Individuální</span>
+                    </label>
+
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={formData.excludeFromGlobalDiscount}
+                        onChange={(e) => setFormData(prev => ({ ...prev, excludeFromGlobalDiscount: e.target.checked }))}
+                        className="checkbox"
+                      />
+                      <span className="text-sm text-gray-700">Vyloučit z globální slevy</span>
                     </label>
                   </div>
                 </div>

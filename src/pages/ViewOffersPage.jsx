@@ -58,7 +58,9 @@ const ConfigurationsPicker = ({
   onDeleteConfiguration,
   refetchData,
   setError,
-  updateConfiguration 
+  updateConfiguration,
+  loadProcessedItems,
+  loadItemsForCurrency
 }) => {
   const { user } = useCurrentUser();
   const [selectedCustomer, setSelectedCustomer] = useState('all');
@@ -325,7 +327,8 @@ function ViewOffersPage() {
     setProcessedItems,
     setError,
     refetchData,
-    updateConfiguration
+    updateConfiguration,
+    loadProcessedItems
   } = useConfigData();
   const { user, loading: userLoading, error: userError } = useCurrentUser();
   const [selectedConfiguration, setSelectedConfiguration] = useState(null);
@@ -356,6 +359,9 @@ function ViewOffersPage() {
   // Calculate which bundles should be active based on amounts
   const updateActiveBundles = useCallback((newAmounts) => {
     let foundActive = false;
+    console.log('newAmounts', newAmounts);
+    console.log('processedItems', processedItems);
+    console.log('packages', packages);
     const bundleStates = packages.map((pkg, index) => {
       const stateInfo = getBundleState(pkg, index, newAmounts, processedItems, packages);
       
@@ -438,7 +444,7 @@ function ViewOffersPage() {
       
       // Only load new items if currency changed
       if (currency !== currentCurrency) {
-        newItems = await loadItemsForCurrency(currency);
+        newItems = await loadProcessedItems(currency);
       }
 
       // Initialize empty amounts data with all items reset to default values
@@ -449,14 +455,22 @@ function ViewOffersPage() {
         individualDiscounts: {}
       };
 
-      // First, set all items to have zero values to ensure clean state
-      newItems.forEach(item => {
-        if (item.type === 'item') {
-          configAmounts.amounts[item.id] = 0;
-          configAmounts.discount[item.id] = 0;
-          configAmounts.fixace[item.id] = 0;
-        }
-      });
+      // Helper function to process items recursively
+      const processItems = (items) => {
+        items.forEach(item => {
+          if (item.type === 'item') {
+            configAmounts.amounts[item.id] = 0;
+            configAmounts.discount[item.id] = 0;
+            configAmounts.fixace[item.id] = 0;
+          }
+          if (item.type === 'category' && item.children) {
+            processItems(item.children);
+          }
+        });
+      };
+
+      // Process all items recursively
+      processItems(newItems);
 
       // Process configuration items and check for fixations
       let hasFixations = false;
@@ -494,8 +508,6 @@ function ViewOffersPage() {
       setSelectedConfiguration(config);
       setGlobalDiscount(config.globalDiscount ?? 0);
       setAmounts(configAmounts);
-      // Update active bundles with the loaded configuration
-      updateActiveBundles(configAmounts);
     } catch (err) {
       setError(err.message);
     }
