@@ -19,7 +19,7 @@ const getBundleHeaderBorderClasses = (index) => `
 `;
 
 export const useTableStyles = (exporting = false) => ({
-    headerCell: "px-2 md:px-4 py-2 text-xs font-bold text-gray-900 uppercase tracking-wider border-b-2 border-gray-200",
+    headerCell: "px-2 md:px-4 py-2 text-xs font-bold text-gray-900 uppercase tracking-wider border-b-2 border-gray-200 bg-white",
     packageHeaderCell: "px-2 md:px-4 py-2 text-xs font-medium text-gray-900 uppercase tracking-wider",
     bodyCell: "px-2 md:px-4 py-2",
     packageBodyCell: "px-2 md:px-4 py-2",

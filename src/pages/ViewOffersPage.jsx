@@ -299,6 +299,19 @@ const ConfigurationsPicker = ({
                   Zrušit
                 </button>
                 <button
+                  onClick={() => {
+                    navigate(`/configurator?edit=${configToEdit.id}`, {
+                      state: {
+                        configuration: configToEdit,
+                        isEditing: true
+                      }
+                    });
+                  }}
+                  className="px-4 py-2 bg-[#e1007b] text-white rounded hover:bg-[#c4006c]"
+                >
+                  Upravit celou konfiguraci
+                </button>
+                <button
                   onClick={handleEditSave}
                   className="px-4 py-2 bg-[#e1007b] text-white rounded hover:bg-[#c4006c]"
                 >
@@ -359,9 +372,7 @@ function ViewOffersPage() {
   // Calculate which bundles should be active based on amounts
   const updateActiveBundles = useCallback((newAmounts) => {
     let foundActive = false;
-    console.log('newAmounts', newAmounts);
-    console.log('processedItems', processedItems);
-    console.log('packages', packages);
+
     const bundleStates = packages.map((pkg, index) => {
       const stateInfo = getBundleState(pkg, index, newAmounts, processedItems, packages);
       
@@ -954,7 +965,7 @@ function ViewOffersPage() {
   }
 
   return (
-    <div className="flex h-screen overflow-hidden">
+    <div className="flex h-screen overflow-hidden bg-white">
       <Sidebar />
       <div className="flex-1 flex flex-col overflow-hidden">
         <header className="flex-none bg-white shadow-sm">

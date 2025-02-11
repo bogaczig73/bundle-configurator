@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useCallback } from "react";
-import { useParams } from 'react-router-dom';
+import { useParams, useLocation, useSearchParams } from 'react-router-dom';
 import Sidebar from '../components/Sidebar';
 import { useConfigData } from '../hooks/useConfigData';
 import { BundleTable } from '../components/Table/BundleTable';
@@ -21,6 +21,11 @@ import FlyingImage from '../components/FlyingImage';
 
 function ConfiguratorPage() {
   const { bundleId } = useParams();
+  const location = useLocation();
+  const [searchParams] = useSearchParams();
+  const editingConfigId = searchParams.get('edit');
+  const editingConfig = location.state?.configuration;
+  const isEditing = location.state?.isEditing || false;
   const { 
     loading, 
     error, 
@@ -33,7 +38,8 @@ function ConfiguratorPage() {
     setProcessedItems,
     setLoading,
     loadItemsForCurrency,
-    loadProcessedItems
+    loadProcessedItems,
+    updateConfiguration
   } = useConfigData(bundleId);
   const [amounts, setAmounts] = useState({
     amounts: {},
@@ -171,6 +177,46 @@ function ConfiguratorPage() {
     updateActiveBundles(amounts);
   }, [updateActiveBundles, amounts]);
 
+  // Set initial values if editing
+  useEffect(() => {
+    if (editingConfig && isEditing) {
+      setConfigName(editingConfig.name || '');
+      setSelectedCustomer(editingConfig.customer || '');
+      setIsPrivate(editingConfig.isPrivate || false);
+      setSelectedCurrency(editingConfig.currency || 'CZK');
+      setGlobalDiscount(editingConfig.globalDiscount || 0);
+
+      // Set amounts if they exist
+      if (editingConfig.items) {
+        const newAmounts = {
+          amounts: {},
+          discount: {},
+          fixace: {},
+          individualDiscounts: {}
+        };
+
+        Object.entries(editingConfig.items).forEach(([itemId, itemData]) => {
+          newAmounts.amounts[itemId] = itemData.amount || 0;
+          newAmounts.discount[itemId] = itemData.discount || 0;
+          newAmounts.fixace[itemId] = itemData.fixace || 0;
+
+          if (itemData.subItemDiscounts) {
+            if (itemData.subItemDiscounts.fixace !== undefined) {
+              newAmounts.individualDiscounts[`${itemId}_fixed_items`] = true;
+              newAmounts.discount[`${itemId}_fixed_items`] = itemData.subItemDiscounts.fixace;
+            }
+            if (itemData.subItemDiscounts.over !== undefined) {
+              newAmounts.individualDiscounts[`${itemId}_over_fixation_items`] = true;
+              newAmounts.discount[`${itemId}_over_fixation_items`] = itemData.subItemDiscounts.over;
+            }
+          }
+        });
+
+        setAmounts(newAmounts);
+      }
+    }
+  }, [editingConfig, isEditing]);
+
   const handleAmountChange = (itemId, value, field = 'amounts', subItemId = null) => {
     if (itemId.toString() === '1' && value.toString() === '666') {
       setShowBubu(false); // Reset first
@@ -239,8 +285,6 @@ function ConfiguratorPage() {
     }
 
     try {
-      const bundleId = `bundle_${Date.now()}_${Math.random().toString(36)}`;
-      
       const validItems = {};
       // Only include items that have actual values
       Object.entries(amounts.amounts || {}).forEach(([itemId, amount]) => {
@@ -260,7 +304,6 @@ function ConfiguratorPage() {
           };
         }
       });
-      console.log('validItems', validItems);
 
       // Ensure we have at least one valid item
       if (Object.keys(validItems).length === 0) {
@@ -268,17 +311,24 @@ function ConfiguratorPage() {
         return;
       }
 
-      await saveConfiguration({
-        id: bundleId,
+      const configData = {
         name: configName,
         customerId: selectedCustomer,
         items: validItems,
-        status: 'draft',
-        createdBy: '',
+        status: isEditing ? editingConfig.status : 'draft',
+        createdBy: isEditing ? editingConfig.createdBy : '',
         globalDiscount: Number(globalDiscount) || 0,
         currency: selectedCurrency,
         isPrivate: isPrivate
-      });
+      };
+
+      if (isEditing && editingConfigId) {
+        // Update existing configuration
+        await updateConfiguration(editingConfigId, configData);
+      } else {
+        // Create new configuration
+        await saveConfiguration(configData);
+      }
       
       setIsModalOpen(false);
     } catch (err) {
@@ -312,7 +362,7 @@ function ConfiguratorPage() {
           <div className="p-6">
             <div className="flex justify-between items-center">
               <h1 className="text-2xl font-bold text-gray-900">
-                {bundleId ? `Bundle ${bundleId}` : 'Nová konfigurace'}
+                {isEditing ? `Úprava konfigurace - ${configName}` : 'Nová konfigurace'}
               </h1>
               <div className="flex items-center gap-4">
                 <div className="flex items-center gap-2">
@@ -387,7 +437,7 @@ function ConfiguratorPage() {
                   onClick={() => setIsModalOpen(true)}
                   className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
                 >
-                  Uložit konfiguraci
+                  {isEditing ? 'Aktualizovat konfiguraci' : 'Uložit konfiguraci'}
                 </button>
               </div>
             </div>
