@@ -546,7 +546,7 @@ export const TableRow = ({ item, tableStyles }) => {
                     )}
                   </span>
                 )}
-                <span className="text-xs text-gray-500 italic text-center">
+                <span className="text-xs text-gray-500 italic">
                   {itemInstance.getPrice(bundle.id) === 0 ? '' :
                     itemInstance.individual && itemInstance.isSelected(bundle.id) ? 'individuální paušál' : (
                       <>
@@ -556,15 +556,15 @@ export const TableRow = ({ item, tableStyles }) => {
                   }
                 </span>
                 {itemInstance.packages?.find(p => p.packageId === bundle.id)?.note && (
-                  <span className="text-xs text-gray-500 italic text-center">
+                  <span className="text-xs text-gray-500 italic">
                     {itemInstance.packages?.find(p => p.packageId === bundle.id)?.note}
                   </span>
                 )}
-                <span className="text-xs text-gray-500 italic text-center">
+                <span className="text-xs text-gray-500 italic">
                   {(itemInstance.getDiscount(bundle.id) > 0 ? ` První ${itemInstance.getDiscount(bundle.id)} v ceně` : '')}
                 </span>
                 {((amounts.discount?.[itemInstance.id] ?? itemInstance.discount ?? 0) > 0) && (
-                  <span className="text-xs text-gray-500 italic text-center">
+                  <span className="text-xs text-gray-500 italic">
                     {`Sleva: ${amounts.discount?.[itemInstance.id] ?? itemInstance.discount ?? 0}%`}
                   </span>
                 )}
