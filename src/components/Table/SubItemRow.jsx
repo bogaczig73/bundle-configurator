@@ -255,7 +255,7 @@ export const SubItemRow = ({
                   </span>
                 ) : (
                   <>
-                    <span className="text-[11px] font-medium italic">
+                    <span className="text-[11px] font-medium italic text-center">
                       {(() => {
                         const priceInfo = calculateFinalPrice(
                           bundle.id === 0 ? 0 : parentItem.getPrice(bundle.id),
@@ -267,11 +267,11 @@ export const SubItemRow = ({
                         return formatPrice(priceInfo.finalPrice, currency);
                       })()}
                     </span>
-                    <span className="text-[10px] text-gray-500 italic">
+                    <span className="text-[10px] text-gray-500 italic text-center">
                       {(parentItem.getDiscount(bundle.id) > 0 && type === 'over') ? ` První ${parentItem.getDiscount(bundle.id)} v ceně` : ''}
                     </span>
                     {((amounts.discount?.[`${parentItem.id}_${type === 'fixace' ? 'fixed_items' : 'over_fixation_items'}`] ?? 0) > 0 || (type === 'fixace' && !parentItem.excludeFromGlobalDiscount && amounts.globalDiscount > 0)) && (
-                      <span className="text-[10px] text-gray-500 italic">
+                      <span className="text-[10px] text-gray-500 italic text-center">
                         {`Sleva: ${type === 'fixace' ? 
                           (amounts.individualDiscounts?.[`${parentItem.id}_fixed_items`] ? 
                             `${amounts.discount?.[`${parentItem.id}_fixed_items`]}% (individuální)` : 
