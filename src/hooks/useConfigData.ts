@@ -336,7 +336,6 @@ export function useConfigData(bundleId: string | null = null, configId: string |
         const categoriesSnap = await getDoc(categoriesRef);
         let currentCategories = categoriesSnap.exists() ? categoriesSnap.data()?.categories || [] : [];
 
-        console.log('Current categories before update:', JSON.stringify(currentCategories, null, 2));
 
         // Ensure currentCategories is an array
         if (!Array.isArray(currentCategories)) {
@@ -354,20 +353,14 @@ export function useConfigData(bundleId: string | null = null, configId: string |
           order: formData.order || 1,
           excludeFromGlobalDiscount: formData.excludeFromGlobalDiscount || false
         });
-
-        console.log('New category data:', JSON.stringify(newCategoryData, null, 2));
-
         // If editing, update existing category
         if (formData.id) {
-          console.log('Editing existing category with ID:', formData.id);
           // Check if category exists
           const categoryExists = currentCategories.some((cat: Category) => cat.id === formData.id);
           
           if (categoryExists) {
-            console.log('Updating existing category');
             currentCategories = currentCategories.map((cat: Category) => {
               if (cat.id === formData.id) {
-                console.log('Found category to update:', JSON.stringify(cat, null, 2));
                 return newCategoryData;
               }
               return cat;
@@ -378,9 +371,7 @@ export function useConfigData(bundleId: string | null = null, configId: string |
           }
         } else {
           // Add new category
-          console.log('Adding new category to array of length:', currentCategories.length);
           currentCategories.push(newCategoryData);
-          console.log('Categories array after push:', JSON.stringify(currentCategories, null, 2));
         }
 
         // Sort categories by parent and order
@@ -390,18 +381,12 @@ export function useConfigData(bundleId: string | null = null, configId: string |
           }
           return (a.parentId || 0) - (b.parentId || 0);
         });
-
-        console.log('Final categories before saving:', JSON.stringify(currentCategories, null, 2));
-        console.log('Number of categories to save:', currentCategories.length);
-        console.log('Is currentCategories an array?', Array.isArray(currentCategories));
-
         // Save to Firestore
         const dataToSave = { 
           categories: currentCategories,
           currency: currency.toUpperCase(),
           updatedAt: serverTimestamp()
         };
-        console.log('Full data object being saved:', JSON.stringify(dataToSave, null, 2));
 
         await setDoc(categoriesRef, dataToSave);
 
@@ -415,7 +400,6 @@ export function useConfigData(bundleId: string | null = null, configId: string |
         const itemsSnap = await getDoc(itemsRef);
         const currentItems = itemsSnap.data()?.items || [];
 
-        console.log('Current items before update:', JSON.stringify(currentItems, null, 2));
 
         const newItemData = cleanObject({
           id: formData.id || Date.now(),
@@ -436,9 +420,6 @@ export function useConfigData(bundleId: string | null = null, configId: string |
           type: 'item',
           order: formData.order || 1
         });
-
-        console.log('New item data:', JSON.stringify(newItemData, null, 2));
-
         // Check if item exists
         const itemExists = currentItems.some((item: ItemData) => item.id === formData.id);
         let updatedItems;
@@ -460,17 +441,12 @@ export function useConfigData(bundleId: string | null = null, configId: string |
           }
           return (a.categoryId || 0) - (b.categoryId || 0);
         });
-
-        console.log('Final items before saving:', JSON.stringify(updatedItems, null, 2));
-        console.log('Number of items to save:', updatedItems.length);
-
         // Save to Firestore
         const dataToSave = { 
           items: updatedItems,
           currency: currency.toUpperCase(),
           updatedAt: serverTimestamp()
         };
-        console.log('Full data object being saved:', JSON.stringify(dataToSave, null, 2));
 
         await setDoc(itemsRef, dataToSave);
 

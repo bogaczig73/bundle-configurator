@@ -280,7 +280,7 @@ export const TableRow = ({ item, tableStyles }) => {
                     onAmountChange(itemInstance.id, Number(e.target.value));
                   }}
                   onClick={(e) => e.stopPropagation()}
-                  className={tableStyles.numberInput}
+                  className={`${tableStyles.numberInput} ${(amounts.fixace[itemInstance.id] || 0) > (amounts.amounts[itemInstance.id] || 0) ? 'border-orange-300 bg-orange-50' : ''}`}
                 />
                 <button
                   onClick={(e) => {
@@ -314,7 +314,6 @@ export const TableRow = ({ item, tableStyles }) => {
                   disabled={readonly}
                   className={tableStyles.checkbox}
                 />
-
               ) : readonly ? (
                 <span className={tableStyles.itemAmount}>
                   {amounts.fixace[itemInstance.id] || 0}
@@ -334,18 +333,31 @@ export const TableRow = ({ item, tableStyles }) => {
                     </svg>
                   </button>
 
-                  <input
-                    type="text"
-                    min={0}
-                    value={amounts.fixace[itemInstance.id] || 0}
-                    onChange={(e) => {
-                      e.stopPropagation();
-                      onAmountChange(itemInstance.id, Number(e.target.value), 'fixace');
-                    }}
-                    onClick={(e) => e.stopPropagation()}
-                    className={tableStyles.numberInput}
-                    data-tooltip-target="tooltip-default"
-                  />
+                  <div className="relative">
+                    <input
+                      type="text"
+                      min={0}
+                      value={amounts.fixace[itemInstance.id] || 0}
+                      onChange={(e) => {
+                        e.stopPropagation();
+                        onAmountChange(itemInstance.id, Number(e.target.value), 'fixace');
+                      }}
+                      onClick={(e) => e.stopPropagation()}
+                      className={`${tableStyles.numberInput} ${(amounts.fixace[itemInstance.id] || 0) > (amounts.amounts[itemInstance.id] || 0) ? 'border-orange-300 bg-orange-50' : ''}`}
+                      data-tooltip-target="tooltip-default"
+                    />
+                    {(amounts.fixace[itemInstance.id] || 0) > (amounts.amounts[itemInstance.id] || 0) && (
+                      <div className="absolute -left-16 top-1/2 transform -translate-y-1/2 group">
+                        <svg className="w-5 h-5 text-orange-500 cursor-help" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                        </svg>
+                        <div className="invisible group-hover:visible absolute left-0 -top-8 -translate-x-1/2 px-2 py-1 bg-gray-900 text-white text-xs rounded whitespace-nowrap">
+                          Množství nesmí být menší než fixované množství
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
                   <button
                     onClick={(e) => {
                       e.stopPropagation();

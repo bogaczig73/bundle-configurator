@@ -349,11 +349,10 @@ function ConfiguratorPage() {
                       // Update all fixed items' individual discounts to match global discount
                       setAmounts(prev => {
                         const newAmounts = { ...prev };
-                        // Reset individual discounts for fixed items
+                        // Initialize objects if they don't exist
                         if (!newAmounts.individualDiscounts) {
                           newAmounts.individualDiscounts = {};
                         }
-                        console.log(newAmounts.discount)
                         if (!newAmounts.discount) {
                           newAmounts.discount = {};
                         }
@@ -361,9 +360,14 @@ function ConfiguratorPage() {
                         // For each item that has amounts
                         Object.keys(newAmounts.amounts || {}).forEach(itemId => {
                           const fixedItemKey = `${itemId}_fixed_items`;
-                          // Reset the individual discount flag and value
-                          newAmounts.individualDiscounts[fixedItemKey] = false;
-                          newAmounts.discount[fixedItemKey] = newGlobalDiscount;
+                          const item = processedItems.find(item => item.id.toString() === itemId.toString());
+                          
+                          // Only update items that are not excluded from global discount
+                          if (item && !item.excludeFromGlobalDiscount) {
+                            // Reset the individual discount flag and value
+                            newAmounts.individualDiscounts[fixedItemKey] = false;
+                            newAmounts.discount[fixedItemKey] = newGlobalDiscount;
+                          }
                         });
                         return newAmounts;
                       });

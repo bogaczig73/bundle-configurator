@@ -199,6 +199,43 @@ function BundleSettingsPage() {
           children: []
         };
         formData = categoryData;
+
+        // If excludeFromGlobalDiscount is true, update all items in this category
+        if (formData.excludeFromGlobalDiscount) {
+          const updateItemsInCategory = (items, targetCategoryId) => {
+            return items.map(item => {
+              if (item.type === 'category') {
+                if (item.id === targetCategoryId) {
+                  // If this is our target category, update all its children
+                  return {
+                    ...item,
+                    excludeFromGlobalDiscount: true,
+                    children: item.children?.map(child => ({
+                      ...child,
+                      excludeFromGlobalDiscount: true
+                    }))
+                  };
+                }
+                // If not our target, recursively check children
+                return {
+                  ...item,
+                  children: updateItemsInCategory(item.children || [], targetCategoryId)
+                };
+              }
+              // For items directly in the target category
+              if (item.categoryId === targetCategoryId) {
+                return {
+                  ...item,
+                  excludeFromGlobalDiscount: true
+                };
+              }
+              return item;
+            });
+          };
+
+          const updatedItems = updateItemsInCategory(processedItems, formData.id);
+          await saveItems(updatedItems, selectedCurrency);
+        }
       }
 
       const result = await handleNewItem(formData, selectedCurrency);
@@ -226,7 +263,7 @@ function BundleSettingsPage() {
     } finally {
       setIsItemSaving(false);
     }
-  }, [handleNewItem, setError, selectedCurrency, loadItemsForCurrency, loadCategoriesForCurrency, processCategories, setProcessedItems]);
+  }, [handleNewItem, setError, selectedCurrency, loadItemsForCurrency, loadCategoriesForCurrency, processCategories, setProcessedItems, saveItems, processedItems]);
 
   // Add handler for excluding category from global discount
   const handleCategoryGlobalDiscountExclusion = useCallback(async (categoryId, exclude) => {
@@ -275,7 +312,7 @@ function BundleSettingsPage() {
     } finally {
       setLoading(false);
     }
-  }, [processedItems, saveItems, selectedCurrency]);
+  }, [processedItems, saveItems, selectedCurrency, setError, setLoading]);
 
   // Add missing handlers
   const handleEditItem = useCallback((item) => {
@@ -498,9 +535,9 @@ function BundleTable({
     centerWrapper: "flex justify-center items-center h-full",
     columnWidths: {
       details: "w-40 min-w-[100px]",
-      checkbox: "w-10",
-      individual: "w-10",
-      globalDiscount: "w-10",
+      checkbox: "w-5",
+      individual: "w-5",
+      globalDiscount: "w-5",
       bundle: "w-10",
     }
   };

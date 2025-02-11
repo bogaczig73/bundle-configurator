@@ -19,13 +19,19 @@ export const applyCategoryDiscount = ({
     if (showFixace) {
       // Update fixed items discount
       const fixedItemKey = `${item.id}_fixed_items`;
-      if (value !== amounts.globalDiscount) {
-        // Only set individual discount if value is different from global discount
+      
+      // For items excluded from global discount, always set as individual discount
+      if (item.excludeFromGlobalDiscount) {
         onAmountChange(fixedItemKey, value, 'discount');
         onAmountChange(fixedItemKey, true, 'individualDiscounts');
       } else {
-        // If value matches global discount, remove individual discount
-        onAmountChange(fixedItemKey, false, 'individualDiscounts');
+        // For other items, follow normal logic
+        if (value !== amounts.globalDiscount) {
+          onAmountChange(fixedItemKey, value, 'discount');
+          onAmountChange(fixedItemKey, true, 'individualDiscounts');
+        } else {
+          onAmountChange(fixedItemKey, false, 'individualDiscounts');
+        }
       }
       
       // Update over-fixation items discount
@@ -33,13 +39,16 @@ export const applyCategoryDiscount = ({
       onAmountChange(overFixationKey, value, 'discount');
     } else {
       // Update main item discount
-      if (value !== amounts.globalDiscount) {
-        // Only set individual discount if value is different from global discount
+      if (item.excludeFromGlobalDiscount) {
         onAmountChange(item.id, value, 'discount');
         onAmountChange(item.id, true, 'individualDiscounts');
       } else {
-        // If value matches global discount, remove individual discount
-        onAmountChange(item.id, false, 'individualDiscounts');
+        if (value !== amounts.globalDiscount) {
+          onAmountChange(item.id, value, 'discount');
+          onAmountChange(item.id, true, 'individualDiscounts');
+        } else {
+          onAmountChange(item.id, false, 'individualDiscounts');
+        }
       }
     }
   });

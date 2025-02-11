@@ -153,14 +153,18 @@ export const SubItemRow = ({
                   <>
                     <button
                       onClick={(e) => {
-                        console.log(amounts);
                         e.stopPropagation();
                         const discountKey = `${parentItem.id}_${type === 'fixace' ? 'fixed_items' : 'over_fixation_items'}`;
                         const currentDiscount = type === 'fixace' ? 
                           (amounts.individualDiscounts?.[discountKey] ? 
-                            amounts.discount?.[discountKey] : amounts.globalDiscount ?? 0) :
+                            amounts.discount?.[discountKey] : 
+                            (!parentItem.excludeFromGlobalDiscount ? amounts.globalDiscount ?? 0 : 0)) :
                           (amounts.discount?.[discountKey] ?? parentItem.discount ?? 0);
+                        
                         onDiscountChange(discountKey, Math.max(0, currentDiscount - 5));
+                        if (type === 'fixace') {
+                          onAmountChange(discountKey, true, 'individualDiscounts');
+                        }
                       }}
                       className={tableStyles.inputCounterButton + " rounded-s-md"}
                     >
@@ -183,7 +187,11 @@ export const SubItemRow = ({
                         e.stopPropagation();
                         const value = Math.min(100, Math.max(0, Number(e.target.value)));
                         const discountKey = `${parentItem.id}_${type === 'fixace' ? 'fixed_items' : 'over_fixation_items'}`;
+                        
                         onDiscountChange(discountKey, value);
+                        if (type === 'fixace') {
+                          onAmountChange(discountKey, true, 'individualDiscounts');
+                        }
                       }}
                       onClick={(e) => e.stopPropagation()}
                       className={tableStyles.numberInput}
@@ -195,9 +203,14 @@ export const SubItemRow = ({
                         const discountKey = `${parentItem.id}_${type === 'fixace' ? 'fixed_items' : 'over_fixation_items'}`;
                         const currentDiscount = type === 'fixace' ? 
                           (amounts.individualDiscounts?.[discountKey] ? 
-                            amounts.discount?.[discountKey] : amounts.globalDiscount ?? 0) :
+                            amounts.discount?.[discountKey] : 
+                            (!parentItem.excludeFromGlobalDiscount ? amounts.globalDiscount ?? 0 : 0)) :
                           (amounts.discount?.[discountKey] ?? 0);
+                        
                         onDiscountChange(discountKey, Math.min(100, currentDiscount + 5));
+                        if (type === 'fixace') {
+                          onAmountChange(discountKey, true, 'individualDiscounts');
+                        }
                       }}
                       className={tableStyles.inputCounterButton + " rounded-e-md"}
                     >
