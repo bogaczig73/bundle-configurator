@@ -4,6 +4,17 @@ export const getExportFilename = (configuration, extension) => {
     : `offer-${new Date().toISOString()}.${extension}`;
 };
 
+const handleAccordionRows = (container, amounts, shouldExpand = true) => {
+  const tableRows = (container || document).querySelectorAll('[data-accordion-row="true"]');
+  tableRows.forEach(row => {
+    const itemId = row.getAttribute('data-item-id');
+    const isExpanded = row.getAttribute('data-expanded') === 'true';
+    if (amounts.amounts[itemId] > 0 && isExpanded !== shouldExpand) {
+      row.click(); // Trigger click to expand/collapse
+    }
+  });
+};
+
 export const handleExportSetup = async (printRef, showFixace, amounts, enableRowSelection, selectedRows) => {
   if (enableRowSelection && Object.keys(selectedRows).length > 0) {
     const container = printRef.current;
@@ -107,13 +118,7 @@ export const handleExportSetup = async (printRef, showFixace, amounts, enableRow
   }
 
   if (showFixace) {
-    const tableRows = document.querySelectorAll('[data-accordion-row="true"]');
-    tableRows.forEach(row => {
-      const itemId = row.getAttribute('data-item-id');
-      if (amounts.amounts[itemId] > 0 && !row.classList.contains('expanded')) {
-        row.click(); // Trigger click to expand
-      }
-    });
+    handleAccordionRows(null, amounts, true);
   }
 
   await new Promise(resolve => setTimeout(resolve, 100));
@@ -137,13 +142,7 @@ export const handleExportCleanup = (printRef, showFixace, amounts, enableRowSele
   }
 
   if (showFixace) {
-    const tableRows = document.querySelectorAll('[data-accordion-row="true"]');
-    tableRows.forEach(row => {
-      const itemId = row.getAttribute('data-item-id');
-      if (amounts.amounts[itemId] > 0 && row.classList.contains('expanded')) {
-        row.click();
-      }
-    });
+    handleAccordionRows(null, amounts, false);
   }
 
   // Clean up scaling and show selector column again
@@ -232,13 +231,7 @@ export const exportToPDFV2 = (pdfExportComponent, printRef, showFixace, amounts,
 
     // Expand all carousels if fixace is enabled
     if (showFixace) {
-      const tableRows = container.querySelectorAll('[data-accordion-row="true"]');
-      tableRows.forEach(row => {
-        const itemId = row.getAttribute('data-item-id');
-        if (amounts.amounts[itemId] > 0 && !row.classList.contains('expanded')) {
-          row.click(); // Trigger click to expand
-        }
-      });
+      handleAccordionRows(container, amounts, true);
     }
 
     // Add delay before export to allow carousels to expand
@@ -281,13 +274,7 @@ export const exportToPDFV2 = (pdfExportComponent, printRef, showFixace, amounts,
 
       // Collapse carousels back if they were expanded
       if (showFixace) {
-        const tableRows = container.querySelectorAll('[data-accordion-row="true"]');
-        tableRows.forEach(row => {
-          const itemId = row.getAttribute('data-item-id');
-          if (amounts.amounts[itemId] > 0 && row.classList.contains('expanded')) {
-            row.click(); // Trigger click to collapse
-          }
-        });
+        handleAccordionRows(container, amounts, false);
       }
     }, 300); // 300ms delay
   } catch (error) {

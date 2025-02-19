@@ -13,7 +13,6 @@ export const applyCategoryDiscount = ({
   amounts 
 }) => {
   const items = getItemsInCategory(category);
-  
   // Update discounts for all items
   items.forEach(item => {
     if (showFixace) {
@@ -59,8 +58,21 @@ export const applyCategoryDiscount = ({
 
 // Helper function to find a category by ID in processedItems
 export const findCategoryById = (processedItems, categoryId) => {
-  return processedItems.find(item => 
-    item.type === 'category' && 
-    Number(item.id) === Number(categoryId)
-  );
+  const searchInItems = (items) => {
+    for (const item of items) {
+      // Check if current item is the category we're looking for
+      if (item.type === 'category' && Number(item.id) === Number(categoryId)) {
+        return item;
+      }
+      
+      // If item has children, recursively search in them
+      if (item.children && item.children.length > 0) {
+        const found = searchInItems(item.children);
+        if (found) return found;
+      }
+    }
+    return null;
+  };
+
+  return searchInItems(processedItems);
 }; 

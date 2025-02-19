@@ -18,6 +18,7 @@ import {
   getExportFilename,
   exportToPDFV2
 } from '../utils/pdfExport';
+import { useToast } from '../context/ToastContext';
 
 // Delete Confirmation Modal Component
 const DeleteConfirmationModal = ({ show, onClose, onConfirm, configurationName }) => {
@@ -63,6 +64,7 @@ const ConfigurationsPicker = ({
   loadItemsForCurrency
 }) => {
   const { user } = useCurrentUser();
+  const { showToast } = useToast();
   const [selectedCustomer, setSelectedCustomer] = useState('all');
   const navigate = useNavigate();
   const [showDeleteModal, setShowDeleteModal] = useState(false);
@@ -129,16 +131,19 @@ const ConfigurationsPicker = ({
     if (!configToEdit) return;
 
     try {
+      showToast('Updating configuration...', 'info');
       await updateConfiguration(configToEdit.id, {
         name: editForm.name,
         customerId: editForm.customer,
         isPrivate: editForm.isPrivate
       });
+      showToast('Configuration updated successfully!', 'success');
       setShowEditModal(false);
       setConfigToEdit(null);
     } catch (error) {
       console.error('Error updating configuration:', error);
       setError('Failed to update configuration');
+      showToast('Failed to update configuration. Please try again.', 'error');
     }
   };
 
@@ -307,7 +312,7 @@ const ConfigurationsPicker = ({
                       }
                     });
                   }}
-                  className="px-4 py-2 bg-[#e1007b] text-white rounded hover:bg-[#c4006c]"
+                  className="px-4 py-2 bg-[#e1007b] text-white rounded hover:bg-[#c4006c] hidden"
                 >
                   Upravit celou konfiguraci
                 </button>
@@ -368,6 +373,7 @@ function ViewOffersPage() {
     selectedBundles: {},
     selectedCategories: {}
   });
+  const { showToast } = useToast();
 
   // Calculate which bundles should be active based on amounts
   const updateActiveBundles = useCallback((newAmounts) => {
@@ -450,6 +456,7 @@ function ViewOffersPage() {
   // Function to handle configuration selection and load correct items
   const handleConfigurationSelect = async (config) => {
     try {
+      showToast('Loading configuration...', 'info');
       const currency = config.currency || 'CZK';
       let newItems = processedItems;
       
@@ -519,8 +526,10 @@ function ViewOffersPage() {
       setSelectedConfiguration(config);
       setGlobalDiscount(config.globalDiscount ?? 0);
       setAmounts(configAmounts);
+      showToast('Configuration loaded successfully!', 'success');
     } catch (err) {
       setError(err.message);
+      showToast('Failed to load configuration. Please try again.', 'error');
     }
   };
 
@@ -928,6 +937,7 @@ function ViewOffersPage() {
 
   const handleDeleteConfiguration = async (configId) => {
     try {
+      showToast('Deleting configuration...', 'info');
       await deleteDoc(doc(db, 'configurations', configId));
       // If the deleted configuration was selected, clear the selection
       if (selectedConfiguration?.id === configId) {
@@ -935,9 +945,11 @@ function ViewOffersPage() {
       }
       // Refetch the configurations list
       await refetchData();
+      showToast('Configuration deleted successfully!', 'success');
     } catch (err) {
       console.error('Error deleting configuration:', err);
       setDeleteError('Failed to delete configuration. Please try again.');
+      showToast('Failed to delete configuration. Please try again.', 'error');
     }
   };
 

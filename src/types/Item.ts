@@ -24,6 +24,7 @@ export interface ItemBase {
   price?: number;
   selected?: boolean;
   order?: number;
+  parentId?: number | null;
 }
 
 export interface ItemData extends ItemBase {
@@ -51,6 +52,7 @@ export class Item implements ItemData {
   price?: number;
   selected?: boolean;
   order?: number;
+  readonly parentId?: number;
 
   // New fields for better calculation handling
   private _fixaceAmount: number = 0;
@@ -65,7 +67,7 @@ export class Item implements ItemData {
   constructor(data: Partial<ItemData>) {
     this.id = data.id ?? 0;
     this.name = data.name ?? '';
-    this.categoryId = data.categoryId ?? 0;
+    this.categoryId = data.categoryId ?? data.parentId ?? 0;
     this.type = data.type ?? 'item';
     this.description = data.description;
     this.note = data.note;
@@ -191,7 +193,8 @@ export class Item implements ItemData {
       depth: this.depth,
       price: this.price,
       selected: this.selected,
-      order: this.order
+      order: this.order,
+      parentId: this.parentId
     };
   }
 }

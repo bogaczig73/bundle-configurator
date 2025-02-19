@@ -24,7 +24,6 @@ export const BundleTable = forwardRef(({
 }, ref) => {
   const tableStyles = useTableStyles(exporting);
   const flattenedItems = useMemo(() => processItems(items), [items]);
-
   return (
     <TableProvider
       bundles={bundles}

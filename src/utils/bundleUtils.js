@@ -17,7 +17,7 @@ export const getBundleState = (bundle, index, amounts, items, packages) => {
   const nonSelectedItems = [];
   let isUserLimitState = 'default';
   const userAmount = amounts?.amounts?.[1] || 0;
-  if (userAmount >= bundle.userLimit) {
+  if (userAmount > bundle.userLimit) {
     isUserLimitState = 'inactive';
     nonSelectedItems.push({
       name: "Počet uživatelů přesahuje limit balíčku",

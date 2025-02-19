@@ -8,6 +8,7 @@ import { useConfigData } from '../hooks/useConfigData';
 import ItemFormModal from '../components/ItemFormModal';
 import { CURRENCIES } from '../hooks/useConfigData';
 import { useTableStyles } from '../components/Table/useTableStyles';
+import { useToast } from '../context/ToastContext';
 
 function BundleSettingsPage() {
   const { userId } = useParams();
@@ -30,6 +31,7 @@ function BundleSettingsPage() {
     loadCategoriesForCurrency,
     processCategories
   } = useConfigData();
+  const { showToast } = useToast();
 
   const [bundlesState, setBundlesState] = useState([]);
   const [itemPrices, setItemPrices] = useState({});
@@ -146,6 +148,7 @@ function BundleSettingsPage() {
   const handleSave = async () => {
     setLoading(true);
     setError('');
+    showToast('Saving changes...', 'info');
     
     try {
       // Save items using the hook's method with currency
@@ -160,9 +163,11 @@ function BundleSettingsPage() {
       }));
       await updateDoc(doc(db, 'default', 'packages'), { packages: updatedPackages });
 
+      showToast('Changes saved successfully!', 'success');
       userId && navigate(`/users/${userId}/bundles`);
     } catch (err) {
       console.error('Error saving bundles:', err);
+      showToast('Failed to save changes. Please try again.', 'error');
       setError('Failed to save changes. Please try again.');
     } finally {
       setLoading(false);
@@ -172,6 +177,7 @@ function BundleSettingsPage() {
   // Update the handleItemSubmit function
   const handleItemSubmit = useCallback(async (formData) => {
     setIsItemSaving(true);
+    showToast('Saving item...', 'info');
     try {
       // Validate required fields
       if (!formData.name) {
@@ -243,27 +249,17 @@ function BundleSettingsPage() {
         throw new Error('Failed to save item - no result returned');
       }
       
-      // Reload both items and categories after saving
-      const [updatedItems, updatedCategories] = await Promise.all([
-        loadItemsForCurrency(selectedCurrency),
-        loadCategoriesForCurrency(selectedCurrency)
-      ]);
-      
-      const processedTree = processCategories(updatedCategories, updatedItems);
-      if (!processedTree || processedTree.length === 0) {
-        throw new Error('Failed to process updated items');
-      }
-
-      setProcessedItems(processedTree);
+      showToast('Item saved successfully!', 'success');
       setShowItemModal(false);
       setEditingItem(null);
     } catch (err) {
       console.error('Error saving item:', err);
+      showToast(err instanceof Error ? err.message : 'Failed to save item. Please try again.', 'error');
       setError(err instanceof Error ? err.message : 'Failed to save item. Please try again.');
     } finally {
       setIsItemSaving(false);
     }
-  }, [handleNewItem, setError, selectedCurrency, loadItemsForCurrency, loadCategoriesForCurrency, processCategories, setProcessedItems, saveItems, processedItems]);
+  }, [handleNewItem, selectedCurrency, showToast]);
 
   // Add handler for excluding category from global discount
   const handleCategoryGlobalDiscountExclusion = useCallback(async (categoryId, exclude) => {
@@ -346,24 +342,20 @@ function BundleSettingsPage() {
   // Update handleItemDelete function to include currency
   const handleItemDelete = useCallback(async (itemId) => {
     setIsItemSaving(true);
+    showToast('Deleting item...', 'info');
     try {
       await handleDeleteItem(itemId, selectedCurrency);
-      // Reload items and categories for current currency after deletion
-      const [updatedItems, updatedCategories] = await Promise.all([
-        loadItemsForCurrency(selectedCurrency),
-        loadCategoriesForCurrency(selectedCurrency)
-      ]);
-      const processedTree = processCategories(updatedCategories, updatedItems);
-      setProcessedItems(processedTree);
+      showToast('Item deleted successfully!', 'success');
       setShowItemModal(false);
       setEditingItem(null);
     } catch (err) {
       console.error('Error deleting item:', err);
+      showToast('Failed to delete item. Please try again.', 'error');
       setError('Failed to delete item. Please try again.');
     } finally {
       setIsItemSaving(false);
     }
-  }, [handleDeleteItem, setError, loadItemsForCurrency, loadCategoriesForCurrency, selectedCurrency, setProcessedItems]);
+  }, [handleDeleteItem, selectedCurrency, showToast]);
 
   // Add handler for note changes
   const handleItemNoteChange = useCallback((bundleId, itemId, note) => {
@@ -425,12 +417,6 @@ function BundleSettingsPage() {
                     ))}
                   </select>
                 </div>
-                
-                <ActionButtons
-                  userId={userId}
-                  loading={loading}
-                  onSave={handleSave}
-                />
               </div>
             </div>
             {error && (

@@ -12,12 +12,8 @@ import { useTableStyles } from '../components/Table/useTableStyles';
 import { useCurrentUser } from '../api/users';
 import { getBundleState } from '../utils/bundleUtils';
 import FlyingImage from '../components/FlyingImage';
+import { useToast } from '../context/ToastContext';
 
-// // Available currencies
-// const CURRENCIES = [
-//   { code: 'CZK', symbol: 'Kč', name: 'Český' },
-//   { code: 'EUR', symbol: '€', name: 'Slovenský' },
-// ];
 
 function ConfiguratorPage() {
   const { bundleId } = useParams();
@@ -61,6 +57,7 @@ function ConfiguratorPage() {
   const [isPrivate, setIsPrivate] = useState(false);
   const [activeBundles, setActiveBundles] = useState(packages.map(() => 'default'));
   const [showBubu, setShowBubu] = useState(false);
+  const { showToast } = useToast();
 
   // Helper function to find an item in the nested structure
   const findItemInCategories = useCallback((itemId, categories) => {
@@ -281,10 +278,12 @@ function ConfiguratorPage() {
   const handleSaveConfig = async () => {
     if (!configName || !selectedCustomer) {
       setError('Please fill in all required fields');
+      showToast('Please fill in all required fields', 'error');
       return;
     }
 
     try {
+      showToast('Saving configuration...', 'info');
       const validItems = {};
       // Only include items that have actual values
       Object.entries(amounts.amounts || {}).forEach(([itemId, amount]) => {
@@ -308,6 +307,7 @@ function ConfiguratorPage() {
       // Ensure we have at least one valid item
       if (Object.keys(validItems).length === 0) {
         setError('Please add at least one item amount');
+        showToast('Please add at least one item amount', 'error');
         return;
       }
 
@@ -325,15 +325,18 @@ function ConfiguratorPage() {
       if (isEditing && editingConfigId) {
         // Update existing configuration
         await updateConfiguration(editingConfigId, configData);
+        showToast('Configuration updated successfully!', 'success');
       } else {
         // Create new configuration
         await saveConfiguration(configData);
+        showToast('Configuration saved successfully!', 'success');
       }
       
       setIsModalOpen(false);
     } catch (err) {
       console.error('Save configuration error:', err);
       setError(err.message || 'Error saving configuration');
+      showToast(err.message || 'Error saving configuration', 'error');
     }
   };
 

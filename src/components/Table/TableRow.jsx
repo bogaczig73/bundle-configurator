@@ -29,7 +29,6 @@ export const TableRow = ({ item, tableStyles }) => {
   const [isExpanded, setIsExpanded] = React.useState(false);
   // Convert plain item object to Item instance if it isn't already
   const itemInstance = item instanceof Item ? item : new Item(item);
-
   // Skip if this is a category row
   if (itemInstance.type === 'category') {
     return (
@@ -384,7 +383,7 @@ export const TableRow = ({ item, tableStyles }) => {
                 </span>
               ) : itemInstance.checkbox ? (
                 <div className="flex items-center" onClick={(e) => e.stopPropagation()}>
-                  {!readonly && (
+                  {!readonly && !showFixace && (
                     <>
                       <button
                         onClick={(e) => {
@@ -426,7 +425,7 @@ export const TableRow = ({ item, tableStyles }) => {
                       </button>
                     </>
                   )}
-                  {readonly && (
+                  {(readonly || showFixace) && (
                     <span className={tableStyles.itemAmount}>
                       {amounts.discount[itemInstance.id] ? `${amounts.discount[itemInstance.id]}%` : '-'}
                     </span>
